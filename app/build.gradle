@@ -1,0 +1,112 @@
+plugins {
+    id 'com.android.application'
+    id 'kotlin-android'
+    id 'kotlin-kapt'
+}
+
+android {
+    compileSdkVersion rootProject.ext.android.compileSdkVersion
+
+    defaultConfig {
+        applicationId "io.agora.iotlinkdemo"
+        minSdkVersion rootProject.ext.android.minSdkVersion
+        targetSdkVersion rootProject.ext.android.targetSdkVersion
+        versionCode 44
+        versionName "2.0.0.4"
+        ndk {
+            abiFilters "armeabi-v7a", "arm64-v8a"
+        }
+        javaCompileOptions {
+            annotationProcessorOptions {
+                arguments = [AROUTER_MODULE_NAME: project.getName()]
+            }
+        }
+    }
+    signingConfigs {
+        myConfig {
+            storeFile file('../iot.jks')
+            keyAlias 'FalconDemo'
+            keyPassword 'Agora123456'
+            storePassword 'Agora123456'
+        }
+    }
+    buildTypes {
+        debug {
+            minifyEnabled false
+            signingConfig signingConfigs.myConfig
+        }
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.myConfig
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['src/main/jniLibs']
+        }
+    }
+    buildFeatures {
+        viewBinding true
+        dataBinding true
+    }
+    applicationVariants.all { variant ->
+        variant.outputs.each { output ->
+            output.outputFileName =
+                    "AgoraLink-${variant.name}" + "-v" + defaultConfig.versionCode + "-" +
+                            defaultConfig.versionName + ".apk"
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
+    implementation project(path: ':iotsdk20')
+    implementation project(path: ':avengine')
+    kapt rootProject.ext.deps.arouter_kapt
+    implementation rootProject.ext.deps.arouter
+    implementation rootProject.ext.deps.appcompat
+    implementation rootProject.ext.deps.multidex
+    implementation rootProject.ext.deps.constraintlayout
+    implementation rootProject.ext.deps.v7
+    implementation rootProject.ext.deps.material
+    implementation rootProject.ext.deps.gson
+    implementation rootProject.ext.deps.eventbus
+
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.4.1'
+    implementation 'androidx.navigation:navigation-fragment-ktx:2.4.2'
+    implementation 'androidx.navigation:navigation-ui-ktx:2.4.2'
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
+
+    // MQTT使用的库
+    implementation 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5'
+    implementation 'org.eclipse.paho:org.eclipse.paho.android.service:1.1.1'
+
+    // Glide 图片加载
+    api rootProject.ext.deps.glide
+    kapt rootProject.ext.deps.glide_compiler
+
+    // 二维码解析
+    implementation files('libs/core-3.5.0.jar')
+
+
+    // IJK播放器
+    implementation 'tv.danmaku.ijk.media:ijkplayer-java:0.8.8'
+    implementation 'tv.danmaku.ijk.media:ijkplayer-armv7a:0.8.8'
+    implementation 'tv.danmaku.ijk.media:ijkplayer-arm64:0.8.8'
+    implementation 'tv.danmaku.ijk.media:ijkplayer-exo:0.8.8'
+
+    def aws_version = "2.25.+"
+    implementation "com.amazonaws:aws-android-sdk-iot:$aws_version"
+    implementation "com.amazonaws:aws-android-sdk-mobile-client:$aws_version"
+
+
+}

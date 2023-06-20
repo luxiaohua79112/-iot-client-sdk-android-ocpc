@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="io.agora.iotlinkdemo">
+
+
+    <!-- 从扩展存储读取权限，添加设备时访问系统图库需要 -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+
+    <!-- 允许应用程序改变任务的z顺序，来电时将APP从后台拉到前台显示 -->
+    <uses-permission android:name="android.permission.REORDER_TASKS" />
+
+    <!-- 悬浮窗系统权限，用于支持来电时将APP从后台拉到前台显示 -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+    <!-- MQTT相关权限 -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- ==================== 添加设备配网权限 BEGIN ==================== -->
+        <!-- 允许应用程序获取wifi状态，Android 10以上要求权限 -->
+        <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+        <!-- 允许程序改变网络连接状态 -->
+        <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+        <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+        <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
+        <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <!-- ==================== 添加设备配网权限 END ==================== -->
+
+
+    <application
+        android:name=".base.AgoraApplication"
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:networkSecurityConfig="@xml/security_config"
+        android:requestLegacyExternalStorage="true"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.AgoraLink"
+        tools:replace="android:allowBackup">
+        <meta-data
+            android:name="design_width_in_dp"
+            android:value="375" />
+        <meta-data
+            android:name="design_height_in_dp"
+            android:value="812" />
+
+        <activity
+            android:name=".models.welcome.WelcomeActivity"
+            android:label="@string/app_name"
+            android:screenOrientation="portrait">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".models.login.AccountLoginActivity"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name=".models.login.AccountRegisterActivity"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".models.player.DevPreviewActivity"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".models.settings.AccountSecurityActivity"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".models.settings.AboutActivity"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".models.home.MainActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:launchMode="standard"
+            android:screenOrientation="portrait" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileProvider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/provider_paths" />
+        </provider>
+
+        <service android:name="org.eclipse.paho.android.service.MqttService" />
+
+        <!-- 设置声网应用的AppID -->
+        <meta-data
+            android:name="AGORA_APPID"
+            android:value="@string/AGORA_APPID" />
+
+        <!-- 设置声网应用的ProjectID -->
+        <meta-data
+            android:name="PROJECT_ID"
+            android:value="@string/PROJECT_ID" />
+
+        <!-- 设置灵隼服务Master Server -->
+        <meta-data
+            android:name="MASTER_SERVER_URL"
+            android:value="@string/MASTER_SERVER_URL" />
+
+        <!-- 设置灵隼服务Slave Server -->
+        <meta-data
+            android:name="SALVE_SERVER_URL"
+            android:value="@string/SALVE_SERVER_URL" />
+
+        <!-- 设置配第三方账号服务器地址 Account Server -->
+        <meta-data
+            android:name="ACCOUNT_SERVER_URL"
+            android:value="@string/ACCOUNT_SERVER_URL" />
+
+    </application>
+
+
+    <!-- targetSdkVersion是30或者更高版本时，需要添加<queries>标签，使应用可以访问HMS Core（APK） -->
+        <queries>
+            <intent>
+                <action android:name="com.huawei.hms.core.aidlservice" />
+            </intent>
+        </queries>
+    <!-- HMS Core（APK）访问配置 end-->
+
+</manifest>
