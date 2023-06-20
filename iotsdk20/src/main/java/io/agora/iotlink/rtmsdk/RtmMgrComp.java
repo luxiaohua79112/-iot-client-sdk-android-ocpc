@@ -3,6 +3,7 @@ package io.agora.iotlink.rtmsdk;
 
 import android.content.Context;
 import android.os.Message;
+import android.text.TextUtils;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -208,9 +209,13 @@ public class RtmMgrComp extends BaseThreadComp {
             ALog.getInstance().d(TAG, "<onMessageConnectToDev> done, login with token");
 
         } else {  // 已经登录，进行Token更新操作
-            mState.setValue(RTM_STATE_RENEWING);  // 切换到正在RenewToking状态
-            rtmEngRenewToken(rtmToken);
-            ALog.getInstance().d(TAG, "<onMessageConnectToDev> done, renew token");
+            if (!TextUtils.isEmpty(rtmToken)) {
+                mState.setValue(RTM_STATE_RENEWING);  // 切换到正在RenewToking状态
+                rtmEngRenewToken(rtmToken);
+                ALog.getInstance().d(TAG, "<onMessageConnectToDev> done, renew token");
+            } else {
+                ALog.getInstance().d(TAG, "<onMessageConnectToDev> done, need NOT renew token");
+            }
         }
     }
 
@@ -221,7 +226,7 @@ public class RtmMgrComp extends BaseThreadComp {
         int errCode = msg.arg1;
 
         if (errCode != ErrCode.XOK) {
-            mState.setValue(RTM_STATE_RENEWING);  // 登录失败，切换到 未登录状态
+            mState.setValue(RTM_STATE_IDLE);  // 登录失败，切换到 未登录状态
 
         } else {
             mState.setValue(RTM_STATE_RUNNING);  // 登录成功，切换到 运行状态
@@ -325,7 +330,8 @@ public class RtmMgrComp extends BaseThreadComp {
 
         try {
             IDeviceSessionMgr.InitParam initParam = mSessionMgr.getInitParam();
-            mRtmClient = RtmClient.createInstance(initParam.mContext, initParam.mAppId, rtmListener);
+            String appId = initParam.mAppId;
+            mRtmClient = RtmClient.createInstance(initParam.mContext, appId, rtmListener);
         } catch (Exception exp) {
             exp.printStackTrace();
             ALog.getInstance().e(TAG, "<rtmEngCreate> [EXCEPTION] create rtmp, exp=" + exp.toString());

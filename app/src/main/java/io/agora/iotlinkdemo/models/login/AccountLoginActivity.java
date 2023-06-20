@@ -137,6 +137,7 @@ public class AccountLoginActivity extends BaseViewBindingActivity<ActivityLoginB
                         initParam.mContext = linkInitParam.mContext;
                         initParam.mAppId = linkInitParam.mAppId;
                         initParam.mProjectID = linkInitParam.mProjectID;
+                        initParam.mUserId = PresistentLinkComp.getInstance().getLocalNodeId();
                         File file = initParam.mContext.getExternalFilesDir(null);
                         String cachePath = file.getAbsolutePath();
                         initParam.mLogFilePath = cachePath + "/callkit.log";
