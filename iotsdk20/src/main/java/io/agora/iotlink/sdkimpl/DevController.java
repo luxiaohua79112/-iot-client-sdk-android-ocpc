@@ -25,6 +25,7 @@ import io.agora.iotlink.ErrCode;
 import io.agora.iotlink.IDevController;
 import io.agora.iotlink.IVodPlayer;
 import io.agora.iotlink.logger.ALog;
+import io.agora.iotlink.rtmsdk.RtmCmdCtx;
 
 
 /*
@@ -68,10 +69,15 @@ public class DevController  implements IDevController {
     public int sendCmdPtzCtrl(int action, int direction, int speed,
                               final OnCommandCmdListener cmdListener) {
 
-        Map<String, String> params = new HashMap();
+        RtmCmdCtx command = new RtmCmdCtx();
+
+
+
         JSONObject body = new JSONObject();
         ALog.getInstance().d(TAG, "<sendCmdPtzCtrl> [BEGIN] action=" + action
                 + ", direction=" + direction + ", speed=" + speed);
+
+
 
 
         // body内容

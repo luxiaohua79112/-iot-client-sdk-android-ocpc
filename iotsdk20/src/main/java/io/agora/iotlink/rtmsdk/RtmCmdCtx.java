@@ -45,16 +45,39 @@ public class RtmCmdCtx  {
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Variable Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
+    public static long mGlobalSeqId = 1;
+
     public long  mSequenceId;       ///< 序列号，request--response的序列号一一对应
     public String mDeviceId;        ///< 命令到达的设备Id
     public int mCmdId;              ///< 命令字符串
     public long mSendTimestamp;     ///< 命令发送的时间戳，用于超时判断
     public boolean mIsRespCmd;      ///< 是否是响应命令包，true
 
+    ////////////////////////////////////
+    /////////// 请求命令中参数 ////////////
+    ////////////////////////////////////
     public String mParam;           ///< 请求命令中：参数数据
 
+    public int mPtzCtrlAction;      ///< 云台控制动作
+    public int mPtzCtrlDirection;   ///< 云台控制方向
+    public int mPtzCtrlSpeed;       ///< 云台控制速度
+
+    public String mQueryFileId;     ///< 媒体文件查询 文件Id
+    public long mQueryBeginTime;    ///< 媒体文件查询 开始时间
+    public long mQueryEndTime;      ///< 媒体文件查询 结束时间
+    public int mQueryPageIndex;     ///< 媒体文件查询 页面索引，从1开始
+    public int mQueryPageSize;      ///< 媒体文件查询 页面最多记录数
+
+
+
+    ////////////////////////////////////
+    /////////// 回应命令中数据 ////////////
+    ////////////////////////////////////
     public int mErrCode;            ///< 回应命令中：错误码
     public String mRespData;        ///< 响应数据包
+
+
+
 
 
     ///////////////////////////////////////////////////////////////////////
@@ -73,6 +96,12 @@ public class RtmCmdCtx  {
         return infoText;
     }
 
+    public RtmCmdCtx() {
+        synchronized (RtmCmdCtx.class) {
+            mSequenceId = mGlobalSeqId;
+            mGlobalSeqId++;
+        }
+    }
 
     /**
      * @brief 将请求命令组成JSON字符串，转换成字节流返回
