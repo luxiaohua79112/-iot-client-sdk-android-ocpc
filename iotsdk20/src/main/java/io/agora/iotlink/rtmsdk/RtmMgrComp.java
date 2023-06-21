@@ -71,7 +71,7 @@ public class RtmMgrComp extends BaseThreadComp {
     private RtmPktQueue mRecvPktQueue = new RtmPktQueue();  ///< 接收数据包队列
     private RtmPktQueue mSendPktQueue = new RtmPktQueue();  ///< 发送数据包队列
 
-
+    private RtmCmdMgr mCommandMgr = new RtmCmdMgr();        ///< 命令管理器
 
 
     ///////////////////////////////////////////////////////////////////////
@@ -130,19 +130,21 @@ public class RtmMgrComp extends BaseThreadComp {
 
 
     /**
-     * @brief 发送消息到设备
+     * @brief 发送命令到设备
      */
-    public int sendMessageToDev(final String deviceId, final byte[] sendData) {
-        RtmPacket packet = new RtmPacket();
-        packet.mPeerId = deviceId;
-        packet.mPktData = sendData;
-        mSendPktQueue.inqueue(packet);
+    public int sendCommandToDev(final RtmCmdCtx command) {
+
+        // 添加到命令处理器中
+        mCommandMgr.addCommand(command);
 
         // 发送消息处理
+        RtmPacket packet = new RtmPacket();
+        packet.mPeerId = command.mDeviceId;
+        packet.mPktData = command.getReqCmdDataBytes();
+        mSendPktQueue.inqueue(packet);
         sendSingleMessage(MSGID_RTM_SEND_PKT, 0, 0, null, 0);
 
-        ALog.getInstance().d(TAG, "<sendMessageToDev> deviceId=" + deviceId
-                + ", sendData.length=" + sendData.length);
+        ALog.getInstance().d(TAG, "<sendMessageToDev> command=" + command);
         return ErrCode.XOK;
     }
 
@@ -279,7 +281,13 @@ public class RtmMgrComp extends BaseThreadComp {
                 return;
             }
 
-            // TODO: 回调给上层
+            // 解析回应命令数据包,生成回应命令
+            RtmCmdCtx rspCmdCtx = RtmCmdCtx.parseRspCmdDataBytes(recvedPkt.mPktData);
+            if (rspCmdCtx == null) {   // 回应命令解析失败
+                continue;
+            }
+
+
         }
     }
 
@@ -330,7 +338,7 @@ public class RtmMgrComp extends BaseThreadComp {
 
         try {
             IDeviceSessionMgr.InitParam initParam = mSessionMgr.getInitParam();
-            String appId = initParam.mAppId;
+            String appId = "aab8b8f5a8cd4469a63042fcfafe7063"; // initParam.mAppId;
             mRtmClient = RtmClient.createInstance(initParam.mContext, appId, rtmListener);
         } catch (Exception exp) {
             exp.printStackTrace();

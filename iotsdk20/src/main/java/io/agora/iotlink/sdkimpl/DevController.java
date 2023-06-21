@@ -14,11 +14,17 @@ package io.agora.iotlink.sdkimpl;
 
 import android.view.View;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import io.agora.iotlink.ErrCode;
 import io.agora.iotlink.IDevController;
 import io.agora.iotlink.IVodPlayer;
+import io.agora.iotlink.logger.ALog;
 
 
 /*
@@ -60,17 +66,47 @@ public class DevController  implements IDevController {
     ///////////////////////////////////////////////////////////////////////
     @Override
     public int sendCmdPtzCtrl(int action, int direction, int speed,
-                              final OnDevCmdListener cmdListener) {
+                              final OnCommandCmdListener cmdListener) {
+
+        Map<String, String> params = new HashMap();
+        JSONObject body = new JSONObject();
+        ALog.getInstance().d(TAG, "<sendCmdPtzCtrl> [BEGIN] action=" + action
+                + ", direction=" + direction + ", speed=" + speed);
+
+
+        // body内容
+        try {
+            body.put("sequenceId", 0);
+            body.put("cmd", "PTZ_CTRL");
+
+            JSONObject paramObj = new JSONObject();
+            paramObj.put("action", action);
+            paramObj.put("direction", direction);
+            paramObj.put("speed", speed);
+            body.put("param", paramObj);
+
+        } catch (JSONException jsonExp) {
+            jsonExp.printStackTrace();
+            ALog.getInstance().e(TAG, "<sendCmdPtzCtrl> [EXP] jsonExp=" + jsonExp);
+            return ErrCode.XERR_JSON_WRITE;
+        }
+
+        String realBody = String.valueOf(body);
+
+
+
+        ALog.getInstance().d(TAG, "<sendCmdPtzCtrl> [BEGIN] action=" + action
+                + ", direction=" + direction + ", speed=" + speed);
         return ErrCode.XOK;
     }
 
     @Override
-    public int sendCmdPtzReset(final OnDevCmdListener cmdListener) {
+    public int sendCmdPtzReset(final OnCommandCmdListener cmdListener) {
         return ErrCode.XOK;
     }
 
     @Override
-    public int storageCardFormat(final OnDevCmdListener cmdListener) {
+    public int storageCardFormat(final OnCommandCmdListener cmdListener) {
         return ErrCode.XOK;
     }
 

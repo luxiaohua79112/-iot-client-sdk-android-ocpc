@@ -21,9 +21,9 @@ import java.util.UUID;
 public interface IDevController  {
 
     /**
-     * @brief 命令发送回调监听器
+     * @brief 公共的命令回调监听器
      */
-    public static interface OnDevCmdListener {
+    public static interface OnCommandCmdListener {
 
         /**
          * @brief 命令执行完成回调
@@ -31,7 +31,7 @@ public interface IDevController  {
          * @param result1: 不同的命令对应不同的返回值1
          * @param result2: 不同的命令对应不同的返回值2
          */
-        default void onDeviceCmdDone(int errCode, long result1, long result2) {}
+        default void onDeviceCmdDone(int commandId, int errCode) {}
     }
 
 
@@ -47,14 +47,14 @@ public interface IDevController  {
      * @param cmdListener: 命令完成回调
      * @return 返回错误码
      */
-    int sendCmdPtzCtrl(int action, int direction, int speed, final OnDevCmdListener cmdListener);
+    int sendCmdPtzCtrl(int action, int direction, int speed, final OnCommandCmdListener cmdListener);
 
     /**
      * @brief 发送云台校准命令
      * @param cmdListener: 命令完成回调
      * @return 返回错误码
      */
-    int sendCmdPtzReset(final OnDevCmdListener cmdListener);
+    int sendCmdPtzReset(final OnCommandCmdListener cmdListener);
 
 
     /**
@@ -62,6 +62,6 @@ public interface IDevController  {
      * @param cmdListener: 命令完成回调
      * @return 返回错误码
      */
-    int storageCardFormat(final OnDevCmdListener cmdListener);
+    int storageCardFormat(final OnCommandCmdListener cmdListener);
 
 }
