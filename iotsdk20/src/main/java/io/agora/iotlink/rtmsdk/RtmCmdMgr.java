@@ -28,7 +28,7 @@ public class RtmCmdMgr {
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Variable Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
-    private HashMap<Long, RtmCmdCtx> mCmdMap = new HashMap<>();  ///< 命令映射表
+    private HashMap<Long, IRtmCmd> mCmdMap = new HashMap<>();  ///< 命令映射表
 
 
     ////////////////////////////////////////////////////////////////////////
@@ -36,27 +36,27 @@ public class RtmCmdMgr {
     ////////////////////////////////////////////////////////////////////////
     /**
      * @brief 增加节点映射
-     * @param RtmCmdCtx : 要映射的会话
+     * @param rtmCmd : 要映射的会话
      * @return None
      */
-    public void addCommand(final RtmCmdCtx RtmCmdCtx) {
+    public void addCommand(final IRtmCmd rtmCmd) {
         synchronized (mCmdMap) {
-            mCmdMap.put(RtmCmdCtx.mSequenceId, RtmCmdCtx);
+            mCmdMap.put(rtmCmd.getSequenceId(), rtmCmd);
         }
     }
 
     /**
      * @brief 更新已经存在的节点信息
-     * @param RtmCmdCtx : 要更新的会话
+     * @param rtmCmd : 要更新的会话
      * @return None
      */
-    public void updateCommand(final RtmCmdCtx RtmCmdCtx) {
+    public void updateCommand(final IRtmCmd rtmCmd) {
         synchronized (mCmdMap) {
-            RtmCmdCtx tmpSession = mCmdMap.get(RtmCmdCtx.mSequenceId);
+            IRtmCmd tmpSession = mCmdMap.get(rtmCmd.getSequenceId());
             if (tmpSession == null) {
                 return;
             }
-            mCmdMap.put(RtmCmdCtx.mSequenceId, RtmCmdCtx);
+            mCmdMap.put(rtmCmd.getSequenceId(), rtmCmd);
         }
     }
 
@@ -64,10 +64,10 @@ public class RtmCmdMgr {
      * @brief 根据 sequenceId 获取命令信息
      * @return 返回提取到的session，如果未提取到则返回null
      */
-    public RtmCmdCtx getCommand(long sequenceId) {
+    public IRtmCmd getCommand(long sequenceId) {
         synchronized (mCmdMap) {
-            RtmCmdCtx RtmCmdCtx = mCmdMap.get(sequenceId);
-            return RtmCmdCtx;
+            IRtmCmd IRtmCmd = mCmdMap.get(sequenceId);
+            return IRtmCmd;
         }
     }
 
@@ -76,10 +76,10 @@ public class RtmCmdMgr {
      * @brief 根据 sequenceId 删除命令信息
      * @return 返回删除的会话，如果未找到则返回null
      */
-    public RtmCmdCtx removeCommand(final UUID sequenceId) {
+    public IRtmCmd removeCommand(final UUID sequenceId) {
         synchronized (mCmdMap) {
-            RtmCmdCtx RtmCmdCtx = mCmdMap.remove(sequenceId);
-            return RtmCmdCtx;
+            IRtmCmd IRtmCmd = mCmdMap.remove(sequenceId);
+            return IRtmCmd;
         }
     }
 
@@ -88,18 +88,18 @@ public class RtmCmdMgr {
      * @brief 查询所有响应超时的命令
      * @return 返回超时的命令列表
      */
-    public List<RtmCmdCtx> queryTimeoutCommandList(long timeout) {
-        ArrayList<RtmCmdCtx> timeoutList = new ArrayList<>();
+    public List<IRtmCmd> queryTimeoutCommandList(long timeout) {
+        ArrayList<IRtmCmd> timeoutList = new ArrayList<>();
         long currTimestamp = System.currentTimeMillis();
 
         synchronized (mCmdMap) {
-            for (Map.Entry<Long, RtmCmdCtx> entry : mCmdMap.entrySet()) {
-                RtmCmdCtx rtmCmdCtx = entry.getValue();
+            for (Map.Entry<Long, IRtmCmd> entry : mCmdMap.entrySet()) {
+                IRtmCmd rtmCmd = entry.getValue();
 
-                if (!rtmCmdCtx.mIsRespCmd) {
-                    long timeDiff = currTimestamp - rtmCmdCtx.mSendTimestamp;
+                if (!rtmCmd.isResponseCmd()) {
+                    long timeDiff = currTimestamp - rtmCmd.getSendTimestamp();
                     if (timeDiff > timeout) {  // 呼叫超时
-                        timeoutList.add(rtmCmdCtx);
+                        timeoutList.add(rtmCmd);
                     }
                 }
             }
@@ -113,12 +113,12 @@ public class RtmCmdMgr {
      * @brief 获取当前所有命令列表
      * @return 返回所有命令列表
      */
-    public List<RtmCmdCtx> getAllCommandList() {
-        ArrayList<RtmCmdCtx> commandList = new ArrayList<>();
+    public List<IRtmCmd> getAllCommandList() {
+        ArrayList<IRtmCmd> commandList = new ArrayList<>();
         synchronized (mCmdMap) {
-            for (Map.Entry<Long, RtmCmdCtx> entry : mCmdMap.entrySet()) {
-                RtmCmdCtx rtmCmdCtx = entry.getValue();
-                commandList.add(rtmCmdCtx);
+            for (Map.Entry<Long, IRtmCmd> entry : mCmdMap.entrySet()) {
+                IRtmCmd rtmCmd = entry.getValue();
+                commandList.add(rtmCmd);
             }
         }
 
@@ -146,8 +146,5 @@ public class RtmCmdMgr {
             mCmdMap.clear();
         }
     }
-
-
-
 
 }

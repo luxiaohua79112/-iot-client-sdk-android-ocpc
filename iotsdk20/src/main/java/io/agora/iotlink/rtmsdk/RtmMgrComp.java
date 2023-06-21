@@ -19,6 +19,7 @@ import io.agora.iotlink.base.AtomicInteger;
 import io.agora.iotlink.base.BaseThreadComp;
 import io.agora.iotlink.logger.ALog;
 import io.agora.iotlink.sdkimpl.DeviceSessionMgr;
+import io.agora.iotlink.utils.JsonUtils;
 import io.agora.rtm.ErrorInfo;
 import io.agora.rtm.ResultCallback;
 import io.agora.rtm.RtmClient;
@@ -132,14 +133,14 @@ public class RtmMgrComp extends BaseThreadComp {
     /**
      * @brief 发送命令到设备
      */
-    public int sendCommandToDev(final RtmCmdCtx command) {
+    public int sendCommandToDev(final IRtmCmd command) {
 
         // 添加到命令处理器中
         mCommandMgr.addCommand(command);
 
         // 发送消息处理
         RtmPacket packet = new RtmPacket();
-        packet.mPeerId = command.mDeviceId;
+        packet.mPeerId = command.getDeviceId();
         packet.mPktData = command.getReqCmdDataBytes();
         mSendPktQueue.inqueue(packet);
         sendSingleMessage(MSGID_RTM_SEND_PKT, 0, 0, null, 0);
@@ -282,13 +283,43 @@ public class RtmMgrComp extends BaseThreadComp {
             }
 
             // 解析回应命令数据包,生成回应命令
-            RtmCmdCtx rspCmdCtx = RtmCmdCtx.parseRspCmdDataBytes(recvedPkt.mPktData);
-            if (rspCmdCtx == null) {   // 回应命令解析失败
+            IRtmCmd responseCmd = parseRspCmdDataBytes(recvedPkt.mPktData);
+            if (responseCmd == null) {   // 回应命令解析失败
                 continue;
             }
 
+            // 回调给上层
 
         }
+    }
+
+    /**
+     * @brief 工作线程中运行，解析数据包生成相应的ResponseCommand
+     */
+    IRtmCmd parseRspCmdDataBytes(final byte[] data) {
+        String jsonText = String.valueOf(data);
+        if (TextUtils.isEmpty(jsonText)) {
+            ALog.getInstance().e(TAG, "<parseRspCmdDataBytes> fail to convert data bytes!");
+            return null;
+        }
+
+        JSONObject recvJsonObj = JsonUtils.generateJsonObject(jsonText);
+        if (recvJsonObj == null) {
+            ALog.getInstance().e(TAG, "<parseRspCmdDataBytes> fail to convert JSON object, jsonText=" + jsonText);
+            return null;
+        }
+
+        RtmBaseCmd rtmRspCmd = new RtmBaseCmd();
+        rtmRspCmd.mSequenceId = JsonUtils.parseJsonLongValue(recvJsonObj, "sequenceId", -1);
+        rtmRspCmd.mCmdId = JsonUtils.parseJsonIntValue(recvJsonObj, "commandId", -1);
+        rtmRspCmd.mErrCode = JsonUtils.parseJsonIntValue(recvJsonObj, "code", 0);
+//        JSONObject dataJsonObj = JsonUtils.parseJsonObject(recvJsonObj, "data", null);
+//        if (dataJsonObj != null) {
+//            rtmCmdCtx.mRespData = String.valueOf(dataJsonObj);
+//        }
+
+        ALog.getInstance().d(TAG, "<parseRspCmdDataBytes> done, rtmRspCmd=" + rtmRspCmd);
+        return rtmRspCmd;
     }
 
 
