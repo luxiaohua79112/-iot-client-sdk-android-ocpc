@@ -15,30 +15,26 @@ import io.agora.iotlink.logger.ALog;
 import io.agora.iotlink.utils.JsonUtils;
 
 /**
- * @brief 基本命令
- *        有命令请求，就有对应的响应，如果超时没有接收到响应数据，则返回超时
+ * @brief 播放请求命令
  */
-public class RtmBaseCmd implements IRtmCmd  {
+public class RtmPlayReqCmd extends RtmBaseCmd  {
 
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Constant Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
-    private static final String TAG = "IOTSDK/RtmBaseCmd";
+    private static final String TAG = "IOTSDK/RtmPlayReqCmd";
 
 
 
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Variable Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
-    public long  mSequenceId;       ///< 序列号，request--response的序列号一一对应
-    public String mDeviceId;        ///< 命令到达的设备Id
-    public int mCmdId;              ///< 命令字符串
-    public long mSendTimestamp;     ///< 命令发送的时间戳，用于超时判断
-    public boolean mIsRespCmd;      ///< 是否是响应命令包，true
-    public int mErrCode;            ///< 回应命令中：错误码
+    public long mGlobalStartTime;       ///< 全局的播放开始时间戳
 
+    public String mFileId;              ///< 要播放的 fileId
+    public long mStartTime;              ///< 播放开始时间戳
 
-
+    public int mRate;                   ///< 播放倍速
 
 
     ///////////////////////////////////////////////////////////////////////
@@ -50,8 +46,10 @@ public class RtmBaseCmd implements IRtmCmd  {
                 + ", mDeviceId=" + mDeviceId
                 + ", mCmdId=" + mCmdId
                 + ", mSendTimestamp=" + mSendTimestamp
-                + ", mIsRespCmd=" + mIsRespCmd
-                + ", mErrCode=" + mErrCode + " }";
+                + ", mGlobalStartTime=" + mGlobalStartTime
+                + ", mFileId=" + mFileId
+                + ", mStartTime=" + mStartTime
+                + ", mRate=" + mRate + " }";
         return infoText;
     }
 
@@ -60,39 +58,25 @@ public class RtmBaseCmd implements IRtmCmd  {
     ///////////////////////////////////////////////////////////////////////
     //////////////////// Override Methods of IRtmCmd //////////////////////
     ///////////////////////////////////////////////////////////////////////
-    @Override
-    public long getSequenceId() {
-        return mSequenceId;
-    }
-
-    @Override
-    public int getCommandId() {
-        return mCmdId;
-    }
-
-    @Override
-    public String getDeviceId() {
-        return mDeviceId;
-    }
-
-    @Override
-    public long getSendTimestamp() {
-        return mSendTimestamp;
-    }
-
-    @Override
-    public boolean isResponseCmd() {
-        return mIsRespCmd;
-    }
 
     @Override
     public byte[] getReqCmdDataBytes() {
-        JSONObject body = new JSONObject();
+        JSONObject bodyObj = new JSONObject();
 
         // body内容
         try {
-            body.put("sequenceId", mSequenceId);
-            body.put("commandId", mCmdId);
+            bodyObj.put("sequenceId", mSequenceId);
+            bodyObj.put("commandId", mCmdId);
+
+            JSONObject paramObj = new JSONObject();
+            if (TextUtils.isEmpty(mFileId)) {
+                paramObj.put("fileId", mFileId);
+                paramObj.put("startTime", mStartTime);
+            } else {
+                paramObj.put("globalStartTime", mGlobalStartTime);
+            }
+            paramObj.put("rate", mRate);
+            bodyObj.put("param", paramObj);
 
         } catch (JSONException jsonExp) {
             jsonExp.printStackTrace();
@@ -100,7 +84,7 @@ public class RtmBaseCmd implements IRtmCmd  {
             return null;
         }
 
-        String realBody = String.valueOf(body);
+        String realBody = String.valueOf(bodyObj);
         byte[]  dataBytes = realBody.getBytes(StandardCharsets.UTF_8);
         return dataBytes;
     }

@@ -18,12 +18,12 @@ import io.agora.iotlink.utils.JsonUtils;
  * @brief 基本命令
  *        有命令请求，就有对应的响应，如果超时没有接收到响应数据，则返回超时
  */
-public class RtmBaseCmd implements IRtmCmd  {
+public class RtmQueryReqCmd extends RtmBaseCmd  {
 
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Constant Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
-    private static final String TAG = "IOTSDK/RtmBaseCmd";
+    private static final String TAG = "IOTSDK/RtmQueryCmd";
 
 
 
@@ -55,6 +55,14 @@ public class RtmBaseCmd implements IRtmCmd  {
         return infoText;
     }
 
+    public RtmQueryCmd() {
+
+    }
+
+    public RtmQueryCmd(int reqCmdId) {
+        mSequenceId = 1;
+        mCmdId = reqCmdId;
+    }
 
 
     ///////////////////////////////////////////////////////////////////////
