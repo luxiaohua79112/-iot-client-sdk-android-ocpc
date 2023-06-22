@@ -7,7 +7,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,22 +15,23 @@ import io.agora.iotlink.logger.ALog;
 import io.agora.iotlink.utils.JsonUtils;
 
 /**
- * @brief 设备端媒体文件查询响应命令，返回查询到的媒体文件信息列表
+ * @brief 设备端媒体文件删除响应命令，返回删除失败的文件列表
  *
  */
-public class RtmQueryRspCmd extends RtmBaseCmd  {
+public class RtmDeleteRspCmd extends RtmBaseCmd  {
 
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Constant Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
-    private static final String TAG = "IOTSDK/RtmQueryRspCmd";
+    private static final String TAG = "IOTSDK/RtmDeleteRspCmd";
 
 
 
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Variable Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
-    public ArrayList<DevFileInfo> mFileList = new ArrayList<>();
+
+
 
 
 
@@ -44,7 +44,6 @@ public class RtmQueryRspCmd extends RtmBaseCmd  {
                 + ", mDeviceId=" + mDeviceId
                 + ", mCmdId=" + mCmdId
                 + ", mSendTimestamp=" + mSendTimestamp
-                + ", mFileList=" + mFileList
                 + ", mIsRespCmd=" + mIsRespCmd
                 + ", mErrCode=" + mErrCode + " }";
         return infoText;
@@ -55,6 +54,7 @@ public class RtmQueryRspCmd extends RtmBaseCmd  {
     ///////////////////////////////////////////////////////////////////////
     //////////////////// Override Methods of IRtmCmd //////////////////////
     ///////////////////////////////////////////////////////////////////////
+
 
 
 
