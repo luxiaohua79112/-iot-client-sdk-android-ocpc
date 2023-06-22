@@ -116,5 +116,16 @@ public class JsonUtils {
 		}
 	}
 
+	public static JSONObject getJsonObjFromArray(JSONArray jsonState, int index) {
+		try {
+			JSONObject jsonObject = jsonState.getJSONObject(index);
+			return jsonObject;
+
+		} catch (JSONException e) {
+			ALog.getInstance().e(TAG, "<getJsonObjFromArray> exp=" + e.toString());
+			return null;
+		}
+	}
+
 }
 

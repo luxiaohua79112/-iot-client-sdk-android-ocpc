@@ -7,6 +7,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,7 +31,7 @@ public class RtmDeleteRspCmd extends RtmBaseCmd  {
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Variable Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
-
+    public ArrayList<DevFileDelErrInfo> mErrorList = new ArrayList<>();
 
 
 
@@ -44,6 +45,7 @@ public class RtmDeleteRspCmd extends RtmBaseCmd  {
                 + ", mDeviceId=" + mDeviceId
                 + ", mCmdId=" + mCmdId
                 + ", mSendTimestamp=" + mSendTimestamp
+                + ", mErrorList=" + mErrorList
                 + ", mIsRespCmd=" + mIsRespCmd
                 + ", mErrCode=" + mErrCode + " }";
         return infoText;

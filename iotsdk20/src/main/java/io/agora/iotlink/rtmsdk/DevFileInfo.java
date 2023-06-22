@@ -35,7 +35,7 @@ public class DevFileInfo  {
     public String mVideoUrl;        ///< 视频文件URL
     public long mStartTime;         ///< 录像开始时间戳，单位：秒
     public long mStopTime;          ///< 录像结束时间戳，单位：秒
-    public int mEvent;              ///< 0-全部事件、1-页面变动、2-有人移动 （文件夹类型的时候不需要返回）
+    public int mEvent;
 
 
     ///////////////////////////////////////////////////////////////////////

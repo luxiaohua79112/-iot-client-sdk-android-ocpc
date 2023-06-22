@@ -5,6 +5,7 @@ import android.content.Context;
 import android.os.Message;
 import android.text.TextUtils;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -283,7 +284,7 @@ public class RtmMgrComp extends BaseThreadComp {
             }
 
             // 解析回应命令数据包,生成回应命令
-            IRtmCmd responseCmd = parseRspCmdDataBytes(recvedPkt.mPktData);
+            IRtmCmd responseCmd = parseRspCmdDataBytes(recvedPkt.mPeerId, recvedPkt.mPktData);
             if (responseCmd == null) {   // 回应命令解析失败
                 continue;
             }
@@ -296,30 +297,115 @@ public class RtmMgrComp extends BaseThreadComp {
     /**
      * @brief 工作线程中运行，解析数据包生成相应的ResponseCommand
      */
-    IRtmCmd parseRspCmdDataBytes(final byte[] data) {
+    IRtmCmd parseRspCmdDataBytes(final String deviceId, final byte[] data) {
         String jsonText = String.valueOf(data);
         if (TextUtils.isEmpty(jsonText)) {
             ALog.getInstance().e(TAG, "<parseRspCmdDataBytes> fail to convert data bytes!");
             return null;
         }
+        ALog.getInstance().e(TAG, "<parseRspCmdDataBytes> BEGIN, jsonText=" + jsonText);
 
         JSONObject recvJsonObj = JsonUtils.generateJsonObject(jsonText);
         if (recvJsonObj == null) {
-            ALog.getInstance().e(TAG, "<parseRspCmdDataBytes> fail to convert JSON object, jsonText=" + jsonText);
+            ALog.getInstance().e(TAG, "<parseRspCmdDataBytes> END, fail to convert JSON object!");
             return null;
         }
 
-        RtmBaseCmd rtmRspCmd = new RtmBaseCmd();
-        rtmRspCmd.mSequenceId = JsonUtils.parseJsonLongValue(recvJsonObj, "sequenceId", -1);
-        rtmRspCmd.mCmdId = JsonUtils.parseJsonIntValue(recvJsonObj, "commandId", -1);
-        rtmRspCmd.mErrCode = JsonUtils.parseJsonIntValue(recvJsonObj, "code", 0);
-//        JSONObject dataJsonObj = JsonUtils.parseJsonObject(recvJsonObj, "data", null);
-//        if (dataJsonObj != null) {
-//            rtmCmdCtx.mRespData = String.valueOf(dataJsonObj);
-//        }
+        // 解析基本的回应命令信息
+        long sequenceId = JsonUtils.parseJsonLongValue(recvJsonObj, "sequenceId", -1);
+        int commandId = JsonUtils.parseJsonIntValue(recvJsonObj, "commandId", -1);
+        int errCode = JsonUtils.parseJsonIntValue(recvJsonObj, "code", 0);
+        if (sequenceId < 0 || commandId < 0) {
+            ALog.getInstance().e(TAG, "<parseRspCmdDataBytes> END, no sequenceId or commandId!");
+            return null;
+        }
 
-        ALog.getInstance().d(TAG, "<parseRspCmdDataBytes> done, rtmRspCmd=" + rtmRspCmd);
-        return rtmRspCmd;
+        IRtmCmd responseCmd = null;
+        switch (commandId) {
+            case IRtmCmd.CMDID_MEDIA_QUERY: {       // 查询响应命令
+                RtmQueryRspCmd queryRspCmd = new RtmQueryRspCmd();
+                queryRspCmd.mSequenceId = sequenceId;
+                queryRspCmd.mCmdId = commandId;
+                queryRspCmd.mIsRespCmd = true;
+                queryRspCmd.mErrCode = errCode;
+                queryRspCmd.mDeviceId = deviceId;
+
+                JSONObject respDataObj = JsonUtils.parseJsonObject(recvJsonObj, "data", null);
+                if (respDataObj != null) {
+                    JSONArray fileArrayObj = JsonUtils.parseJsonArray(respDataObj, "fileList");
+                    if (fileArrayObj != null) {
+                        for (int i = 0; i < fileArrayObj.length(); i++) {
+                            JSONObject fileInfoObj =  JsonUtils.getJsonObjFromArray(fileArrayObj, i);
+                            if (fileInfoObj == null) {
+                                continue;
+                            }
+
+                            DevFileInfo fileInfo = new DevFileInfo();
+                            fileInfo.mFileType = JsonUtils.parseJsonIntValue(fileInfoObj, "type", 0);
+                            fileInfo.mFileId = JsonUtils.parseJsonStringValue(fileInfoObj, "fileId", null);
+                            fileInfo.mEvent = JsonUtils.parseJsonIntValue(fileInfoObj, "event", 0);
+                            fileInfo.mStartTime = JsonUtils.parseJsonLongValue(fileInfoObj, "startTime", -1);
+                            fileInfo.mStopTime = JsonUtils.parseJsonLongValue(fileInfoObj, "stopTime", -1);
+                            fileInfo.mImgUrl = JsonUtils.parseJsonStringValue(fileInfoObj, "imgUrl", null);
+                            fileInfo.mVideoUrl = JsonUtils.parseJsonStringValue(fileInfoObj, "videoUrl", null);
+                            queryRspCmd.mFileList.add(fileInfo);
+                        }
+                    }
+                }
+                responseCmd = queryRspCmd;
+            } break;
+
+            case IRtmCmd.CMDID_MEDIA_COVER: {       // 封面图片响应命令
+
+            } break;
+
+            case IRtmCmd.CMDID_MEDIA_DELETE: {      // 删除响应命令
+                RtmDeleteRspCmd deleteRspCmd = new RtmDeleteRspCmd();
+                deleteRspCmd.mSequenceId = sequenceId;
+                deleteRspCmd.mCmdId = commandId;
+                deleteRspCmd.mIsRespCmd = true;
+                deleteRspCmd.mErrCode = errCode;
+                deleteRspCmd.mDeviceId = deviceId;
+
+                JSONObject respDataObj = JsonUtils.parseJsonObject(recvJsonObj, "data", null);
+                if (respDataObj != null) {
+                    JSONArray undelArrayObj = JsonUtils.parseJsonArray(respDataObj, "undeleteList");
+                    if (undelArrayObj != null) {
+                        for (int i = 0; i < undelArrayObj.length(); i++) {
+                            JSONObject undelItemObj =  JsonUtils.getJsonObjFromArray(undelArrayObj, i);
+                            if (undelItemObj == null) {
+                                continue;
+                            }
+
+                            DevFileDelErrInfo errInfo = new DevFileDelErrInfo();
+                            errInfo.mDelErrCode = JsonUtils.parseJsonIntValue(undelItemObj, "error", 0);
+                            errInfo.mFileId = JsonUtils.parseJsonStringValue(undelItemObj, "fileId", null);
+                            deleteRspCmd.mErrorList.add(errInfo);
+                        }
+                    }
+                }
+                responseCmd = deleteRspCmd;
+            } break;
+
+            case IRtmCmd.CMDID_CUSTOMIZE_SEND: {    // 定制化响应命令
+
+            } break;
+
+            default: {  // 其他响应命令，都不需要响应数据
+                RtmBaseCmd baseCmd = new RtmBaseCmd();
+                baseCmd.mSequenceId = sequenceId;
+                baseCmd.mCmdId = commandId;
+                baseCmd.mIsRespCmd = true;
+                baseCmd.mErrCode = errCode;
+                baseCmd.mDeviceId = deviceId;
+                responseCmd = baseCmd;
+            } break;
+
+
+        }
+
+        ALog.getInstance().d(TAG, "<parseRspCmdDataBytes> END, responseCmd=" + responseCmd);
+        return responseCmd;
     }
 
 

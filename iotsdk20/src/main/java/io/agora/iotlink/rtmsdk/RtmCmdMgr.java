@@ -76,7 +76,7 @@ public class RtmCmdMgr {
      * @brief 根据 sequenceId 删除命令信息
      * @return 返回删除的会话，如果未找到则返回null
      */
-    public IRtmCmd removeCommand(final UUID sequenceId) {
+    public IRtmCmd removeCommand(final long sequenceId) {
         synchronized (mCmdMap) {
             IRtmCmd IRtmCmd = mCmdMap.remove(sequenceId);
             return IRtmCmd;
