@@ -27,11 +27,11 @@ public interface IDevController  {
 
         /**
          * @brief 命令执行完成回调
+         * @param commandId: 命令Id
          * @param errCode: 命令执行结果错误码
-         * @param result1: 不同的命令对应不同的返回值1
-         * @param result2: 不同的命令对应不同的返回值2
+         * @param respData: 设备端返回的响应数据（可能为null）
          */
-        default void onDeviceCmdDone(int commandId, int errCode) {}
+        default void onDeviceCmdDone(int commandId, int errCode, final String respData) {}
     }
 
 
@@ -62,6 +62,14 @@ public interface IDevController  {
      * @param cmdListener: 命令完成回调
      * @return 返回错误码
      */
-    int storageCardFormat(final OnCommandCmdListener cmdListener);
+    int sendCmdSdcardFmt(final OnCommandCmdListener cmdListener);
+
+    /**
+     * @brief 发送定制化的命令数据
+     * @param customizeData: 上层自定义数据
+     * @param cmdListener: 命令完成回调
+     * @return 返回错误码
+     */
+    int sendCmdCustomize(final String customizeData, final OnCommandCmdListener cmdListener);
 
 }

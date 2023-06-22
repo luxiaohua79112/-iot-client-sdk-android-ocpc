@@ -23,9 +23,15 @@ import java.util.UUID;
 
 import io.agora.iotlink.ErrCode;
 import io.agora.iotlink.IDevController;
+import io.agora.iotlink.IDeviceSessionMgr;
 import io.agora.iotlink.IVodPlayer;
 import io.agora.iotlink.logger.ALog;
+import io.agora.iotlink.rtmsdk.IRtmCmd;
+import io.agora.iotlink.rtmsdk.RtmBaseCmd;
 import io.agora.iotlink.rtmsdk.RtmCmdCtx;
+import io.agora.iotlink.rtmsdk.RtmCmdSeqId;
+import io.agora.iotlink.rtmsdk.RtmCustomizeReqCmd;
+import io.agora.iotlink.rtmsdk.RtmPlzCtrlReqCmd;
 
 
 /*
@@ -52,6 +58,7 @@ public class DevController  implements IDevController {
 
     private UUID mSessionId;
     private DeviceSessionMgr mSessionMgr;
+    private String mDeviceId;
 
 
     ///////////////////////////////////////////////////////////////////////
@@ -60,6 +67,8 @@ public class DevController  implements IDevController {
     public DevController(final UUID sessionId, final DeviceSessionMgr sessionMgr) {
         mSessionId = sessionId;
         mSessionMgr = sessionMgr;
+        IDeviceSessionMgr.SessionInfo sessionInfo = mSessionMgr.getSessionInfo(sessionId);
+        mDeviceId = sessionInfo.mPeerDevId;
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -69,51 +78,67 @@ public class DevController  implements IDevController {
     public int sendCmdPtzCtrl(int action, int direction, int speed,
                               final OnCommandCmdListener cmdListener) {
 
-        RtmCmdCtx command = new RtmCmdCtx();
+        RtmPlzCtrlReqCmd plzCtrlCmd = new RtmPlzCtrlReqCmd();
+        plzCtrlCmd.mSequenceId = RtmCmdSeqId.getSeuenceId();
+        plzCtrlCmd.mCmdId = IRtmCmd.CMDID_PTZ_CTRL;
+        plzCtrlCmd.mDeviceId = mDeviceId;
+        plzCtrlCmd.mSendTimestamp = System.currentTimeMillis();
+        plzCtrlCmd.mAction = action;
+        plzCtrlCmd.mDirection = direction;
+        plzCtrlCmd.mSpeed = speed;
 
+        int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(plzCtrlCmd);
 
-
-        JSONObject body = new JSONObject();
-        ALog.getInstance().d(TAG, "<sendCmdPtzCtrl> [BEGIN] action=" + action
-                + ", direction=" + direction + ", speed=" + speed);
-
-
-
-
-        // body内容
-        try {
-            body.put("sequenceId", 0);
-            body.put("cmd", "PTZ_CTRL");
-
-            JSONObject paramObj = new JSONObject();
-            paramObj.put("action", action);
-            paramObj.put("direction", direction);
-            paramObj.put("speed", speed);
-            body.put("param", paramObj);
-
-        } catch (JSONException jsonExp) {
-            jsonExp.printStackTrace();
-            ALog.getInstance().e(TAG, "<sendCmdPtzCtrl> [EXP] jsonExp=" + jsonExp);
-            return ErrCode.XERR_JSON_WRITE;
-        }
-
-        String realBody = String.valueOf(body);
-
-
-
-        ALog.getInstance().d(TAG, "<sendCmdPtzCtrl> [BEGIN] action=" + action
-                + ", direction=" + direction + ", speed=" + speed);
-        return ErrCode.XOK;
+        ALog.getInstance().d(TAG, "<sendCmdPtzCtrl> done, ret=" + ret
+                + ", plzCtrlCmd=" + plzCtrlCmd);
+        return ret;
     }
 
     @Override
     public int sendCmdPtzReset(final OnCommandCmdListener cmdListener) {
-        return ErrCode.XOK;
+        RtmBaseCmd plzResetCmd = new RtmBaseCmd();
+        plzResetCmd.mSequenceId = RtmCmdSeqId.getSeuenceId();
+        plzResetCmd.mCmdId = IRtmCmd.CMDID_PTZ_RESET;
+        plzResetCmd.mDeviceId = mDeviceId;
+        plzResetCmd.mSendTimestamp = System.currentTimeMillis();
+
+        int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(plzResetCmd);
+
+        ALog.getInstance().d(TAG, "<sendCmdPtzReset> done, ret=" + ret
+                + ", plzResetCmd=" + plzResetCmd);
+        return ret;
     }
 
     @Override
-    public int storageCardFormat(final OnCommandCmdListener cmdListener) {
-        return ErrCode.XOK;
+    public int sendCmdSdcardFmt(final OnCommandCmdListener cmdListener) {
+        RtmBaseCmd sdCardFmtCmd = new RtmBaseCmd();
+        sdCardFmtCmd.mSequenceId = RtmCmdSeqId.getSeuenceId();
+        sdCardFmtCmd.mCmdId = IRtmCmd.CMDID_SDCARD_FMT;
+        sdCardFmtCmd.mDeviceId = mDeviceId;
+        sdCardFmtCmd.mSendTimestamp = System.currentTimeMillis();
+
+        int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(sdCardFmtCmd);
+
+        ALog.getInstance().d(TAG, "<sendCmdSdcardFmt> done, ret=" + ret
+                + ", sdCardFmtCmd=" + sdCardFmtCmd);
+        return ret;
+    }
+
+    @Override
+    public int sendCmdCustomize(final String customizeData,
+                                final OnCommandCmdListener cmdListener) {
+        RtmCustomizeReqCmd customizeCmd = new RtmCustomizeReqCmd();
+        customizeCmd.mSequenceId = RtmCmdSeqId.getSeuenceId();
+        customizeCmd.mCmdId = IRtmCmd.CMDID_SDCARD_FMT;
+        customizeCmd.mDeviceId = mDeviceId;
+        customizeCmd.mSendTimestamp = System.currentTimeMillis();
+        customizeCmd.mSendData = customizeData;
+
+        int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(customizeCmd);
+
+        ALog.getInstance().d(TAG, "<sendCmdCustomize> done, ret=" + ret
+                + ", customizeCmd=" + customizeCmd);
+        return ret;
     }
 
 }
