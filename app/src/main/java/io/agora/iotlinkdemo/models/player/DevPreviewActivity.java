@@ -38,7 +38,9 @@ import io.agora.iotlinkdemo.base.PushApplication;
 import io.agora.iotlinkdemo.databinding.ActivityDevPreviewBinding;
 import io.agora.iotlinkdemo.databinding.ActivityMainBinding;
 import io.agora.iotlinkdemo.dialog.CommonDialog;
+import io.agora.iotlinkdemo.models.home.DeviceInfo;
 import io.agora.iotlinkdemo.models.home.DeviceListAdapter;
+import io.agora.iotlinkdemo.presistentconnect.PresistentLinkComp;
 
 
 public class DevPreviewActivity extends BaseViewBindingActivity<ActivityDevPreviewBinding>
@@ -148,6 +150,19 @@ public class DevPreviewActivity extends BaseViewBindingActivity<ActivityDevPrevi
             @Override
             public void onDeviceCmdDone(int commandId, int errCode, String respData) {
                 Log.d(TAG, "<onBtnPlzCtrl.onDeviceCmdDone> errCode=" + errCode);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (errCode != ErrCode.XOK) {  // 控制命令失败
+                            hideLoadingView();
+                            popupMessage("Fail to plz control, errCode=" + errCode);
+
+                        } else {
+                            hideLoadingView();
+                            popupMessage("Successful to plz control!");
+                        }
+                    }
+                });
             }
         });
         if (ret != ErrCode.XOK) {
@@ -171,6 +186,19 @@ public class DevPreviewActivity extends BaseViewBindingActivity<ActivityDevPrevi
             @Override
             public void onDeviceCmdDone(int commandId, int errCode, String respData) {
                 Log.d(TAG, "<onBtnPlzStop.onDeviceCmdDone> errCode=" + errCode);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (errCode != ErrCode.XOK) {  // 控制命令失败
+                            hideLoadingView();
+                            popupMessage("Fail to plz stop, errCode=" + errCode);
+
+                        } else {
+                            hideLoadingView();
+                            popupMessage("Successful to plz stop!");
+                        }
+                    }
+                });
             }
         });
         if (ret != ErrCode.XOK) {
@@ -193,7 +221,19 @@ public class DevPreviewActivity extends BaseViewBindingActivity<ActivityDevPrevi
             @Override
             public void onDeviceCmdDone(int commandId, int errCode, String respData) {
                 Log.d(TAG, "<onBtnPlzReset.onDeviceCmdDone> errCode=" + errCode);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (errCode != ErrCode.XOK) {  // 校准命令失败
+                            hideLoadingView();
+                            popupMessage("Fail to plz reset, errCode=" + errCode);
 
+                        } else {
+                            hideLoadingView();
+                            popupMessage("Successful to plz reset!");
+                        }
+                    }
+                });
             }
         });
         if (ret != ErrCode.XOK) {
@@ -216,6 +256,19 @@ public class DevPreviewActivity extends BaseViewBindingActivity<ActivityDevPrevi
             @Override
             public void onDeviceCmdDone(int commandId, int errCode, String respData) {
                 Log.d(TAG, "<onBtnSdcardFormat.onDeviceCmdDone> errCode=" + errCode);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (errCode != ErrCode.XOK) {  // 格式化命令失败
+                            hideLoadingView();
+                            popupMessage("Fail to Sdcard format, errCode=" + errCode);
+
+                        } else {
+                            hideLoadingView();
+                            popupMessage("Successful to Sdcard format!");
+                        }
+                    }
+                });
             }
         });
         if (ret != ErrCode.XOK) {
