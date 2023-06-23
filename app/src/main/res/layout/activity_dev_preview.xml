@@ -3,37 +3,102 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/container"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/white_f8">
 
-    <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/tvNodeId"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="10dp"
+        android:text="nodeId"
+        android:textColor="@color/black"
+        android:textSize="16sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <SurfaceView
+        android:id="@+id/svDeviceView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="240dp"
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="40dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <androidx.appcompat.widget.AppCompatEditText
+        android:id="@+id/etPlzDirect"
+        style="@style/def_et_input"
+        android:layout_width="140dp"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="20dp"
+        android:enabled="true"
+        android:hint="云台方向"
+        android:inputType="number"
+        android:paddingEnd="40dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/svDeviceView"  />
+
+    <androidx.appcompat.widget.AppCompatEditText
+        android:id="@+id/etPlzSpeed"
+        style="@style/def_et_input"
+        android:layout_width="140dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="20dp"
+        android:enabled="true"
+        android:hint="控制速度"
+        android:inputType="number"
+        android:paddingEnd="40dp"
+        app:layout_constraintStart_toEndOf="@+id/etPlzDirect"
+        app:layout_constraintTop_toBottomOf="@id/svDeviceView"  />
 
 
-        <SurfaceView
-            android:id="@+id/svDeviceView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_marginStart="0dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_plz_ctrl"
+        android:layout_width="100dp"
+        android:layout_height="60dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="20dp"
+        android:background="#80D6D6D6"
+        android:text="云台控制"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/etPlzDirect" />
 
-        <androidx.appcompat.widget.AppCompatTextView
-            android:id="@+id/tvNodeId"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="20dp"
-            android:layout_marginTop="20dp"
-            android:text="nodeId"
-            android:textColor="@color/white_f6"
-            android:textSize="16sp"
-            app:layout_constraintStart_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-
-    </FrameLayout>
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_plz_stop"
+        android:layout_width="100dp"
+        android:layout_height="60dp"
+        android:layout_marginStart="140dp"
+        android:layout_marginTop="20dp"
+        android:background="#80D6D6D6"
+        android:text="云台停止"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/etPlzDirect" />
 
 
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_plz_reset"
+        android:layout_width="100dp"
+        android:layout_height="60dp"
+        android:layout_marginStart="280dp"
+        android:layout_marginTop="20dp"
+        android:background="#80D6D6D6"
+        android:text="云台校准"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/etPlzDirect" />
+
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_sdcard_fmt"
+        android:layout_width="100dp"
+        android:layout_height="60dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="20dp"
+        android:background="#80D6D6D6"
+        android:text="SD卡格式化"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btn_plz_ctrl" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -8,11 +8,14 @@ import android.os.Looper;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
+import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.widget.PopupMenu;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.ActivityKt;
 import androidx.navigation.NavController;
@@ -26,6 +29,8 @@ import java.util.UUID;
 import io.agora.iotlink.AIotAppSdkFactory;
 import io.agora.iotlink.ErrCode;
 //import io.agora.iotlink.ICallkitMgr;
+import io.agora.iotlink.IDevController;
+import io.agora.iotlink.IDeviceSessionMgr;
 import io.agora.iotlinkdemo.R;
 import io.agora.iotlinkdemo.base.AgoraApplication;
 import io.agora.iotlinkdemo.base.BaseViewBindingActivity;
@@ -55,12 +60,13 @@ public class DevPreviewActivity extends BaseViewBindingActivity<ActivityDevPrevi
 
     @Override
     public void initView(@Nullable Bundle savedInstanceState) {
+        IDeviceSessionMgr sessionMgr = AIotAppSdkFactory.getDevSessionMgr();
         mSessionId = PushApplication.getInstance().getFullscrnSessionId();
-//        ICallkitMgr callkitMgr = AIotAppSdkFactory.getInstance().getCallkitMgr();
-//        callkitMgr.setPeerVideoView(mSessionId, getBinding().svDeviceView);
-//
-//        ICallkitMgr.SessionInfo sessionInfo = callkitMgr.getSessionInfo(mSessionId);
-//        getBinding().tvNodeId.setText(sessionInfo.mPeerNodeId);
+        IDeviceSessionMgr.SessionInfo sessionInfo = sessionMgr.getSessionInfo(mSessionId);
+        getBinding().tvNodeId.setText(sessionInfo.mPeerDevId);
+
+        getBinding().etPlzDirect.setText("0");
+        getBinding().etPlzSpeed.setText("1");
 
         Log.d(TAG, "<initView> ");
     }
@@ -72,16 +78,26 @@ public class DevPreviewActivity extends BaseViewBindingActivity<ActivityDevPrevi
 
     @Override
     public void initListener() {
+        getBinding().btnPlzCtrl.setOnClickListener(view -> {
+            onBtnPlzCtrl(view);
+        });
+
+        getBinding().btnPlzStop.setOnClickListener(view -> {
+            onBtnPlzStop(view);
+        });
+
+        getBinding().btnPlzReset.setOnClickListener(view -> {
+            onBtnPlzReset(view);
+        });
+
+        getBinding().btnSdcardFmt.setOnClickListener(view -> {
+            onBtnSdcardFormat(view);
+        });
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-
-//        mSessionId = PushApplication.getInstance().getFullscrnSessionId();
-//        ICallkitMgr callkitMgr = AIotAppSdkFactory.getInstance().getCallkitMgr();
-//        callkitMgr.registerListener(this);
-
         Log.d(TAG, "<onStart> mSessionId=" + mSessionId);
     }
 
@@ -89,9 +105,6 @@ public class DevPreviewActivity extends BaseViewBindingActivity<ActivityDevPrevi
     protected void onStop() {
         super.onStop();
         Log.d(TAG, "<onStop> ");
-
-//        ICallkitMgr callkitMgr = AIotAppSdkFactory.getInstance().getCallkitMgr();
-//        callkitMgr.unregisterListener(this);
     }
 
     @Override
@@ -114,154 +127,100 @@ public class DevPreviewActivity extends BaseViewBindingActivity<ActivityDevPrevi
     }
 
 
-
     ///////////////////////////////////////////////////////////////////////////
-    //////////////// Override Methods of ICallkitMgr.ICallback  ///////////////
+    //////////////////////////// Event & Widget Methods  ///////////////////////
     ///////////////////////////////////////////////////////////////////////////
-    /*
-    @Override
-    public void onPeerIncoming(final UUID sessionId, final String peerNodeId,
-                               final String attachMsg) {
-        Log.d(TAG, "<onPeerIncoming> [IOTSDK/] sessionId=" + sessionId
-                + ", peerNodeId=" + peerNodeId + ", attachMsg=" + attachMsg);
-
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-
-            }
-        });
-    }
-
-    @Override
-    public void onDialDone(final UUID sessionId, final String peerNodeId, int errCode) {
-        Log.d(TAG, "<onDialDone> [IOTSDK/] sessionId=" + sessionId
-                + ", peerNodeId=" + peerNodeId + ", errCode=" + errCode);
-        if (sessionId.compareTo(mSessionId) != 0) {
+    /**
+    * @brief 云台旋转控制
+    */
+    void onBtnPlzCtrl(View view) {
+        IDeviceSessionMgr sessionMgr = AIotAppSdkFactory.getDevSessionMgr();
+        IDevController devController = sessionMgr.getDevController(mSessionId);
+        if (devController == null) {
+            popupMessage("Not found device controller with sessionId=" + mSessionId);
             return;
         }
 
-        runOnUiThread(new Runnable() {
+        int action = 0;
+        int direction = 1;
+        int speed = 1;
+        int ret = devController.sendCmdPtzCtrl(action, direction, speed, new IDevController.OnCommandCmdListener() {
             @Override
-            public void run() {
-
+            public void onDeviceCmdDone(int commandId, int errCode, String respData) {
+                Log.d(TAG, "<onBtnPlzCtrl.onDeviceCmdDone> errCode=" + errCode);
             }
         });
-    }
-
-    @Override
-    public void onPeerAnswer(final UUID sessionId, final String peerNodeId) {
-        Log.d(TAG, "<onPeerAnswer> [IOTSDK/] sessionId=" + sessionId
-                + ", peerNodeId=" + peerNodeId);
-        if (sessionId.compareTo(mSessionId) != 0) {
-            return;
+        if (ret != ErrCode.XOK) {
+            popupMessage("Fail to plz control, errCode=" + ret);
         }
 
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-
-            }
-        });
     }
 
-    @Override
-    public void onPeerHangup(final UUID sessionId, final String peerNodeId) {
-        Log.d(TAG, "<onPeerHangup> [IOTSDK/] sessionId=" + sessionId
-                + ", peerNodeId=" + peerNodeId);
-        if (sessionId.compareTo(mSessionId) != 0) {
-            return;
-        }
-
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                finish();
-            }
-        });
-    }
-
-    @Override
-    public void onPeerTimeout(final UUID sessionId, final String peerNodeId) {
-        Log.d(TAG, "<onPeerTimeout> [IOTSDK/] sessionId=" + sessionId
-                + ", peerNodeId=" + peerNodeId);
-        if (sessionId.compareTo(mSessionId) != 0) {
-            return;
-        }
-
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                finish();
-            }
-        });
-    }
-
-    @Override
-    public void onPeerFirstVideo(final UUID sessionId, int videoWidth, int videoHeight) {
-        Log.d(TAG, "<onPeerFirstVideo> [IOTSDK/] sessionId=" + sessionId
-                + ", videoWidth=" + videoWidth + ", videoHeight=" + videoHeight);
-        if (sessionId.compareTo(mSessionId) != 0) {
-            return;
-        }
-    }
-
-    @Override
-    public void onOtherUserOnline(final UUID sessionId, int uid, int onlineUserCount) {
-        Log.d(TAG, "<onOtherUserOnline> [IOTSDK/] sessionId=" + sessionId
-                + ", onlineUserCount=" + onlineUserCount);
-        if (sessionId.compareTo(mSessionId) != 0) {
-            return;
-        }
-
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-
-            }
-        });
-    }
-
-    @Override
-    public void onOtherUserOffline(final UUID sessionId, int uid, int onlineUserCount) {
-        Log.d(TAG, "<onOtherUserOffline> [IOTSDK/] sessionId=" + sessionId
-                + ", onlineUserCount=" + onlineUserCount);
-        if (sessionId.compareTo(mSessionId) != 0) {
-            return;
-        }
-
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-
-            }
-        });
-    }
-
+    /**
+     * @brief 云台控制停止
      */
-//
-//    @Override
-//    public void onSessionError(final UUID sessionId, int errCode) {
-//        Log.d(TAG, "<onSessionError> [IOTSDK/] sessionId=" + sessionId
-//                + ", errCode=" + errCode);
-//        if (sessionId.compareTo(mSessionId) != 0) {
-//            return;
-//        }
-//
-//        runOnUiThread(new Runnable() {
-//            @Override
-//            public void run() {
-//                finish();
-//            }
-//        });
-//    }
-//
-//    @Override
-//    public void onRecordingError(final UUID sessionId, int errCode) {
-//        Log.d(TAG, "<onRecordingError> [IOTSDK/] sessionId=" + sessionId
-//                + ", errCode=" + errCode);
-//        if (sessionId.compareTo(mSessionId) != 0) {
-//            return;
-//        }
-//    }
+    void onBtnPlzStop(View view) {
+        IDeviceSessionMgr sessionMgr = AIotAppSdkFactory.getDevSessionMgr();
+        IDevController devController = sessionMgr.getDevController(mSessionId);
+        if (devController == null) {
+            popupMessage("Not found device controller with sessionId=" + mSessionId);
+            return;
+        }
+
+        int ret = devController.sendCmdPtzCtrl(1, 1, 1, new IDevController.OnCommandCmdListener() {
+            @Override
+            public void onDeviceCmdDone(int commandId, int errCode, String respData) {
+                Log.d(TAG, "<onBtnPlzStop.onDeviceCmdDone> errCode=" + errCode);
+            }
+        });
+        if (ret != ErrCode.XOK) {
+            popupMessage("Fail to plz stop, errCode=" + ret);
+        }
+    }
+
+   /**
+    * @brief 云台校准
+    */
+    void onBtnPlzReset(View view) {
+        IDeviceSessionMgr sessionMgr = AIotAppSdkFactory.getDevSessionMgr();
+        IDevController devController = sessionMgr.getDevController(mSessionId);
+        if (devController == null) {
+            popupMessage("Not found device controller with sessionId=" + mSessionId);
+            return;
+        }
+
+        int ret = devController.sendCmdPtzReset( new IDevController.OnCommandCmdListener() {
+            @Override
+            public void onDeviceCmdDone(int commandId, int errCode, String respData) {
+                Log.d(TAG, "<onBtnPlzReset.onDeviceCmdDone> errCode=" + errCode);
+
+            }
+        });
+        if (ret != ErrCode.XOK) {
+            popupMessage("Fail to plz reset, errCode=" + ret);
+        }
+    }
+
+    /**
+     * @brief SD卡格式化
+     */
+    void onBtnSdcardFormat(View view) {
+        IDeviceSessionMgr sessionMgr = AIotAppSdkFactory.getDevSessionMgr();
+        IDevController devController = sessionMgr.getDevController(mSessionId);
+        if (devController == null) {
+            popupMessage("Not found device controller with sessionId=" + mSessionId);
+            return;
+        }
+
+        int ret = devController.sendCmdSdcardFmt( new IDevController.OnCommandCmdListener() {
+            @Override
+            public void onDeviceCmdDone(int commandId, int errCode, String respData) {
+                Log.d(TAG, "<onBtnSdcardFormat.onDeviceCmdDone> errCode=" + errCode);
+            }
+        });
+        if (ret != ErrCode.XOK) {
+            popupMessage("Fail to sdcard format, errCode=" + ret);
+        }
+    }
+
 }
