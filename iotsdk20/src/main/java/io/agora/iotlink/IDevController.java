@@ -27,11 +27,10 @@ public interface IDevController  {
 
         /**
          * @brief 命令执行完成回调
-         * @param commandId: 命令Id
          * @param errCode: 命令执行结果错误码
          * @param respData: 设备端返回的响应数据（可能为null）
          */
-        default void onDeviceCmdDone(int commandId, int errCode, final String respData) {}
+        default void onDeviceCmdDone(int errCode, final String respData) {}
     }
 
 

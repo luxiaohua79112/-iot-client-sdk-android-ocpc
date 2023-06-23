@@ -91,7 +91,7 @@ public class DevController  implements IDevController {
             @Override
             public void onRtmCmdResponsed(int commandId, int errCode, IRtmCmd reqCmd, IRtmCmd rspCmd) {
                 ALog.getInstance().d(TAG, "<sendCmdPtzCtrl.onRtmCmdResponsed> errCode=" + errCode);
-                cmdListener.onDeviceCmdDone(IRtmCmd.CMDID_PTZ_RESET, errCode, null);
+                cmdListener.onDeviceCmdDone(errCode, null);
             }
         };
 
@@ -113,7 +113,7 @@ public class DevController  implements IDevController {
             @Override
             public void onRtmCmdResponsed(int commandId, int errCode, IRtmCmd reqCmd, IRtmCmd rspCmd) {
                 ALog.getInstance().d(TAG, "<sendCmdPtzReset.onRtmCmdResponsed> errCode=" + errCode);
-                cmdListener.onDeviceCmdDone(IRtmCmd.CMDID_PTZ_RESET, errCode, null);
+                cmdListener.onDeviceCmdDone(errCode, null);
             }
         };
 
@@ -135,7 +135,7 @@ public class DevController  implements IDevController {
             @Override
             public void onRtmCmdResponsed(int commandId, int errCode, IRtmCmd reqCmd, IRtmCmd rspCmd) {
                 ALog.getInstance().d(TAG, "<sendCmdSdcardFmt.onRtmCmdResponsed> errCode=" + errCode);
-                cmdListener.onDeviceCmdDone(IRtmCmd.CMDID_SDCARD_FMT, errCode, null);
+                cmdListener.onDeviceCmdDone(errCode, null);
             }
         };
 
@@ -160,10 +160,10 @@ public class DevController  implements IDevController {
             public void onRtmCmdResponsed(int commandId, int errCode, IRtmCmd reqCmd, IRtmCmd rspCmd) {
                 ALog.getInstance().d(TAG, "<sendCmdCustomize.onRtmCmdResponsed> errCode=" + errCode);
                 if (errCode == ErrCode.XERR_TIMEOUT) {
-                    cmdListener.onDeviceCmdDone(IRtmCmd.CMDID_CUSTOMIZE_SEND, errCode, null);
+                    cmdListener.onDeviceCmdDone(errCode, null);
                 } else {
                     RtmCustomizeRspCmd respCmd = (RtmCustomizeRspCmd)rspCmd;
-                    cmdListener.onDeviceCmdDone(IRtmCmd.CMDID_CUSTOMIZE_SEND, errCode, respCmd.mRecvData);
+                    cmdListener.onDeviceCmdDone(errCode, respCmd.mRecvData);
                 }
             }
         };

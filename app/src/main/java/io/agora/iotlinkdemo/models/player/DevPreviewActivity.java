@@ -148,7 +148,7 @@ public class DevPreviewActivity extends BaseViewBindingActivity<ActivityDevPrevi
         int speed = 1;
         int ret = devController.sendCmdPtzCtrl(action, direction, speed, new IDevController.OnCommandCmdListener() {
             @Override
-            public void onDeviceCmdDone(int commandId, int errCode, String respData) {
+            public void onDeviceCmdDone(int errCode, String respData) {
                 Log.d(TAG, "<onBtnPlzCtrl.onDeviceCmdDone> errCode=" + errCode);
                 runOnUiThread(new Runnable() {
                     @Override
@@ -184,7 +184,7 @@ public class DevPreviewActivity extends BaseViewBindingActivity<ActivityDevPrevi
 
         int ret = devController.sendCmdPtzCtrl(1, 1, 1, new IDevController.OnCommandCmdListener() {
             @Override
-            public void onDeviceCmdDone(int commandId, int errCode, String respData) {
+            public void onDeviceCmdDone(int errCode, String respData) {
                 Log.d(TAG, "<onBtnPlzStop.onDeviceCmdDone> errCode=" + errCode);
                 runOnUiThread(new Runnable() {
                     @Override
@@ -219,7 +219,7 @@ public class DevPreviewActivity extends BaseViewBindingActivity<ActivityDevPrevi
 
         int ret = devController.sendCmdPtzReset( new IDevController.OnCommandCmdListener() {
             @Override
-            public void onDeviceCmdDone(int commandId, int errCode, String respData) {
+            public void onDeviceCmdDone(int errCode, String respData) {
                 Log.d(TAG, "<onBtnPlzReset.onDeviceCmdDone> errCode=" + errCode);
                 runOnUiThread(new Runnable() {
                     @Override
@@ -254,7 +254,7 @@ public class DevPreviewActivity extends BaseViewBindingActivity<ActivityDevPrevi
 
         int ret = devController.sendCmdSdcardFmt( new IDevController.OnCommandCmdListener() {
             @Override
-            public void onDeviceCmdDone(int commandId, int errCode, String respData) {
+            public void onDeviceCmdDone(int errCode, String respData) {
                 Log.d(TAG, "<onBtnSdcardFormat.onDeviceCmdDone> errCode=" + errCode);
                 runOnUiThread(new Runnable() {
                     @Override
