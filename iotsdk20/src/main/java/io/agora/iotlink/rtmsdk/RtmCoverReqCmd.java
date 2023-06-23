@@ -7,7 +7,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,22 +15,23 @@ import io.agora.iotlink.logger.ALog;
 import io.agora.iotlink.utils.JsonUtils;
 
 /**
- * @brief 设备端媒体文件查询响应命令，返回查询到的媒体文件信息列表
+ * @brief 获取视频封面请求命令
  *
  */
-public class RtmQueryRspCmd extends RtmBaseCmd  {
+public class RtmCoverReqCmd extends RtmBaseCmd  {
 
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Constant Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
-    private static final String TAG = "IOTSDK/RtmQueryRspCmd";
+    private static final String TAG = "IOTSDK/RtmCoverReqCmd";
 
 
 
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Variable Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
-    public ArrayList<DevFileInfo> mFileList = new ArrayList<>();
+    public String mImgUrl;            ///< 要查询封面的图片文件路径
+
 
 
 
@@ -43,9 +43,8 @@ public class RtmQueryRspCmd extends RtmBaseCmd  {
         String infoText = "{ mSequenceId=" + mSequenceId
                 + ", mDeviceId=" + mDeviceId
                 + ", mCmdId=" + mCmdId
-                + ", mFileList=" + mFileList
-                + ", mIsRespCmd=" + mIsRespCmd
-                + ", mErrCode=" + mErrCode + " }";
+                + ", mSendTimestamp=" + mSendTimestamp
+                + ", mImgUrl=" + mImgUrl + " }";
         return infoText;
     }
 
@@ -54,6 +53,30 @@ public class RtmQueryRspCmd extends RtmBaseCmd  {
     ///////////////////////////////////////////////////////////////////////
     //////////////////// Override Methods of IRtmCmd //////////////////////
     ///////////////////////////////////////////////////////////////////////
+    @Override
+    public byte[] getReqCmdDataBytes() {
+        JSONObject bodyObj = new JSONObject();
+
+        // body内容
+        try {
+            bodyObj.put("sequenceId", mSequenceId);
+            bodyObj.put("commandId", mCmdId);
+
+            JSONObject paramObj = new JSONObject();
+            paramObj.put("imgUrl", mImgUrl);
+            bodyObj.put("param", paramObj);
+
+        } catch (JSONException jsonExp) {
+            jsonExp.printStackTrace();
+            ALog.getInstance().e(TAG, "<getReqCmdDataBytes> [EXP] jsonExp=" + jsonExp);
+            return null;
+        }
+
+        String realBody = String.valueOf(bodyObj);
+        byte[]  dataBytes = realBody.getBytes(StandardCharsets.UTF_8);
+        return dataBytes;
+    }
+
 
 
 

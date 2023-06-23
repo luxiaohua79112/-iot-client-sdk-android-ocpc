@@ -466,7 +466,7 @@ public class RtmMgrComp extends BaseThreadComp {
 
         try {
             IDeviceSessionMgr.InitParam initParam = mSessionMgr.getInitParam();
-            String appId = "aab8b8f5a8cd4469a63042fcfafe7063"; // initParam.mAppId;
+            String appId = initParam.mAppId;
             mRtmClient = RtmClient.createInstance(initParam.mContext, appId, rtmListener);
         } catch (Exception exp) {
             exp.printStackTrace();

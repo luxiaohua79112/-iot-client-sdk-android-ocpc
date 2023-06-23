@@ -15,8 +15,8 @@ import io.agora.iotlink.logger.ALog;
 import io.agora.iotlink.utils.JsonUtils;
 
 /**
- * @brief 基本命令
- *        有命令请求，就有对应的响应，如果超时没有接收到响应数据，则返回超时
+ * @brief 基本命令，可以是请求命令，也可以是响应命令，通过 mIsRespCmd 区分
+ *        如果超时没有接收到响应数据，则返回超时
  */
 public class RtmBaseCmd implements IRtmCmd  {
 

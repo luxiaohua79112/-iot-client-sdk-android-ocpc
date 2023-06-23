@@ -1,37 +1,25 @@
 package io.agora.iotlink.rtmsdk;
 
 
-import android.text.TextUtils;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-
-import io.agora.iotlink.ErrCode;
-import io.agora.iotlink.logger.ALog;
-import io.agora.iotlink.utils.JsonUtils;
 
 /**
- * @brief 设备端媒体文件查询响应命令，返回查询到的媒体文件信息列表
+ * @brief 获取视频封面响应命令
  *
  */
-public class RtmQueryRspCmd extends RtmBaseCmd  {
+public class RtmCoverRspCmd extends RtmBaseCmd  {
 
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Constant Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
-    private static final String TAG = "IOTSDK/RtmQueryRspCmd";
+    private static final String TAG = "IOTSDK/RtmCoverRspCmd";
 
 
 
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Variable Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
-    public ArrayList<DevFileInfo> mFileList = new ArrayList<>();
+    public String mContentBase64;            ///< 封面图片内容的base64数据
+
 
 
 
@@ -43,7 +31,7 @@ public class RtmQueryRspCmd extends RtmBaseCmd  {
         String infoText = "{ mSequenceId=" + mSequenceId
                 + ", mDeviceId=" + mDeviceId
                 + ", mCmdId=" + mCmdId
-                + ", mFileList=" + mFileList
+                + ", mContentBase64=" + mContentBase64
                 + ", mIsRespCmd=" + mIsRespCmd
                 + ", mErrCode=" + mErrCode + " }";
         return infoText;
@@ -54,6 +42,7 @@ public class RtmQueryRspCmd extends RtmBaseCmd  {
     ///////////////////////////////////////////////////////////////////////
     //////////////////// Override Methods of IRtmCmd //////////////////////
     ///////////////////////////////////////////////////////////////////////
+
 
 
 

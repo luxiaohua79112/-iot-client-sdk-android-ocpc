@@ -44,7 +44,6 @@ public class RtmDeleteRspCmd extends RtmBaseCmd  {
         String infoText = "{ mSequenceId=" + mSequenceId
                 + ", mDeviceId=" + mDeviceId
                 + ", mCmdId=" + mCmdId
-                + ", mSendTimestamp=" + mSendTimestamp
                 + ", mErrorList=" + mErrorList
                 + ", mIsRespCmd=" + mIsRespCmd
                 + ", mErrCode=" + mErrCode + " }";

@@ -3,10 +3,12 @@ package io.agora.iotlink.rtmsdk;
 
 import android.text.TextUtils;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,7 +32,7 @@ public class RtmDeleteReqCmd extends RtmBaseCmd  {
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Variable Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
-
+    public ArrayList<String> mFileIdList = new ArrayList<>();   ///< 要删除的 fileId列表
 
 
 
@@ -44,6 +46,7 @@ public class RtmDeleteReqCmd extends RtmBaseCmd  {
                 + ", mDeviceId=" + mDeviceId
                 + ", mCmdId=" + mCmdId
                 + ", mSendTimestamp=" + mSendTimestamp
+                + ", mFileIdList=" + mFileIdList
                 + ", mIsRespCmd=" + mIsRespCmd
                 + ", mErrCode=" + mErrCode + " }";
         return infoText;
@@ -56,12 +59,21 @@ public class RtmDeleteReqCmd extends RtmBaseCmd  {
     ///////////////////////////////////////////////////////////////////////
      @Override
     public byte[] getReqCmdDataBytes() {
-        JSONObject body = new JSONObject();
+        JSONObject bodyObj = new JSONObject();
 
         // body内容
         try {
-            body.put("sequenceId", mSequenceId);
-            body.put("commandId", mCmdId);
+            bodyObj.put("sequenceId", mSequenceId);
+            bodyObj.put("commandId", mCmdId);
+
+            JSONObject paramObj = new JSONObject();
+            JSONArray idArrayObj = new JSONArray();
+            for (int i = 0; i < mFileIdList.size(); i++) {
+                String fileId = mFileIdList.get(i);
+                idArrayObj.put(i, fileId);
+            }
+            paramObj.put("fileIdList", idArrayObj);
+            bodyObj.put("param", paramObj);
 
         } catch (JSONException jsonExp) {
             jsonExp.printStackTrace();
@@ -69,7 +81,7 @@ public class RtmDeleteReqCmd extends RtmBaseCmd  {
             return null;
         }
 
-        String realBody = String.valueOf(body);
+        String realBody = String.valueOf(bodyObj);
         byte[]  dataBytes = realBody.getBytes(StandardCharsets.UTF_8);
         return dataBytes;
     }
