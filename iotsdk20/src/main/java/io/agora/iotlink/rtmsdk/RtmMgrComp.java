@@ -388,7 +388,18 @@ public class RtmMgrComp extends BaseThreadComp {
             } break;
 
             case IRtmCmd.CMDID_CUSTOMIZE_SEND: {    // 定制化响应命令
+                RtmCustomizeRspCmd customizeRspCmd = new RtmCustomizeRspCmd();
+                customizeRspCmd.mSequenceId = sequenceId;
+                customizeRspCmd.mCmdId = commandId;
+                customizeRspCmd.mIsRespCmd = true;
+                customizeRspCmd.mErrCode = errCode;
+                customizeRspCmd.mDeviceId = deviceId;
 
+                JSONObject respDataObj = JsonUtils.parseJsonObject(recvJsonObj, "data", null);
+                if (respDataObj != null) {
+                    customizeRspCmd.mRecvData = JsonUtils.parseJsonStringValue(respDataObj, "recvData", null);
+                }
+                responseCmd = customizeRspCmd;
             } break;
 
             default: {  // 其他响应命令，都不需要响应数据
