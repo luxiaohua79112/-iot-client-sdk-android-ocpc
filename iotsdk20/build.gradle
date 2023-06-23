@@ -64,11 +64,11 @@ dependencies {
     implementation 'tv.danmaku.ijk.media:ijkplayer-armv7a:0.8.8'
     implementation 'tv.danmaku.ijk.media:ijkplayer-arm64:0.8.8'
     implementation 'tv.danmaku.ijk.media:ijkplayer-exo:0.8.8'
-//    implementation files('libs/gsyVideoPlayer-aliplay-release.aar')
-//    implementation files('libs/gsyVideoPlayer-armv7a-release.aar')
-//    implementation files('libs/gsyVideoPlayer-armv64-release.aar')
-//    implementation files('libs/gsyVideoPlayer-base-release.aar')
-//    implementation files('libs/gsyVideoPlayer-java-release.aar')
-//    implementation files('libs/gsyVideoPlayer-proxy_cache-release.aar')
-//    implementation files('libs/gsyVideoPlayer-release.aar')
+    implementation files('libs/gsyVideoPlayer-aliplay-release.aar')
+    implementation files('libs/gsyVideoPlayer-armv7a-release.aar')
+    implementation files('libs/gsyVideoPlayer-armv64-release.aar')
+    implementation files('libs/gsyVideoPlayer-base-release.aar')
+    implementation files('libs/gsyVideoPlayer-java-release.aar')
+    implementation files('libs/gsyVideoPlayer-proxy_cache-release.aar')
+    implementation files('libs/gsyVideoPlayer-release.aar')
 }
