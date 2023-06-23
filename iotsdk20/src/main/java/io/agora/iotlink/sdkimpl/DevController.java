@@ -31,6 +31,7 @@ import io.agora.iotlink.rtmsdk.RtmBaseCmd;
 import io.agora.iotlink.rtmsdk.RtmCmdCtx;
 import io.agora.iotlink.rtmsdk.RtmCmdSeqId;
 import io.agora.iotlink.rtmsdk.RtmCustomizeReqCmd;
+import io.agora.iotlink.rtmsdk.RtmCustomizeRspCmd;
 import io.agora.iotlink.rtmsdk.RtmPlzCtrlReqCmd;
 
 
@@ -86,6 +87,13 @@ public class DevController  implements IDevController {
         plzCtrlCmd.mAction = action;
         plzCtrlCmd.mDirection = direction;
         plzCtrlCmd.mSpeed = speed;
+        plzCtrlCmd.mRespListener = new IRtmCmd.OnRtmCmdRespListener() {
+            @Override
+            public void onRtmCmdResponsed(int commandId, int errCode, IRtmCmd reqCmd, IRtmCmd rspCmd) {
+                ALog.getInstance().d(TAG, "<sendCmdPtzCtrl.onRtmCmdResponsed> errCode=" + errCode);
+                cmdListener.onDeviceCmdDone(IRtmCmd.CMDID_PTZ_RESET, errCode, null);
+            }
+        };
 
         int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(plzCtrlCmd);
 
@@ -101,6 +109,13 @@ public class DevController  implements IDevController {
         plzResetCmd.mCmdId = IRtmCmd.CMDID_PTZ_RESET;
         plzResetCmd.mDeviceId = mDeviceId;
         plzResetCmd.mSendTimestamp = System.currentTimeMillis();
+        plzResetCmd.mRespListener = new IRtmCmd.OnRtmCmdRespListener() {
+            @Override
+            public void onRtmCmdResponsed(int commandId, int errCode, IRtmCmd reqCmd, IRtmCmd rspCmd) {
+                ALog.getInstance().d(TAG, "<sendCmdPtzReset.onRtmCmdResponsed> errCode=" + errCode);
+                cmdListener.onDeviceCmdDone(IRtmCmd.CMDID_PTZ_RESET, errCode, null);
+            }
+        };
 
         int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(plzResetCmd);
 
@@ -116,6 +131,13 @@ public class DevController  implements IDevController {
         sdCardFmtCmd.mCmdId = IRtmCmd.CMDID_SDCARD_FMT;
         sdCardFmtCmd.mDeviceId = mDeviceId;
         sdCardFmtCmd.mSendTimestamp = System.currentTimeMillis();
+        sdCardFmtCmd.mRespListener = new IRtmCmd.OnRtmCmdRespListener() {
+            @Override
+            public void onRtmCmdResponsed(int commandId, int errCode, IRtmCmd reqCmd, IRtmCmd rspCmd) {
+                ALog.getInstance().d(TAG, "<sendCmdSdcardFmt.onRtmCmdResponsed> errCode=" + errCode);
+                cmdListener.onDeviceCmdDone(IRtmCmd.CMDID_SDCARD_FMT, errCode, null);
+            }
+        };
 
         int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(sdCardFmtCmd);
 
@@ -129,10 +151,22 @@ public class DevController  implements IDevController {
                                 final OnCommandCmdListener cmdListener) {
         RtmCustomizeReqCmd customizeCmd = new RtmCustomizeReqCmd();
         customizeCmd.mSequenceId = RtmCmdSeqId.getSeuenceId();
-        customizeCmd.mCmdId = IRtmCmd.CMDID_SDCARD_FMT;
+        customizeCmd.mCmdId = IRtmCmd.CMDID_CUSTOMIZE_SEND;
         customizeCmd.mDeviceId = mDeviceId;
         customizeCmd.mSendTimestamp = System.currentTimeMillis();
         customizeCmd.mSendData = customizeData;
+        customizeCmd.mRespListener = new IRtmCmd.OnRtmCmdRespListener() {
+            @Override
+            public void onRtmCmdResponsed(int commandId, int errCode, IRtmCmd reqCmd, IRtmCmd rspCmd) {
+                ALog.getInstance().d(TAG, "<sendCmdCustomize.onRtmCmdResponsed> errCode=" + errCode);
+                if (errCode == ErrCode.XERR_TIMEOUT) {
+                    cmdListener.onDeviceCmdDone(IRtmCmd.CMDID_CUSTOMIZE_SEND, errCode, null);
+                } else {
+                    RtmCustomizeRspCmd respCmd = (RtmCustomizeRspCmd)rspCmd;
+                    cmdListener.onDeviceCmdDone(IRtmCmd.CMDID_CUSTOMIZE_SEND, errCode, respCmd.mRecvData);
+                }
+            }
+        };
 
         int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(customizeCmd);
 

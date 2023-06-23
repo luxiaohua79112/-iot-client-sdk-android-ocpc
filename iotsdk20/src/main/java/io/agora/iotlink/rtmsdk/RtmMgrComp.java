@@ -10,6 +10,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -18,6 +19,7 @@ import io.agora.iotlink.IDeviceSessionMgr;
 import io.agora.iotlink.base.AtomicBoolean;
 import io.agora.iotlink.base.AtomicInteger;
 import io.agora.iotlink.base.BaseThreadComp;
+import io.agora.iotlink.callkit.SessionCtx;
 import io.agora.iotlink.logger.ALog;
 import io.agora.iotlink.sdkimpl.DeviceSessionMgr;
 import io.agora.iotlink.utils.JsonUtils;
@@ -39,7 +41,8 @@ public class RtmMgrComp extends BaseThreadComp {
     //////////////////////// Constant Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
     private static final String TAG = "IOTSDK/RtmMgrComp";
-
+    private static final long COMMAND_TIMEOUT = 30000;              ///< 命令响应超时30秒
+    private static final long TIMER_INTERVAL = 4000;                ///< 定时器间隔 4秒
 
     //
     // RTM的状态机
@@ -60,6 +63,7 @@ public class RtmMgrComp extends BaseThreadComp {
     private static final int MSGID_RTM_LOGIN_DONE = 0x2004;         ///< 登录完成消息
     private static final int MSGID_RTM_LOGOUT_DONE = 0x2005;        ///< 登出完成消息（暂时用不到）
     private static final int MSGID_RTM_RENEWTOKEN_DONE = 0x2006;    ///< token刷新完成消息
+    private static final int MSGID_RTM_TIMER = 0x2009;              ///< 定时广播消息，防止无消息退出
 
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Variable Definition ///////////////////////////
@@ -73,7 +77,7 @@ public class RtmMgrComp extends BaseThreadComp {
     private RtmPktQueue mRecvPktQueue = new RtmPktQueue();  ///< 接收数据包队列
     private RtmPktQueue mSendPktQueue = new RtmPktQueue();  ///< 发送数据包队列
 
-    private RtmCmdMgr mCommandMgr = new RtmCmdMgr();        ///< 命令管理器
+    private RtmCmdMgr mReqCmdMgr = new RtmCmdMgr();        ///< 请求命令管理器
 
 
     ///////////////////////////////////////////////////////////////////////
@@ -97,6 +101,9 @@ public class RtmMgrComp extends BaseThreadComp {
 
         // 启动组件线程
         runStart(TAG);
+
+        // 启动定时器消息
+        sendSingleMessage(MSGID_RTM_TIMER, 0, 0, null, TIMER_INTERVAL);
 
         ALog.getInstance().d(TAG, "<initialize> done");
         return ErrCode.XOK;
@@ -137,7 +144,7 @@ public class RtmMgrComp extends BaseThreadComp {
     public int sendCommandToDev(final IRtmCmd command) {
 
         // 添加到命令处理器中
-        mCommandMgr.addCommand(command);
+        mReqCmdMgr.addCommand(command);
 
         // 发送消息处理
         RtmPacket packet = new RtmPacket();
@@ -176,6 +183,10 @@ public class RtmMgrComp extends BaseThreadComp {
             case MSGID_RTM_RENEWTOKEN_DONE:
                 onMessageRenewTokenDone(msg);
                 break;
+
+            case MSGID_RTM_TIMER:
+                onMessageTimer(msg);
+                break;
         }
     }
 
@@ -187,12 +198,13 @@ public class RtmMgrComp extends BaseThreadComp {
             mWorkHandler.removeMessages(MSGID_RTM_CONNECT_DEV);
             mWorkHandler.removeMessages(MSGID_RTM_LOGIN_DONE);
             mWorkHandler.removeMessages(MSGID_RTM_RENEWTOKEN_DONE);
+            mWorkHandler.removeMessages(MSGID_RTM_TIMER);
         }
+        ALog.getInstance().d(TAG, "<removeAllMessages> done");
     }
 
     @Override
     protected void processTaskFinsh() {
-
         ALog.getInstance().d(TAG, "<processTaskFinsh> done");
     }
 
@@ -286,13 +298,64 @@ public class RtmMgrComp extends BaseThreadComp {
             // 解析回应命令数据包,生成回应命令
             IRtmCmd responseCmd = parseRspCmdDataBytes(recvedPkt.mPeerId, recvedPkt.mPktData);
             if (responseCmd == null) {   // 回应命令解析失败
+                ALog.getInstance().e(TAG, "<onMessageRecvPkt> fail to parse recved packet, mPeerId=" + recvedPkt.mPeerId);
                 continue;
             }
 
-            // 回调给上层
+            // 提取相同 sequenceId的请求命令
+            long sequenceId = responseCmd.getSequenceId();
+            int commandId = responseCmd.getCommandId();
+            int errCode = responseCmd.getRespErrCode();
+            IRtmCmd requestCmd = mReqCmdMgr.removeCommand(sequenceId);
+            if (requestCmd == null) {   // 没有找到对应sequenceId的请求命令
+                ALog.getInstance().e(TAG, "<onMessageRecvPkt> fail to distill request command, sequenceId=" + sequenceId);
+                continue;
+            }
+            if (requestCmd.getCommandId() != commandId) {   // 校验命令Id
+                ALog.getInstance().e(TAG, "<onMessageRecvPkt> error request commandId"
+                        + ", respCmdId=" + commandId + ", reqCmdId=" + requestCmd.getCommandId());
+                continue;
+            }
+
+            //
+            // 回调上层，请求--响应结果
+            //
+            IRtmCmd.OnRtmCmdRespListener cmdRespListener = requestCmd.getRespListener();
+            if (cmdRespListener != null) {
+                cmdRespListener.onRtmCmdResponsed(commandId, errCode, requestCmd, responseCmd );
+            }
 
         }
     }
+
+    /**
+     * @brief 工作线程中运行，定时处理消息
+     */
+    void onMessageTimer(Message msg) {
+
+        List<IRtmCmd> timeoutCmdList = mReqCmdMgr.queryTimeoutCommandList(COMMAND_TIMEOUT);
+
+        //
+        // 处理响应超时的命令
+        //
+        for (IRtmCmd rtmCmd : timeoutCmdList) {
+            mReqCmdMgr.removeCommand(rtmCmd.getSequenceId());   // 从命令管理器中删除改请求命令
+
+            //
+            // 回调上层，请求--响应超时
+            //
+            ALog.getInstance().d(TAG, "<onMessageTimer> callback command timeout, rtmCmd=" + rtmCmd);
+            IRtmCmd.OnRtmCmdRespListener cmdRespListener = rtmCmd.getRespListener();
+            if (cmdRespListener != null) {
+                cmdRespListener.onRtmCmdResponsed(rtmCmd.getCommandId(), ErrCode.XERR_TIMEOUT, rtmCmd, null );
+            }
+        }
+
+        // 下次定时器处理
+        sendSingleMessage(MSGID_RTM_TIMER, 0, 0, null, TIMER_INTERVAL);
+    }
+
+
 
     /**
      * @brief 工作线程中运行，解析数据包生成相应的ResponseCommand

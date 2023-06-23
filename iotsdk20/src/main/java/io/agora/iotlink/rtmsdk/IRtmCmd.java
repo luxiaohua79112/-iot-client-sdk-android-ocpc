@@ -21,6 +21,22 @@ import io.agora.iotlink.utils.JsonUtils;
  */
 public interface IRtmCmd  {
 
+    /**
+     * @brief 命令响应回调监听器
+     */
+    public static interface OnRtmCmdRespListener {
+
+        /**
+         * @brief 命令执行完成回调
+         * @param commandId: 命令Id
+         * @param errCode：命令响应结果
+         * @param reqCmd: 请求命令
+         * @param rspCmd: 对应的响应命令（超时错误时，为null)
+         */
+        default void onRtmCmdResponsed(int commandId, int errCode,
+                                       final IRtmCmd reqCmd, final IRtmCmd rspCmd) { }
+    }
+
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Constant Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
@@ -64,9 +80,21 @@ public interface IRtmCmd  {
 
 
     /**
-     * @brief 获取命令发送时间戳
+     * @brief 获取命令发送时间戳，仅针对 请求命令
      */
     long getSendTimestamp();
+
+
+    /**
+     * @brief 获取命令响应监听器，仅针对 请求命令
+     */
+    OnRtmCmdRespListener getRespListener();
+
+    /**
+     * @brief 将请求命令组成JSON字符串，转换成字节流返回
+     * @return 返回字节流数据
+     */
+    byte[] getReqCmdDataBytes();
 
     /**
      * @brief 当前命令是否是回应命令
@@ -74,9 +102,8 @@ public interface IRtmCmd  {
     boolean isResponseCmd();
 
     /**
-     * @brief 将请求命令组成JSON字符串，转换成字节流返回
-     * @return 返回字节流数据
+     * @brief 返回响应命令的错误码（仅针对响应命令有效）
      */
-    byte[] getReqCmdDataBytes();
+    int getRespErrCode();
 
 }

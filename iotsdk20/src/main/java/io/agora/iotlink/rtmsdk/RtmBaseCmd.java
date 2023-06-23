@@ -32,8 +32,11 @@ public class RtmBaseCmd implements IRtmCmd  {
     ////////////////////////////////////////////////////////////////////////
     public long  mSequenceId;       ///< 序列号，request--response的序列号一一对应
     public String mDeviceId;        ///< 命令到达的设备Id
-    public int mCmdId;              ///< 命令字符串
+    public int mCmdId;              ///< 命令Id
+
     public long mSendTimestamp;     ///< 命令发送的时间戳，用于超时判断
+    public OnRtmCmdRespListener mRespListener;  ///< 命令响应监听器
+
     public boolean mIsRespCmd;      ///< 是否是响应命令包，true
     public int mErrCode;            ///< 回应命令中：错误码
 
@@ -81,6 +84,11 @@ public class RtmBaseCmd implements IRtmCmd  {
     }
 
     @Override
+    public OnRtmCmdRespListener getRespListener() {
+        return mRespListener;
+    }
+
+    @Override
     public boolean isResponseCmd() {
         return mIsRespCmd;
     }
@@ -105,7 +113,10 @@ public class RtmBaseCmd implements IRtmCmd  {
         return dataBytes;
     }
 
-
+    @Override
+    public int getRespErrCode() {
+        return mErrCode;
+    }
 
 
 
