@@ -1,15 +1,24 @@
 package io.agora.iotlinkdemo.models.home;
 
 
+import android.annotation.SuppressLint;
 import android.media.MediaDrm;
+import android.os.Build;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.SeekBar;
 
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
+
+import com.agora.baselibrary.utils.StringUtils;
+
 import io.agora.iotlink.AIotAppSdkFactory;
 import io.agora.iotlink.ErrCode;
 import io.agora.iotlink.IDeviceSessionMgr;
@@ -27,13 +36,26 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
                     IVodPlayer.ICallback    {
 
     private static final String TAG = "IOTLINK/CloudRcdFrag";
+    private static final long TIMER_INTERVAL = 500;       ///< 定时器500ms
 
 
+    //
+    // message Id
+    //
+    private static final int MSGID_PLAYING_TIMER = 0x2001;       ///< 播放定时器
+
+
+
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////// Variable Definition /////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
     private PermissionHandler mPermHandler;             ///< 权限申请处理
+    private Handler mMsgHandler = null;                 ///< 主线程中的消息处理
 
     private MainActivity mMainActivity;
     private CloudRcdFragment mFragment;
     private IVodPlayer mVodPlayer;
+    private IVodPlayer.VodMediaInfo mVodMediaInfo;
 
 
     ///////////////////////////////////////////////////////////////////////////
@@ -54,7 +76,25 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
         mVodPlayer = AIotAppSdkFactory.getVodPlayer();
         mVodPlayer.setDisplayView(getBinding().svDisplay);
         getBinding().sbPlaying.setEnabled(false);
+        getBinding().sbPlaying.setProgress(0);
         getBinding().btnPlayPause.setEnabled(false);
+
+        // 创建主线程消息处理
+        mMsgHandler = new Handler(getActivity().getMainLooper())
+        {
+            @SuppressLint("HandlerLeak")
+            @RequiresApi(api = Build.VERSION_CODES.M)
+            public void handleMessage(Message msg)
+            {
+                switch (msg.what)
+                {
+                    case MSGID_PLAYING_TIMER:
+                        onMessagePlayingTimer();
+                        break;
+                }
+            }
+        };
+
 
         //
         //
@@ -87,6 +127,22 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
 
         getBinding().btnPlayPause.setOnClickListener(view -> {
             onBtnPlayPause(view);
+        });
+
+        getBinding().sbPlaying.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+//                long time = seekBar.getProgress() * getBinding().gsyPlayer.getDuration() / 100;
+//                getBinding().gsyPlayer.getGSYVideoManager().seekTo(time);
+            }
         });
 
         Log.d(TAG, "<initListener> done");
@@ -131,6 +187,7 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
     public void onStop() {
         super.onStop();
         Log.d(TAG, "<onStop> ");
+        mMsgHandler.removeMessages(MSGID_PLAYING_TIMER);
     }
 
     @Override
@@ -171,9 +228,6 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
                 popupMessage("Fail to open file: " + mediaFilePath);
                 return;
             }
-            popupMessage("Opening media file: " + mediaFilePath);
-            showLoadingView();
-
             getBinding().sbPlaying.setEnabled(false);
             getBinding().btnPlayPause.setEnabled(false);
 
@@ -204,16 +258,47 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
         }
     }
 
+    /**
+     * @brief 播放定时器处理
+     */
+
+    void onMessagePlayingTimer() {
+        int playState = mVodPlayer.getPlayingState();
+        if (playState == IVodPlayer.VODPLAYER_STATE_CLOSED) {
+            return;
+        }
+
+        if (playState == IVodPlayer.VODPLAYER_STATE_PLAYING ||
+            playState == IVodPlayer.VODPLAYER_STATE_PAUSED ) {
+
+            long position = mVodPlayer.getPlayingProgress();
+            int progress = (int)(position * 1000L / mVodMediaInfo.mDuration);
+            getBinding().sbPlaying.setProgress(progress);
+
+            String textPosition = StringUtils.INSTANCE.getDurationTimeSS(position / 1000);
+            String textDuration = StringUtils.INSTANCE.getDurationTimeSS(mVodMediaInfo.mDuration / 1000);
+            String textTime = textPosition + " / " + textDuration;
+            getBinding().tvTime.setText(textTime);
+        }
+
+        mMsgHandler.sendEmptyMessageDelayed(MSGID_PLAYING_TIMER, TIMER_INTERVAL);
+    }
+
     void setUiStateToOpened() {
         getBinding().btnOpenClose.setText("关闭");
         getBinding().btnPlayPause.setText("暂停");
+        getBinding().tvTime.setText("00:00:00 / 00:00:00");
+        getBinding().sbPlaying.setProgress(0);
         getBinding().sbPlaying.setEnabled(true);
         getBinding().btnPlayPause.setEnabled(true);
+
     }
 
     void setUiStateToClosed() {
         getBinding().btnOpenClose.setText("打开");
         getBinding().btnPlayPause.setText("播放");
+        getBinding().tvTime.setText("00:00:00 / 00:00:00");
+        getBinding().sbPlaying.setProgress(0);
         getBinding().sbPlaying.setEnabled(false);
         getBinding().btnPlayPause.setEnabled(false);
     }
@@ -230,13 +315,15 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
     @Override
     public void onVodOpenDone(final String mediaUrl) {
         Log.d(TAG, "<onVodOpenDone> mediaUrl=" + mediaUrl);
-
-
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 hideLoadingView();
                 setUiStateToOpened();
+                mVodMediaInfo = mVodPlayer.getMediaInfo();
+                mMsgHandler.sendEmptyMessage(MSGID_PLAYING_TIMER);  // 开始刷新进度
+
+                popupMessage("Opened media file: " + mediaUrl);
             }
         });
     }
@@ -244,6 +331,15 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
     @Override
     public void onVodPlayingDone(final String mediaUrl, long duration) {
         Log.d(TAG, "<onVodPlayingDone> mediaUrl=" + mediaUrl);
+
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mVodPlayer.close();
+                setUiStateToClosed();
+                popupMessage("Media playing completed!");
+            }
+        });
     }
 
     @Override
