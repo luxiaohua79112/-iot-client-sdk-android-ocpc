@@ -67,7 +67,6 @@ public class VodPlayer implements IVodPlayer {
 
     @Override
     public int open(final String mediaUrl, final ICallback callback) {
-
         mState.setValue(IVodPlayer.VODPLAYER_STATE_OPENING);
         mIjkPlayer = new IjkMediaPlayer();
 
@@ -79,13 +78,18 @@ public class VodPlayer implements IVodPlayer {
             //开启硬解码
             mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec", 1);
             mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec-auto-rotate", 1);
-            mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec-handle-resolution-change", 1);
 
             mIjkPlayer.setOnPreparedListener(new IMediaPlayer.OnPreparedListener() {
                  @Override
                  public void onPrepared(IMediaPlayer iMediaPlayer) {
-                     ALog.getInstance().d(TAG, "<open.onPrepared> ");
-                     mState.setValue(IVodPlayer.VODPLAYER_STATE_PAUSED);
+                     mState.setValue(IVodPlayer.VODPLAYER_STATE_PLAYING);  // 准备就绪后自动播放
+                     mMediaInfo = new VodMediaInfo();
+                     mMediaInfo.mMediaUrl = mediaUrl;
+                     mMediaInfo.mDuration = mIjkPlayer.getDuration();
+                     mMediaInfo.mVideoWidth = mIjkPlayer.getVideoWidth();
+                     mMediaInfo.mVideoHeight = mIjkPlayer.getVideoHeight();
+
+                     ALog.getInstance().d(TAG, "<open.onPrepared> mMediaInfo=" + mMediaInfo);
                      if (mCallback != null) {    // 直接回调给上层
                          mCallback.onVodOpenDone(mMediaInfo.mMediaUrl);
                      }
@@ -107,17 +111,11 @@ public class VodPlayer implements IVodPlayer {
                 @Override
                 public boolean onError(IMediaPlayer iMediaPlayer, int what, int extra) {
                     ALog.getInstance().e(TAG, "<open.onError> what=" + what + ", extra=" + extra);
+                    mState.setValue(IVodPlayer.VODPLAYER_STATE_PAUSED);
                     if (mCallback != null) {    // 直接回调给上层
                         mCallback.onVodPlayingError(mMediaInfo.mMediaUrl, what);
                     }
                     return false;
-                }
-            });
-
-            mIjkPlayer.setOnControlMessageListener(new IjkMediaPlayer.OnControlMessageListener() {
-                @Override
-                public String onControlResolveSegmentUrl(int i) {
-                    return null;
                 }
             });
 
@@ -157,13 +155,8 @@ public class VodPlayer implements IVodPlayer {
             return ErrCode.XERR_FILE_OPEN;
         }
 
-        mMediaInfo = new VodMediaInfo();
-        mMediaInfo.mMediaUrl = mediaUrl;
-        mMediaInfo.mDuration = mIjkPlayer.getDuration();
-        mMediaInfo.mVideoWidth = mIjkPlayer.getVideoWidth();
-        mMediaInfo.mVideoHeight = mIjkPlayer.getVideoHeight();
-        ALog.getInstance().e(TAG, "<open> done, mediaUrl=" + mediaUrl
-                + ", mMediaInfo=" + mMediaInfo);
+
+        ALog.getInstance().e(TAG, "<open> done, mediaUrl=" + mediaUrl);
         return ErrCode.XOK;
     }
 

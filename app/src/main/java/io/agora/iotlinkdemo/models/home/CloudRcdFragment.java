@@ -19,7 +19,7 @@ import io.agora.iotlinkdemo.base.BaseViewBindingFragment;
 import io.agora.iotlinkdemo.base.PermissionHandler;
 import io.agora.iotlinkdemo.base.PermissionItem;
 import io.agora.iotlinkdemo.databinding.FragmentHomeCloudrcdBinding;
-
+import io.agora.iotlinkdemo.presistentconnect.PresistentLinkComp;
 
 
 public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudrcdBinding>
@@ -53,6 +53,8 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
         getBinding().titleView.hideLeftImage();
         mVodPlayer = AIotAppSdkFactory.getVodPlayer();
         mVodPlayer.setDisplayView(getBinding().svDisplay);
+        getBinding().sbPlaying.setEnabled(false);
+        getBinding().btnPlayPause.setEnabled(false);
 
         //
         //
@@ -159,22 +161,28 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
      * @brief 打开或者关闭媒体文件 按钮
      */
     void onBtnOpenClose(View view) {
+        String mediaFilePath = "/sdcard/daughter.mp4";
 
         int playState = mVodPlayer.getPlayingState();
         if (playState == IVodPlayer.VODPLAYER_STATE_CLOSED) {
             // 打开媒体文件
-            String mediaFilePath = "/sdcard/daughter.mp4";
             int ret = mVodPlayer.open(mediaFilePath, this);
             if (ret != ErrCode.XOK) {
                 popupMessage("Fail to open file: " + mediaFilePath);
                 return;
             }
             popupMessage("Opening media file: " + mediaFilePath);
+            showLoadingView();
+
+            getBinding().sbPlaying.setEnabled(false);
+            getBinding().btnPlayPause.setEnabled(false);
 
         } else {
             // 关闭媒体文件
             mVodPlayer.close();
             popupMessage("Closed media file!");
+
+            setUiStateToClosed();
         }
 
     }
@@ -183,10 +191,31 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
      * @brief 播放/暂停 按钮
      */
     void onBtnPlayPause(View view) {
-
         int playState = mVodPlayer.getPlayingState();
+        if (playState == IVodPlayer.VODPLAYER_STATE_PAUSED) {
+            // resume
+            mVodPlayer.play();
+            getBinding().btnPlayPause.setText("暂停");
 
+        } else if (playState == IVodPlayer.VODPLAYER_STATE_PLAYING) {
+            // Pause
+            mVodPlayer.pause();
+            getBinding().btnPlayPause.setText("播放");
+        }
+    }
 
+    void setUiStateToOpened() {
+        getBinding().btnOpenClose.setText("关闭");
+        getBinding().btnPlayPause.setText("暂停");
+        getBinding().sbPlaying.setEnabled(true);
+        getBinding().btnPlayPause.setEnabled(true);
+    }
+
+    void setUiStateToClosed() {
+        getBinding().btnOpenClose.setText("打开");
+        getBinding().btnPlayPause.setText("播放");
+        getBinding().sbPlaying.setEnabled(false);
+        getBinding().btnPlayPause.setEnabled(false);
     }
 
 
@@ -196,12 +225,20 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
     @Override
     public void onVodPlayingStateChanged(final String mediaUrl, int newState) {
         Log.d(TAG, "<onVodPlayingStateChanged> mediaUrl=" + mediaUrl);
-
     }
 
     @Override
     public void onVodOpenDone(final String mediaUrl) {
         Log.d(TAG, "<onVodOpenDone> mediaUrl=" + mediaUrl);
+
+
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                hideLoadingView();
+                setUiStateToOpened();
+            }
+        });
     }
 
     @Override
