@@ -10,6 +10,7 @@
 package io.agora.iotlink;
 
 
+import android.view.SurfaceView;
 import android.view.View;
 
 
@@ -80,7 +81,7 @@ public interface IVodPlayer  {
      * @param displayView: 视频帧显示控件
      * @return 返回错误码
      */
-    int setDisplayView(final View displayView);
+    int setDisplayView(final SurfaceView displayView);
 
     /**
      * @brief 打开媒体文件准备播放，打开成功后播放进度位于开始0处，状态切换到 VODPLAYER_STATE_PAUSED

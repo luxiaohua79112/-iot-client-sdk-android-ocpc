@@ -12,11 +12,19 @@ package io.agora.iotlink.sdkimpl;
 
 
 
+import android.view.SurfaceView;
 import android.view.View;
+
+import java.io.IOException;
 
 import io.agora.iotlink.ErrCode;
 import io.agora.iotlink.IVodPlayer;
-import com.shuyu.gsyvideoplayer.video.StandardGSYVideoPlayer;
+import io.agora.iotlink.logger.ALog;
+import tv.danmaku.ijk.media.player.IMediaPlayer;
+import tv.danmaku.ijk.media.player.IjkMediaPlayer;
+
+//import com.shuyu.gsyvideoplayer.listener.GSYMediaPlayerListener;
+//import com.shuyu.gsyvideoplayer.video.StandardGSYVideoPlayer;
 
 /*
  * @brief 云录视频播放器
@@ -38,7 +46,11 @@ public class VodPlayer implements IVodPlayer {
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Variable Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
-    private StandardGSYVideoPlayer mGsyPlayer;
+    private SurfaceView mDisplayView;
+    private ICallback mCallback;
+
+    private IjkMediaPlayer mIjkPlayer;
+    private VodMediaInfo mMediaInfo;
 
 
     ///////////////////////////////////////////////////////////////////////
@@ -46,53 +58,194 @@ public class VodPlayer implements IVodPlayer {
     ///////////////////////////////////////////////////////////////////////
 
     @Override
-    public int setDisplayView(final View displayView) {
+    public int setDisplayView(final SurfaceView displayView) {
+        mDisplayView = displayView;
         return ErrCode.XOK;
     }
 
     @Override
     public int open(final String mediaUrl, final ICallback callback) {
+        mIjkPlayer = new IjkMediaPlayer();
+
+        try {
+            mIjkPlayer.setDataSource(mediaUrl);
+            mIjkPlayer.prepareAsync();
+            mCallback = callback;
+
+            mIjkPlayer.setOnCompletionListener(new IMediaPlayer.OnCompletionListener() {
+                @Override
+                public void onCompletion(IMediaPlayer iMediaPlayer) {
+                    ALog.getInstance().d(TAG, "<open.onCompletion> ");
+                    if (mCallback != null) {    // 直接回调给上层
+                        mCallback.onVodPlayingDone(mMediaInfo.mMediaUrl, mMediaInfo.mDuration);
+                    }
+                }
+            });
+
+            mIjkPlayer.setOnErrorListener(new IMediaPlayer.OnErrorListener() {
+                @Override
+                public boolean onError(IMediaPlayer iMediaPlayer, int what, int extra) {
+                    ALog.getInstance().e(TAG, "<open.onError> what=" + what + ", extra=" + extra);
+                    if (mCallback != null) {    // 直接回调给上层
+                        mCallback.onVodPlayingError(mMediaInfo.mMediaUrl, what);
+                    }
+                    return false;
+                }
+            });
+
+            // 设置显示控件
+            mIjkPlayer.setDisplay(mDisplayView.getHolder());
+
+        } catch (IOException ioExp) {
+            ioExp.printStackTrace();
+            ALog.getInstance().e(TAG, "<open> [IO_EXP] mediaUrl=" + mediaUrl + ", ioExp=" + ioExp);
+            mIjkPlayer.release();
+            mIjkPlayer = null;
+            return ErrCode.XERR_FILE_OPEN;
+
+        } catch (IllegalArgumentException illegalExp) {
+            illegalExp.printStackTrace();
+            ALog.getInstance().e(TAG, "<open> [ILLEGAL_EXP] mediaUrl=" + mediaUrl + ", illegalExp=" + illegalExp);
+            mIjkPlayer.release();
+            mIjkPlayer = null;
+            return ErrCode.XERR_FILE_OPEN;
+
+        } catch (SecurityException securityExp) {
+            securityExp.printStackTrace();
+            ALog.getInstance().e(TAG, "<open> [SECURITY_EXP] mediaUrl=" + mediaUrl + ", securityExp=" + securityExp);
+            mIjkPlayer.release();
+            mIjkPlayer = null;
+            return ErrCode.XERR_FILE_OPEN;
+
+        } catch (Exception exp) {
+            exp.printStackTrace();
+            ALog.getInstance().e(TAG, "<open> [EXP] mediaUrl=" + mediaUrl + ", exp=" + exp);
+            mIjkPlayer.release();
+            mIjkPlayer = null;
+            return ErrCode.XERR_FILE_OPEN;
+        }
+
+        mMediaInfo = new VodMediaInfo();
+        mMediaInfo.mMediaUrl = mediaUrl;
+        mMediaInfo.mDuration = mIjkPlayer.getDuration();
+        mMediaInfo.mVideoWidth = mIjkPlayer.getVideoWidth();
+        mMediaInfo.mVideoHeight = mIjkPlayer.getVideoHeight();
+        ALog.getInstance().e(TAG, "<open> done, mediaUrl=" + mediaUrl
+                + ", mMediaInfo=" + mMediaInfo);
         return ErrCode.XOK;
     }
 
     @Override
     public void close() {
-
+        if (mIjkPlayer != null) {
+            mIjkPlayer.release();
+            mIjkPlayer = null;
+            mMediaInfo = null;
+            ALog.getInstance().d(TAG, "<close> done");
+        }
     }
 
     @Override
     public VodMediaInfo getMediaInfo() {
-        return null;
+        return mMediaInfo;
     }
 
     @Override
     public long getPlayingProgress() {
-        return ErrCode.XOK;
+        if (mIjkPlayer == null) {
+            ALog.getInstance().d(TAG, "<getPlayingProgress> bad state");
+            return 0;
+        }
+
+        long postion = mIjkPlayer.getCurrentPosition();
+        ALog.getInstance().d(TAG, "<getPlayingProgress> postion=" + postion);
+        return postion;
     }
 
     @Override
     public int getPlayingState() {
+
         return ErrCode.XOK;
     }
 
     @Override
     public int play() {
+        if (mIjkPlayer == null) {
+            ALog.getInstance().d(TAG, "<play> bad state");
+            return ErrCode.XERR_BAD_STATE;
+        }
+
+        try {
+            mIjkPlayer.start();
+
+        } catch (IllegalStateException illegalExp) {
+            illegalExp.printStackTrace();
+            ALog.getInstance().e(TAG, "<play> [ILLEGAL_EXP] illegalExp=" + illegalExp);
+            return ErrCode.XERR_PLAYER_PLAY;
+        }
+
+        ALog.getInstance().d(TAG, "<play> done");
         return ErrCode.XOK;
     }
 
     @Override
     public int pause() {
+        if (mIjkPlayer == null) {
+            ALog.getInstance().d(TAG, "<pause> bad state");
+            return ErrCode.XERR_BAD_STATE;
+        }
+
+        try {
+            mIjkPlayer.pause();
+
+        } catch (IllegalStateException illegalExp) {
+            illegalExp.printStackTrace();
+            ALog.getInstance().e(TAG, "<pause> [ILLEGAL_EXP] illegalExp=" + illegalExp);
+            return ErrCode.XERR_PLAYER_PLAY;
+        }
+
+        ALog.getInstance().d(TAG, "<pause> done");
         return ErrCode.XOK;
     }
 
     @Override
     public int stop() {
+        if (mIjkPlayer == null) {
+            ALog.getInstance().d(TAG, "<stop> bad state");
+            return ErrCode.XERR_BAD_STATE;
+        }
+
+        try {
+            mIjkPlayer.stop();
+
+        } catch (IllegalStateException illegalExp) {
+            illegalExp.printStackTrace();
+            ALog.getInstance().e(TAG, "<stop> [ILLEGAL_EXP] illegalExp=" + illegalExp);
+            return ErrCode.XERR_PLAYER_PLAY;
+        }
+
+        ALog.getInstance().d(TAG, "<stop> done");
         return ErrCode.XOK;
     }
 
     @Override
     public long seek(long seekPos) {
-        return seekPos;
+        if (mIjkPlayer == null) {
+            ALog.getInstance().d(TAG, "<seek> bad state, seekPos=" + seekPos);
+            return ErrCode.XERR_BAD_STATE;
+        }
+
+        try {
+            mIjkPlayer.seekTo(seekPos);
+
+        } catch (IllegalStateException illegalExp) {
+            illegalExp.printStackTrace();
+            ALog.getInstance().e(TAG, "<seek> [ILLEGAL_EXP] illegalExp=" + illegalExp);
+            return ErrCode.XERR_PLAYER_PLAY;
+        }
+
+        ALog.getInstance().d(TAG, "<seek> done, seekPos=" + seekPos);
+        return ErrCode.XOK;
     }
 
 }
