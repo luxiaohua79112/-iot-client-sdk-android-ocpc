@@ -1,51 +1,30 @@
 package io.agora.iotlinkdemo.models.home;
 
-import android.content.DialogInterface;
-import android.content.Intent;
+
+import android.media.MediaDrm;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.CompoundButton;
+
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.widget.PopupMenu;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
-
-import com.agora.baselibrary.base.BaseDialog;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Locale;
-import java.util.UUID;
-
-
 import io.agora.iotlink.AIotAppSdkFactory;
 import io.agora.iotlink.ErrCode;
-import io.agora.iotlink.IDevPreviewMgr;
 import io.agora.iotlink.IDeviceSessionMgr;
+import io.agora.iotlink.IVodPlayer;
 import io.agora.iotlinkdemo.R;
 import io.agora.iotlinkdemo.base.BaseViewBindingFragment;
 import io.agora.iotlinkdemo.base.PermissionHandler;
 import io.agora.iotlinkdemo.base.PermissionItem;
-import io.agora.iotlinkdemo.base.PushApplication;
 import io.agora.iotlinkdemo.databinding.FragmentHomeCloudrcdBinding;
-import io.agora.iotlinkdemo.databinding.FragmentHomePageBinding;
-import io.agora.iotlinkdemo.dialog.DialogNewDevice;
-import io.agora.iotlinkdemo.models.player.DevPreviewActivity;
-import io.agora.iotlinkdemo.presistentconnect.PresistentLinkComp;
-import io.agora.iotlinkdemo.utils.AppStorageUtil;
-import io.agora.iotlinkdemo.utils.FileUtils;
+
 
 
 public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudrcdBinding>
-        implements PermissionHandler.ICallback, IDeviceSessionMgr.ISessionCallback  {
+        implements PermissionHandler.ICallback, IDeviceSessionMgr.ISessionCallback,
+                    IVodPlayer.ICallback    {
 
     private static final String TAG = "IOTLINK/CloudRcdFrag";
 
@@ -54,7 +33,7 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
 
     private MainActivity mMainActivity;
     private CloudRcdFragment mFragment;
-
+    private IVodPlayer mVodPlayer;
 
 
     ///////////////////////////////////////////////////////////////////////////
@@ -72,6 +51,8 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
         mFragment = this;
 
         getBinding().titleView.hideLeftImage();
+        mVodPlayer = AIotAppSdkFactory.getVodPlayer();
+        mVodPlayer.setDisplayView(getBinding().svDisplay);
 
         //
         //
@@ -179,6 +160,23 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
      */
     void onBtnOpenClose(View view) {
 
+        int playState = mVodPlayer.getPlayingState();
+        if (playState == IVodPlayer.VODPLAYER_STATE_CLOSED) {
+            // 打开媒体文件
+            String mediaFilePath = "/sdcard/daughter.mp4";
+            int ret = mVodPlayer.open(mediaFilePath, this);
+            if (ret != ErrCode.XOK) {
+                popupMessage("Fail to open file: " + mediaFilePath);
+                return;
+            }
+            popupMessage("Opening media file: " + mediaFilePath);
+
+        } else {
+            // 关闭媒体文件
+            mVodPlayer.close();
+            popupMessage("Closed media file!");
+        }
+
     }
 
     /**
@@ -186,8 +184,35 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
      */
     void onBtnPlayPause(View view) {
 
+        int playState = mVodPlayer.getPlayingState();
+
+
     }
 
+
+    ///////////////////////////////////////////////////////////////////////////
+    //////////////// Override Methods of IVodPlayer.ICallback  ////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    @Override
+    public void onVodPlayingStateChanged(final String mediaUrl, int newState) {
+        Log.d(TAG, "<onVodPlayingStateChanged> mediaUrl=" + mediaUrl);
+
+    }
+
+    @Override
+    public void onVodOpenDone(final String mediaUrl) {
+        Log.d(TAG, "<onVodOpenDone> mediaUrl=" + mediaUrl);
+    }
+
+    @Override
+    public void onVodPlayingDone(final String mediaUrl, long duration) {
+        Log.d(TAG, "<onVodPlayingDone> mediaUrl=" + mediaUrl);
+    }
+
+    @Override
+    public void onVodPlayingError(final String mediaUrl, int errCode) {
+        Log.d(TAG, "<onVodPlayingError> mediaUrl=" + mediaUrl + ", errCode=" + errCode);
+    }
 
 
 }

@@ -24,8 +24,9 @@ public interface IVodPlayer  {
     // VOD播放状态机
     //
     public static final int VODPLAYER_STATE_CLOSED = 0x0000;     ///< 没有媒体文件打开
-    public static final int VODPLAYER_STATE_PAUSED = 0x0001;     ///< 当前暂停播放
-    public static final int VODPLAYER_STATE_PLAYING = 0x0002;    ///< 当前正在播放
+    public static final int VODPLAYER_STATE_OPENING = 0x0001;    ///< 媒体文件正在打开
+    public static final int VODPLAYER_STATE_PAUSED = 0x0002;     ///< 当前暂停播放
+    public static final int VODPLAYER_STATE_PLAYING = 0x0003;    ///< 当前正在播放
 
 
     /**
@@ -58,21 +59,27 @@ public interface IVodPlayer  {
          * @param mediaUrl : 媒体文件Url
          * @param newState : 切换后的新状态
          */
-        default void onVodPlayingStateChanged(final String mediaUrl, int newState) {}
+        default void onVodPlayingStateChanged(final String mediaUrl, int newState) { }
+
+        /**
+         * @brief 当前媒体文件打开完成事
+         * @param mediaUrl : 媒体文件Url
+         */
+        default void onVodOpenDone(final String mediaUrl) { }
 
         /**
          * @brief 当前媒体文件播放完成事件，通常此时可以调用 stop()回到开始重新play()，或者close()关闭播放器
          * @param mediaUrl : 媒体文件Url
          * @param duration : 整个播放时长
          */
-        default void onVodPlayingDone(final String mediaUrl, long duration) {}
+        default void onVodPlayingDone(final String mediaUrl, long duration) { }
 
         /**
          * @brief 播放过程中遇到错误，并且不能恢复，此时上层只能调用 close()关闭播放器
          * @param mediaUrl : 媒体文件Url
          * @param errCode : 错误码
          */
-        default void onVodPlayingError(final String mediaUrl, int errCode) {}
+        default void onVodPlayingError(final String mediaUrl, int errCode) { }
     }
 
 

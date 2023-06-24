@@ -19,6 +19,7 @@ import java.io.IOException;
 
 import io.agora.iotlink.ErrCode;
 import io.agora.iotlink.IVodPlayer;
+import io.agora.iotlink.base.AtomicInteger;
 import io.agora.iotlink.logger.ALog;
 import tv.danmaku.ijk.media.player.IMediaPlayer;
 import tv.danmaku.ijk.media.player.IjkMediaPlayer;
@@ -51,6 +52,7 @@ public class VodPlayer implements IVodPlayer {
 
     private IjkMediaPlayer mIjkPlayer;
     private VodMediaInfo mMediaInfo;
+    private AtomicInteger mState = new AtomicInteger();
 
 
     ///////////////////////////////////////////////////////////////////////
@@ -65,6 +67,8 @@ public class VodPlayer implements IVodPlayer {
 
     @Override
     public int open(final String mediaUrl, final ICallback callback) {
+
+        mState.setValue(IVodPlayer.VODPLAYER_STATE_OPENING);
         mIjkPlayer = new IjkMediaPlayer();
 
         try {
@@ -72,10 +76,27 @@ public class VodPlayer implements IVodPlayer {
             mIjkPlayer.prepareAsync();
             mCallback = callback;
 
+            //开启硬解码
+            mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec", 1);
+            mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec-auto-rotate", 1);
+            mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec-handle-resolution-change", 1);
+
+            mIjkPlayer.setOnPreparedListener(new IMediaPlayer.OnPreparedListener() {
+                 @Override
+                 public void onPrepared(IMediaPlayer iMediaPlayer) {
+                     ALog.getInstance().d(TAG, "<open.onPrepared> ");
+                     mState.setValue(IVodPlayer.VODPLAYER_STATE_PAUSED);
+                     if (mCallback != null) {    // 直接回调给上层
+                         mCallback.onVodOpenDone(mMediaInfo.mMediaUrl);
+                     }
+                 }
+             });
+
             mIjkPlayer.setOnCompletionListener(new IMediaPlayer.OnCompletionListener() {
                 @Override
                 public void onCompletion(IMediaPlayer iMediaPlayer) {
                     ALog.getInstance().d(TAG, "<open.onCompletion> ");
+                    mState.setValue(IVodPlayer.VODPLAYER_STATE_PAUSED);
                     if (mCallback != null) {    // 直接回调给上层
                         mCallback.onVodPlayingDone(mMediaInfo.mMediaUrl, mMediaInfo.mDuration);
                     }
@@ -93,6 +114,13 @@ public class VodPlayer implements IVodPlayer {
                 }
             });
 
+            mIjkPlayer.setOnControlMessageListener(new IjkMediaPlayer.OnControlMessageListener() {
+                @Override
+                public String onControlResolveSegmentUrl(int i) {
+                    return null;
+                }
+            });
+
             // 设置显示控件
             mIjkPlayer.setDisplay(mDisplayView.getHolder());
 
@@ -101,6 +129,7 @@ public class VodPlayer implements IVodPlayer {
             ALog.getInstance().e(TAG, "<open> [IO_EXP] mediaUrl=" + mediaUrl + ", ioExp=" + ioExp);
             mIjkPlayer.release();
             mIjkPlayer = null;
+            mState.setValue(IVodPlayer.VODPLAYER_STATE_CLOSED);
             return ErrCode.XERR_FILE_OPEN;
 
         } catch (IllegalArgumentException illegalExp) {
@@ -108,6 +137,7 @@ public class VodPlayer implements IVodPlayer {
             ALog.getInstance().e(TAG, "<open> [ILLEGAL_EXP] mediaUrl=" + mediaUrl + ", illegalExp=" + illegalExp);
             mIjkPlayer.release();
             mIjkPlayer = null;
+            mState.setValue(IVodPlayer.VODPLAYER_STATE_CLOSED);
             return ErrCode.XERR_FILE_OPEN;
 
         } catch (SecurityException securityExp) {
@@ -115,6 +145,7 @@ public class VodPlayer implements IVodPlayer {
             ALog.getInstance().e(TAG, "<open> [SECURITY_EXP] mediaUrl=" + mediaUrl + ", securityExp=" + securityExp);
             mIjkPlayer.release();
             mIjkPlayer = null;
+            mState.setValue(IVodPlayer.VODPLAYER_STATE_CLOSED);
             return ErrCode.XERR_FILE_OPEN;
 
         } catch (Exception exp) {
@@ -122,6 +153,7 @@ public class VodPlayer implements IVodPlayer {
             ALog.getInstance().e(TAG, "<open> [EXP] mediaUrl=" + mediaUrl + ", exp=" + exp);
             mIjkPlayer.release();
             mIjkPlayer = null;
+            mState.setValue(IVodPlayer.VODPLAYER_STATE_CLOSED);
             return ErrCode.XERR_FILE_OPEN;
         }
 
@@ -141,6 +173,7 @@ public class VodPlayer implements IVodPlayer {
             mIjkPlayer.release();
             mIjkPlayer = null;
             mMediaInfo = null;
+            mState.setValue(IVodPlayer.VODPLAYER_STATE_CLOSED);
             ALog.getInstance().d(TAG, "<close> done");
         }
     }
@@ -164,8 +197,7 @@ public class VodPlayer implements IVodPlayer {
 
     @Override
     public int getPlayingState() {
-
-        return ErrCode.XOK;
+        return mState.getValue();
     }
 
     @Override
@@ -177,6 +209,7 @@ public class VodPlayer implements IVodPlayer {
 
         try {
             mIjkPlayer.start();
+            mState.setValue(IVodPlayer.VODPLAYER_STATE_PLAYING);
 
         } catch (IllegalStateException illegalExp) {
             illegalExp.printStackTrace();
@@ -197,6 +230,7 @@ public class VodPlayer implements IVodPlayer {
 
         try {
             mIjkPlayer.pause();
+            mState.setValue(IVodPlayer.VODPLAYER_STATE_PAUSED);
 
         } catch (IllegalStateException illegalExp) {
             illegalExp.printStackTrace();
@@ -217,6 +251,7 @@ public class VodPlayer implements IVodPlayer {
 
         try {
             mIjkPlayer.stop();
+            mState.setValue(IVodPlayer.VODPLAYER_STATE_PAUSED);
 
         } catch (IllegalStateException illegalExp) {
             illegalExp.printStackTrace();
