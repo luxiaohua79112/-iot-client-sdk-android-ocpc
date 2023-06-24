@@ -93,8 +93,9 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
         //
         // Microphone权限判断处理
         //
-        int[] permIdArray = new int[1];
+        int[] permIdArray = new int[2];
         permIdArray[0] = PermissionHandler.PERM_ID_RECORD_AUDIO;
+        permIdArray[1] = PermissionHandler.PERM_ID_READ_STORAGE;
         mPermHandler = new PermissionHandler(getActivity(), this, permIdArray);
         if (!mPermHandler.isAllPermissionGranted()) {
             Log.d(TAG, "<initView> requesting permission...");
