@@ -143,8 +143,8 @@ public interface IVodPlayer  {
     /**
      * @brief 直接跳转播放进度
      * @param seekPos: 需要跳转到的目标时间戳，单位ms
-     * @return 如果seek成功，返回实际跳转的时间戳； <0 表示seek失败，返回错误码
+     * @return 返回错误码
      */
-    long seek(long seekPos);
+    int seek(long seekPos);
 
 }

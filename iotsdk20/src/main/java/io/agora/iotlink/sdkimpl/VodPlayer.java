@@ -257,7 +257,7 @@ public class VodPlayer implements IVodPlayer {
     }
 
     @Override
-    public long seek(long seekPos) {
+    public int seek(long seekPos) {
         if (mIjkPlayer == null) {
             ALog.getInstance().d(TAG, "<seek> bad state, seekPos=" + seekPos);
             return ErrCode.XERR_BAD_STATE;

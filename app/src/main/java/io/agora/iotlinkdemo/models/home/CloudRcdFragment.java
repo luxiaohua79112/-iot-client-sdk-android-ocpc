@@ -140,8 +140,18 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-//                long time = seekBar.getProgress() * getBinding().gsyPlayer.getDuration() / 100;
-//                getBinding().gsyPlayer.getGSYVideoManager().seekTo(time);
+                if (mVodMediaInfo == null) {
+                    return;
+                }
+                int playState = mVodPlayer.getPlayingState();
+                if (playState == IVodPlayer.VODPLAYER_STATE_OPENING ||
+                    playState == IVodPlayer.VODPLAYER_STATE_CLOSED) {
+                    return;
+                }
+
+                long seekTime = seekBar.getProgress() * mVodMediaInfo.mDuration / 1000;
+                int ret = mVodPlayer.seek(seekTime);
+
             }
         });
 
@@ -235,7 +245,7 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
             // 关闭媒体文件
             mVodPlayer.close();
             popupMessage("Closed media file!");
-
+            mMsgHandler.removeMessages(MSGID_PLAYING_TIMER);
             setUiStateToClosed();
         }
 
@@ -337,6 +347,7 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
             public void run() {
                 mVodPlayer.close();
                 setUiStateToClosed();
+                mMsgHandler.removeMessages(MSGID_PLAYING_TIMER);
                 popupMessage("Media playing completed!");
             }
         });
