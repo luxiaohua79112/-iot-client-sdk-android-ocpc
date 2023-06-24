@@ -12,6 +12,12 @@
         tools:layout="@layout/fragment_home_page" />
 
     <fragment
+        android:id="@+id/navigation_cloudrcd"
+        android:name="io.agora.iotlinkdemo.models.home.CloudRcdFragment"
+        android:label="云录"
+        tools:layout="@layout/fragment_home_mine" />
+
+    <fragment
         android:id="@+id/navigation_mine"
         android:name="io.agora.iotlinkdemo.models.home.MineFragment"
         android:label="@string/title_mine"
