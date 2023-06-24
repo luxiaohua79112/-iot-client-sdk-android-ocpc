@@ -78,6 +78,7 @@ public class VodPlayer implements IVodPlayer {
             //开启硬解码
             mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec", 1);
             mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec-auto-rotate", 1);
+            mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "enable-accurate-seek", 1);
 
             mIjkPlayer.setOnPreparedListener(new IMediaPlayer.OnPreparedListener() {
                  @Override
