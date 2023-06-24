@@ -75,10 +75,24 @@ public class VodPlayer implements IVodPlayer {
             mIjkPlayer.prepareAsync();
             mCallback = callback;
 
-            //开启硬解码
+            // 开启硬解码
             mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec", 1);
+
+            // 自动旋转
             mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec-auto-rotate", 1);
+
+            // 精准seek
             mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "enable-accurate-seek", 1);
+
+            // 打开后立即播放
+            mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "start-on-prepared", 1);
+
+            mIjkPlayer.setOnVideoSizeChangedListener(new IMediaPlayer.OnVideoSizeChangedListener() {
+                @Override
+                public void onVideoSizeChanged(IMediaPlayer iMediaPlayer, int i, int i1, int i2, int i3) {
+
+                }
+            });
 
             mIjkPlayer.setOnPreparedListener(new IMediaPlayer.OnPreparedListener() {
                  @Override
