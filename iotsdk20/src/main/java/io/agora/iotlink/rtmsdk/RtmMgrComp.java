@@ -41,7 +41,7 @@ public class RtmMgrComp extends BaseThreadComp {
     //////////////////////// Constant Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
     private static final String TAG = "IOTSDK/RtmMgrComp";
-    private static final long COMMAND_TIMEOUT = 30000;              ///< 命令响应超时30秒
+    private static final long COMMAND_TIMEOUT = 120000;  // 30000;   ///< 命令响应超时30秒
     private static final long TIMER_INTERVAL = 4000;                ///< 定时器间隔 4秒
 
     //
@@ -365,7 +365,7 @@ public class RtmMgrComp extends BaseThreadComp {
             ALog.getInstance().e(TAG, "<parseRspCmdData> fail to convert data bytes!");
             return null;
         }
-        ALog.getInstance().e(TAG, "<parseRspCmdData> BEGIN, jsonText=" + jsonText);
+        ALog.getInstance().d(TAG, "<parseRspCmdData> BEGIN, jsonText=" + jsonText);
 
         JSONObject recvJsonObj = JsonUtils.generateJsonObject(jsonText);
         if (recvJsonObj == null) {
@@ -500,12 +500,12 @@ public class RtmMgrComp extends BaseThreadComp {
 
             @Override
             public void onMessageReceived(RtmMessage rtmMessage, String peerId) {   // 收到RTM消息
-                ALog.getInstance().d(TAG, "<rtmEngCreate.onMessageReceived> rtmMessage=" + rtmMessage
+                ALog.getInstance().d(TAG, "<rtmEngCreate.onMessageReceived> rtmMessage=" + rtmMessage.getText()
                         + ", peerId=" + peerId);
 
                 RtmPacket packet = new RtmPacket();
                 packet.mPeerId = peerId;
-                packet.mPktData = String.valueOf(rtmMessage.getRawMessage());
+                packet.mPktData = rtmMessage.getText();
                 mRecvPktQueue.inqueue(packet);
                 sendSingleMessage(MSGID_RTM_RECV_PKT, 0, 0, null, 0);
             }
