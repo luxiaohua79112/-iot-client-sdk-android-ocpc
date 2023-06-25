@@ -111,7 +111,7 @@
             android:layout_marginStart="280dp"
             android:layout_marginTop="60dp"
             android:background="#80D6D6D6"
-            android:text="全屏"
+            android:text="控制"
             app:layout_constraintStart_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 

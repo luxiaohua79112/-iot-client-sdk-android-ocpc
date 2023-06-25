@@ -607,11 +607,10 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
             return;
         }
 
-/*
+
         PushApplication.getInstance().setFullscrnSessionId(deviceInfo.mSessionId);
         gotoDevPreviewActivity();
 
- */
     }
 
 
