@@ -48,6 +48,7 @@ public class VodPlayer implements IVodPlayer {
     //////////////////////// Variable Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
     private SurfaceView mDisplayView;
+
     private ICallback mCallback;
 
     private IjkMediaPlayer mIjkPlayer;
@@ -80,6 +81,8 @@ public class VodPlayer implements IVodPlayer {
 
             // 自动旋转
             mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec-auto-rotate", 1);
+
+            mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec-handle-resolution-change", 1);
 
             // 精准seek
             mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "enable-accurate-seek", 1);
