@@ -94,7 +94,7 @@ public class RtmBaseCmd implements IRtmCmd  {
     }
 
     @Override
-    public byte[] getReqCmdDataBytes() {
+    public String getReqCmdData() {
         JSONObject body = new JSONObject();
 
         // body内容
@@ -109,8 +109,7 @@ public class RtmBaseCmd implements IRtmCmd  {
         }
 
         String realBody = String.valueOf(body);
-        byte[]  dataBytes = realBody.getBytes(StandardCharsets.UTF_8);
-        return dataBytes;
+        return realBody;
     }
 
     @Override

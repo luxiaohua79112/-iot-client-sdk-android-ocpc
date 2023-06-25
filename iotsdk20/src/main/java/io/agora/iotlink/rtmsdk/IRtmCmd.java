@@ -91,10 +91,10 @@ public interface IRtmCmd  {
     OnRtmCmdRespListener getRespListener();
 
     /**
-     * @brief 将请求命令组成JSON字符串，转换成字节流返回
-     * @return 返回字节流数据
+     * @brief 将请求命令组成JSON字符串
+     * @return 返回字命令数据字符串
      */
-    byte[] getReqCmdDataBytes();
+    String getReqCmdData();
 
     /**
      * @brief 当前命令是否是回应命令

@@ -149,7 +149,7 @@ public class RtmMgrComp extends BaseThreadComp {
         // 发送消息处理
         RtmPacket packet = new RtmPacket();
         packet.mPeerId = command.getDeviceId();
-        packet.mPktData = command.getReqCmdDataBytes();
+        packet.mPktData = command.getReqCmdData();
         mSendPktQueue.inqueue(packet);
         sendSingleMessage(MSGID_RTM_SEND_PKT, 0, 0, null, 0);
 
@@ -296,7 +296,7 @@ public class RtmMgrComp extends BaseThreadComp {
             }
 
             // 解析回应命令数据包,生成回应命令
-            IRtmCmd responseCmd = parseRspCmdDataBytes(recvedPkt.mPeerId, recvedPkt.mPktData);
+            IRtmCmd responseCmd = parseRspCmdData(recvedPkt.mPeerId, recvedPkt.mPktData);
             if (responseCmd == null) {   // 回应命令解析失败
                 ALog.getInstance().e(TAG, "<onMessageRecvPkt> fail to parse recved packet, mPeerId=" + recvedPkt.mPeerId);
                 continue;
@@ -360,17 +360,16 @@ public class RtmMgrComp extends BaseThreadComp {
     /**
      * @brief 工作线程中运行，解析数据包生成相应的ResponseCommand
      */
-    IRtmCmd parseRspCmdDataBytes(final String deviceId, final byte[] data) {
-        String jsonText = String.valueOf(data);
+    IRtmCmd parseRspCmdData(final String deviceId, final String jsonText) {
         if (TextUtils.isEmpty(jsonText)) {
-            ALog.getInstance().e(TAG, "<parseRspCmdDataBytes> fail to convert data bytes!");
+            ALog.getInstance().e(TAG, "<parseRspCmdData> fail to convert data bytes!");
             return null;
         }
-        ALog.getInstance().e(TAG, "<parseRspCmdDataBytes> BEGIN, jsonText=" + jsonText);
+        ALog.getInstance().e(TAG, "<parseRspCmdData> BEGIN, jsonText=" + jsonText);
 
         JSONObject recvJsonObj = JsonUtils.generateJsonObject(jsonText);
         if (recvJsonObj == null) {
-            ALog.getInstance().e(TAG, "<parseRspCmdDataBytes> END, fail to convert JSON object!");
+            ALog.getInstance().e(TAG, "<parseRspCmdData> END, fail to convert JSON object!");
             return null;
         }
 
@@ -379,7 +378,7 @@ public class RtmMgrComp extends BaseThreadComp {
         int commandId = JsonUtils.parseJsonIntValue(recvJsonObj, "commandId", -1);
         int errCode = JsonUtils.parseJsonIntValue(recvJsonObj, "code", 0);
         if (sequenceId < 0 || commandId < 0) {
-            ALog.getInstance().e(TAG, "<parseRspCmdDataBytes> END, no sequenceId or commandId!");
+            ALog.getInstance().e(TAG, "<parseRspCmdData> END, no sequenceId or commandId!");
             return null;
         }
 
@@ -478,7 +477,7 @@ public class RtmMgrComp extends BaseThreadComp {
 
         }
 
-        ALog.getInstance().d(TAG, "<parseRspCmdDataBytes> END, responseCmd=" + responseCmd);
+        ALog.getInstance().d(TAG, "<parseRspCmdData> END, responseCmd=" + responseCmd);
         return responseCmd;
     }
 
@@ -506,7 +505,7 @@ public class RtmMgrComp extends BaseThreadComp {
 
                 RtmPacket packet = new RtmPacket();
                 packet.mPeerId = peerId;
-                packet.mPktData = rtmMessage.getRawMessage();
+                packet.mPktData = String.valueOf(rtmMessage.getRawMessage());
                 mRecvPktQueue.inqueue(packet);
                 sendSingleMessage(MSGID_RTM_RECV_PKT, 0, 0, null, 0);
             }
@@ -529,7 +528,8 @@ public class RtmMgrComp extends BaseThreadComp {
 
         try {
             IDeviceSessionMgr.InitParam initParam = mSessionMgr.getInitParam();
-            String appId = initParam.mAppId;
+            //String appId = initParam.mAppId;
+            String appId = "aab8b8f5a8cd4469a63042fcfafe7063";
             mRtmClient = RtmClient.createInstance(initParam.mContext, appId, rtmListener);
         } catch (Exception exp) {
             exp.printStackTrace();
@@ -650,7 +650,7 @@ public class RtmMgrComp extends BaseThreadComp {
     /**
      * @brief 发送消息到对端
      */
-    private int rtmEngSendData(final String peerId, final byte[] messageData) {
+    private int rtmEngSendData(final String peerId, final String messageData) {
         if (mRtmClient == null) {
             return ErrCode.XERR_BAD_STATE;
         }
@@ -673,7 +673,7 @@ public class RtmMgrComp extends BaseThreadComp {
             }
         });
 
-        ALog.getInstance().d(TAG, "<sendMessage> done, messageData.length=" + messageData.length);
+        ALog.getInstance().d(TAG, "<sendMessage> done, messageData=" + messageData);
         return ErrCode.XOK;
     }
 

@@ -60,7 +60,7 @@ public class RtmPlayReqCmd extends RtmBaseCmd  {
     ///////////////////////////////////////////////////////////////////////
 
     @Override
-    public byte[] getReqCmdDataBytes() {
+    public String getReqCmdData() {
         JSONObject bodyObj = new JSONObject();
 
         // body内容
@@ -80,13 +80,12 @@ public class RtmPlayReqCmd extends RtmBaseCmd  {
 
         } catch (JSONException jsonExp) {
             jsonExp.printStackTrace();
-            ALog.getInstance().e(TAG, "<getReqCmdDataBytes> [EXP] jsonExp=" + jsonExp);
+            ALog.getInstance().e(TAG, "<getReqCmdData> [EXP] jsonExp=" + jsonExp);
             return null;
         }
 
         String realBody = String.valueOf(bodyObj);
-        byte[]  dataBytes = realBody.getBytes(StandardCharsets.UTF_8);
-        return dataBytes;
+        return realBody;
     }
 
 
