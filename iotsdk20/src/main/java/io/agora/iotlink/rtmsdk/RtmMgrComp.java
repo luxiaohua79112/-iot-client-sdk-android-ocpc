@@ -148,6 +148,7 @@ public class RtmMgrComp extends BaseThreadComp {
 
         // 发送消息处理
         RtmPacket packet = new RtmPacket();
+        packet.mSequenceId = command.getSequenceId();
         packet.mPeerId = command.getDeviceId();
         packet.mPktData = command.getReqCmdData();
         mSendPktQueue.inqueue(packet);
@@ -277,7 +278,7 @@ public class RtmMgrComp extends BaseThreadComp {
         }
 
         // 发送数据包
-        rtmEngSendData(sendPkt.mPeerId, sendPkt.mPktData);
+        rtmEngSendData(sendPkt);
 
         // 队列中还有数据包，放到下次发送消息中处理
         if (mSendPktQueue.size() > 0) {
@@ -574,7 +575,7 @@ public class RtmMgrComp extends BaseThreadComp {
                 ALog.getInstance().i(TAG, "<rtmEngLogin.onFailure> failure"
                         + ", errInfo=" + errorInfo.getErrorCode()
                         + ", errDesc=" + errorInfo.getErrorDescription());
-                int errCode = mapErrCode(errorInfo.getErrorCode());
+                int errCode = mapRtmLoginErrCode(errorInfo.getErrorCode());
                 sendSingleMessage(MSGID_RTM_LOGIN_DONE, errCode, 0, null, 0);
             }
         });
@@ -605,7 +606,7 @@ public class RtmMgrComp extends BaseThreadComp {
                 ALog.getInstance().i(TAG, "<rtmEngLogout.onFailure> failure"
                         + ", errInfo=" + errorInfo.getErrorCode()
                         + ", errDesc=" + errorInfo.getErrorDescription());
-                int errCode = mapErrCode(errorInfo.getErrorCode());
+                int errCode = mapRtmLogoutErrCode(errorInfo.getErrorCode());
                 sendSingleMessage(MSGID_RTM_LOGOUT_DONE, errCode, 0, null, 0);
             }
         });
@@ -636,7 +637,7 @@ public class RtmMgrComp extends BaseThreadComp {
                 ALog.getInstance().i(TAG, "<rtmEngRenewToken.onFailure> failure"
                         + ", errInfo=" + errorInfo.getErrorCode()
                         + ", errDesc=" + errorInfo.getErrorDescription());
-                int errCode = mapErrCode(errorInfo.getErrorCode());
+                int errCode = mapRtmRenewErrCode(errorInfo.getErrorCode());
                 sendSingleMessage(MSGID_RTM_RENEWTOKEN_DONE, errCode, 0, null, 0);
             }
         });
@@ -649,13 +650,13 @@ public class RtmMgrComp extends BaseThreadComp {
     /**
      * @brief 发送消息到对端
      */
-    private int rtmEngSendData(final String peerId, final String messageData) {
+    private int rtmEngSendData(final RtmPacket rtmPacket) {
         if (mRtmClient == null) {
             return ErrCode.XERR_BAD_STATE;
         }
 
-        RtmMessage rtmMsg = mRtmClient.createMessage(messageData);
-        mRtmClient.sendMessageToPeer(peerId, rtmMsg, mSendMsgOptions, new ResultCallback<Void>() {
+        RtmMessage rtmMsg = mRtmClient.createMessage(rtmPacket.mPktData);
+        mRtmClient.sendMessageToPeer(rtmPacket.mPeerId, rtmMsg, mSendMsgOptions, new ResultCallback<Void>() {
             @Override
             public void onSuccess(Void aVoid) {
                 ALog.getInstance().d(TAG, "<rtmEngSendData.onSuccess>");
@@ -667,12 +668,22 @@ public class RtmMgrComp extends BaseThreadComp {
                 ALog.getInstance().i(TAG, "<rtmEngSendData.onFailure> failure"
                         + ", errInfo=" + errorInfo.getErrorCode()
                         + ", errDesc=" + errorInfo.getErrorDescription());
-                int errCode = mapErrCode(errorInfo.getErrorCode());
+                int errCode = mapRtmMsgErrCode(errorInfo.getErrorCode());
 
+                // 发送失败后要进行处理
+                IRtmCmd rtmCmd = mReqCmdMgr.removeCommand(rtmPacket.mSequenceId);   // 从命令管理器中删除改请求命令
+
+                //
+                // 回调上层，请求--响应超时
+                //
+                IRtmCmd.OnRtmCmdRespListener cmdRespListener = rtmCmd.getRespListener();
+                if (cmdRespListener != null) {
+                    cmdRespListener.onRtmCmdResponsed(rtmCmd.getCommandId(), errCode, rtmCmd, null );
+                }
             }
         });
 
-        ALog.getInstance().d(TAG, "<sendMessage> done, messageData=" + messageData);
+        ALog.getInstance().d(TAG, "<sendMessage> done, rtmPacket=" + rtmPacket);
         return ErrCode.XOK;
     }
 
@@ -683,47 +694,97 @@ public class RtmMgrComp extends BaseThreadComp {
     ////////////////////// Methods for Mapping Error Code /////////////////////
     ////////////////////////////////////////////////////////////////////////////
     /**
-     * @brief 映射RTM的错误码到全局统一的错误码
+     * @brief 映射RTM登录的错误码到全局统一的错误码
      */
-    private int mapErrCode(int rtmErrCode) {
+    private int mapRtmLoginErrCode(int rtmErrCode) {
         switch (rtmErrCode) {
             case RtmStatusCode.LoginError.LOGIN_ERR_UNKNOWN:
-                return ErrCode.XERR_UNKNOWN;
+                return ErrCode.XERR_RTMMGR_LOGIN_UNKNOWN;
 
             case RtmStatusCode.LoginError.LOGIN_ERR_REJECTED:
-                return ErrCode.XERR_RTMMGR_REJECT;
+                return ErrCode.XERR_RTMMGR_LOGIN_REJECTED;
 
             case RtmStatusCode.LoginError.LOGIN_ERR_INVALID_ARGUMENT:
-                return ErrCode.XERR_INVALID_PARAM;
+                return ErrCode.XERR_RTMMGR_LOGIN_INVALID_ARGUMENT;
 
             case RtmStatusCode.LoginError.LOGIN_ERR_INVALID_APP_ID:
-                return ErrCode.XERR_APPID_INVALID;
+                return ErrCode.XERR_RTMMGR_LOGIN_INVALID_ARGUMENT;
 
             case RtmStatusCode.LoginError.LOGIN_ERR_INVALID_TOKEN:
-                return ErrCode.XERR_TOKEN_INVALID;
+                return ErrCode.XERR_RTMMGR_LOGIN_INVALID_TOKEN;
 
             case RtmStatusCode.LoginError.LOGIN_ERR_TOKEN_EXPIRED:
-                return ErrCode.XERR_TOKEN_INVALID;
+                return ErrCode.XERR_RTMMGR_LOGIN_TOKEN_EXPIRED;
 
             case RtmStatusCode.LoginError.LOGIN_ERR_NOT_AUTHORIZED:
-                return ErrCode.XERR_NOT_AUTHORIZED;
+                return ErrCode.XERR_RTMMGR_LOGIN_NOT_AUTHORIZED;
 
             case RtmStatusCode.LoginError.LOGIN_ERR_ALREADY_LOGIN:
-                return ErrCode.XERR_RTMMGR_ALREADY_CONNECTED;
+                return ErrCode.XERR_RTMMGR_LOGIN_ALREADY_LOGIN;
 
             case RtmStatusCode.LoginError.LOGIN_ERR_TIMEOUT:
-                return ErrCode.XERR_TIMEOUT;
+                return ErrCode.XERR_RTMMGR_LOGIN_TIMEOUT;
 
             case RtmStatusCode.LoginError.LOGIN_ERR_TOO_OFTEN:
-                return ErrCode.XERR_INVOKE_TOO_OFTEN;
+                return ErrCode.XERR_RTMMGR_LOGIN_TOO_OFTEN;
 
             case RtmStatusCode.LoginError.LOGIN_ERR_NOT_INITIALIZED:
-                return ErrCode.XERR_BAD_STATE;
+                return ErrCode.XERR_RTMMGR_LOGIN_NOT_INITIALIZED;
         }
 
         return ErrCode.XOK;
     }
 
+    /**
+     * @brief 映射RTM登出的错误码到全局统一的错误码
+     */
+    private int mapRtmLogoutErrCode(int rtmErrCode) {
+        switch (rtmErrCode) {
+            case RtmStatusCode.LogoutError.LOGOUT_ERR_REJECTED:
+                return ErrCode.XERR_RTMMGR_LOGOUT_REJECT;
+
+            case RtmStatusCode.LogoutError.LOGOUT_ERR_NOT_INITIALIZED:
+                return ErrCode.XERR_RTMMGR_LOGOUT_NOT_INITIALIZED;
+
+            case RtmStatusCode.LogoutError.LOGOUT_ERR_USER_NOT_LOGGED_IN:
+                return ErrCode.XERR_RTMMGR_LOGOUT_NOT_LOGGED_IN;
+        }
+
+        return ErrCode.XOK;
+    }
+
+    /**
+     * @brief 映射RTM Renew token的错误码到全局统一的错误码
+     */
+    private int mapRtmRenewErrCode(int rtmErrCode) {
+        switch (rtmErrCode) {
+            case RtmStatusCode.RenewTokenError.RENEW_TOKEN_ERR_FAILURE:
+                return ErrCode.XERR_RTMMGR_RENEW_FAILURE;
+
+            case RtmStatusCode.RenewTokenError.RENEW_TOKEN_ERR_INVALID_ARGUMENT:
+                return ErrCode.XERR_RTMMGR_RENEW_INVALID_ARGUMENT;
+
+            case RtmStatusCode.RenewTokenError.RENEW_TOKEN_ERR_REJECTED:
+                return ErrCode.XERR_RTMMGR_RENEW_REJECTED;
+
+            case RtmStatusCode.RenewTokenError.RENEW_TOKEN_ERR_TOO_OFTEN:
+                return ErrCode.XERR_RTMMGR_RENEW_TOO_OFTEN;
+
+            case RtmStatusCode.RenewTokenError.RENEW_TOKEN_ERR_TOKEN_EXPIRED:
+                return ErrCode.XERR_RTMMGR_RENEW_TOKEN_EXPIRED;
+
+            case RtmStatusCode.RenewTokenError.RENEW_TOKEN_ERR_INVALID_TOKEN:
+                return ErrCode.XERR_RTMMGR_RENEW_INVALID_TOKEN;
+
+            case RtmStatusCode.RenewTokenError.RENEW_TOKEN_ERR_NOT_INITIALIZED:
+                return ErrCode.XERR_RTMMGR_RENEW_NOT_INITIALIZED;
+
+            case RtmStatusCode.RenewTokenError.RENEW_TOKEN_ERR_USER_NOT_LOGGED_IN:
+                return ErrCode.XERR_RTMMGR_RENEW_NOT_LOGGED_IN;
+        }
+
+        return ErrCode.XOK;
+    }
 
 
     /**
@@ -738,7 +799,7 @@ public class RtmMgrComp extends BaseThreadComp {
                 return ErrCode.XERR_RTMMGR_MSG_TIMEOUT;
 
             case RtmStatusCode.PeerMessageError.PEER_MESSAGE_ERR_PEER_UNREACHABLE:
-                return ErrCode.XERR_RTMMGR_MSG_UNREACHABLE;
+                return ErrCode.XERR_RTMMGR_MSG_PEER_UNREACHABLE;
 
             case RtmStatusCode.PeerMessageError.PEER_MESSAGE_ERR_CACHED_BY_SERVER:
                 return ErrCode.XERR_RTMMGR_MSG_CACHED_BY_SERVER;
@@ -747,19 +808,19 @@ public class RtmMgrComp extends BaseThreadComp {
                 return ErrCode.XERR_RTMMGR_MSG_TOO_OFTEN;
 
             case RtmStatusCode.PeerMessageError.PEER_MESSAGE_ERR_INVALID_USERID:
-                return ErrCode.XERR_RTMMGR_USERID_INVALID;
+                return ErrCode.XERR_RTMMGR_MSG_INVALID_USERID;
 
             case RtmStatusCode.PeerMessageError.PEER_MESSAGE_ERR_INVALID_MESSAGE:
-                return ErrCode.XERR_RTMMGR_MSG_INVALID;
+                return ErrCode.XERR_RTMMGR_MSG_INVALID_MESSAGE;
 
             case RtmStatusCode.PeerMessageError.PEER_MESSAGE_ERR_IMCOMPATIBLE_MESSAGE:
-                return ErrCode.XERR_RTMMGR_MSG_IMCOMPATIBLE;
+                return ErrCode.XERR_RTMMGR_MSG_IMCOMPATIBLE_MESSAGE;
 
             case RtmStatusCode.PeerMessageError.PEER_MESSAGE_ERR_NOT_INITIALIZED:
-                return ErrCode.XERR_BAD_STATE;
+                return ErrCode.XERR_RTMMGR_MSG_NOT_INITIALIZED;
 
             case RtmStatusCode.PeerMessageError.PEER_MESSAGE_ERR_USER_NOT_LOGGED_IN:
-                return ErrCode.XERR_BAD_STATE;
+                return ErrCode.XERR_RTMMGR_MSG_USER_NOT_LOGGED_IN;
         }
 
         return ErrCode.XOK;
