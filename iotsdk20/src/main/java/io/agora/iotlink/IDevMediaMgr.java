@@ -32,7 +32,7 @@ public interface IDevMediaMgr  {
      * @brief 分页查询文件参数，可以进行查询组合
      */
     public static class QueryParam {
-        public long mFileId;            ///< 文件Id, 0表示则返回根目录文件夹目录
+        public String mFileId;          ///< 文件Id, 0表示则返回根目录文件夹目录
         public long mBeginTimestamp;    ///< 查询时间段的开始时间戳，单位秒
         public long mEndTimestamp;      ///< 查询时间段的结束时间戳，单位秒
         public int mPageIndex;          ///< 查询开始的页索引，从1开始

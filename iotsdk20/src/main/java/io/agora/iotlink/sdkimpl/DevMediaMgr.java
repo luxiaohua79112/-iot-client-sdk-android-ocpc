@@ -19,7 +19,13 @@ import java.util.UUID;
 
 import io.agora.iotlink.ErrCode;
 import io.agora.iotlink.IDevMediaMgr;
+import io.agora.iotlink.IDeviceSessionMgr;
 import io.agora.iotlink.IVodPlayer;
+import io.agora.iotlink.logger.ALog;
+import io.agora.iotlink.rtmsdk.IRtmCmd;
+import io.agora.iotlink.rtmsdk.RtmBaseCmd;
+import io.agora.iotlink.rtmsdk.RtmCmdSeqId;
+import io.agora.iotlink.rtmsdk.RtmQueryReqCmd;
 
 
 /*
@@ -46,7 +52,7 @@ public class DevMediaMgr  implements IDevMediaMgr {
 
     private UUID mSessionId;
     private DeviceSessionMgr mSessionMgr;
-
+    private String mDeviceId;
 
     ///////////////////////////////////////////////////////////////////////
     ////////////////////////// Public Methods  ////////////////////////////
@@ -54,6 +60,8 @@ public class DevMediaMgr  implements IDevMediaMgr {
     public DevMediaMgr(final UUID sessionId, final DeviceSessionMgr sessionMgr) {
         mSessionId = sessionId;
         mSessionMgr = sessionMgr;
+        IDeviceSessionMgr.SessionInfo sessionInfo = mSessionMgr.getSessionInfo(sessionId);
+        mDeviceId = sessionInfo.mPeerDevId;
     }
 
 
@@ -63,7 +71,33 @@ public class DevMediaMgr  implements IDevMediaMgr {
 
     @Override
     public int queryMediaList(final QueryParam queryParam, final OnQueryListener queryListener) {
-        return ErrCode.XOK;
+
+        RtmQueryReqCmd queryReqCmd = new RtmQueryReqCmd();
+        queryReqCmd.mQueryParam.mFileId = queryParam.mFileId;
+        queryReqCmd.mQueryParam.mBeginTime = queryParam.mBeginTimestamp;
+        queryReqCmd.mQueryParam.mEndTime = queryParam.mEndTimestamp;
+        queryReqCmd.mQueryParam.mPageIndex = queryParam.mPageIndex;
+        queryReqCmd.mQueryParam.mPageSize = queryParam.mPageSize;
+
+        queryReqCmd.mSequenceId = RtmCmdSeqId.getSeuenceId();
+        queryReqCmd.mCmdId = IRtmCmd.CMDID_MEDIA_QUERY;
+        queryReqCmd.mDeviceId = mDeviceId;
+        queryReqCmd.mSendTimestamp = System.currentTimeMillis();
+
+        queryReqCmd.mRespListener = new IRtmCmd.OnRtmCmdRespListener() {
+            @Override
+            public void onRtmCmdResponsed(int commandId, int errCode, IRtmCmd reqCmd, IRtmCmd rspCmd) {
+                ALog.getInstance().d(TAG, "<queryMediaList.onRtmCmdResponsed> errCode=" + errCode);
+
+                queryListener.onDevMediaQueryDone(errCode, null);
+            }
+        };
+
+        int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(queryReqCmd);
+
+        ALog.getInstance().d(TAG, "<sendCmdPtzReset> done, ret=" + ret
+                + ", queryReqCmd=" + queryReqCmd);
+        return ret;
     }
 
     @Override

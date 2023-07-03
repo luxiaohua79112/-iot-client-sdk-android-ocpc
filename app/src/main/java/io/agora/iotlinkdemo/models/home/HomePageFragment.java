@@ -693,7 +693,6 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
      */
     void resetDeviceDisplayView(final UUID sessionId) {
 
-//        ICallkitMgr callkitMgr = AIotAppSdkFactory.getInstance().getCallkitMgr();
         List<DeviceInfo> deviceList = mDevListAdapter.getDatas();
         if (deviceList == null) {
             return;
@@ -705,7 +704,6 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
                 continue;
             }
             if (sessionId.compareTo(deviceInfo.mSessionId) == 0) {
-//                callkitMgr.setPeerVideoView(deviceInfo.mSessionId, deviceInfo.mVideoView);
                 Log.d(TAG, "<resetDeviceDisplayView> sessionId=" + sessionId
                         + ", mNodeId=" + deviceInfo.mNodeId);
                 return;

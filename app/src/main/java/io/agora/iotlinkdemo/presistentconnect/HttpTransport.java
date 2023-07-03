@@ -4,6 +4,8 @@ package io.agora.iotlinkdemo.presistentconnect;
 import android.util.Log;
 
 import io.agora.iotlink.ErrCode;
+import io.agora.iotlink.logger.ALog;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -44,14 +46,26 @@ public class HttpTransport {
 
 
 
+    public static final int RESP_CODE_IN_TALKING = 100001;      ///<	对端通话中，无法接听
+    public static final int RESP_CODE_ANSWER = 100002;          ///<	未通话，无法接听
+    public static final int RESP_CODE_HANGUP = 100003;          ///<	未通话，无法挂断
+    public static final int RESP_CODE_ANSWER_TIMEOUT = 100004;  ///< 接听等待超时
+    public static final int RESP_CODE_CALL = 100005;            ///< 呼叫中，无法再次呼叫
+    public static final int RESP_CODE_INVALID_ANSWER = 100006;  ///< 无效的Answer应答
+    public static final int RESP_CODE_PEER_UNREG = 999999;      ///< 被叫端未注册
+    public static final int RESP_CODE_SHADOW_UPDATE = 999998;   ///< 影子更新错误
+    public static final int RESP_CODE_INVALID_TOKEN = 401;      ///< Token过期
+    public static final int RESP_CODE_CALLDEV_FAILURE = 100010; ///< 呼叫通知设备失败
+    public static final int RESP_CODE_RTCTOKEN_FAILURE = 100012; ///< 生成RTC token错误
+
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Variable Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
     private static HttpTransport mInstance = null;
 
     ///< 服务器请求站点
-    private String mBaseUrl = "https://iot-api-gateway.sh.agoralab.co/api";
-
+    private String mBaseUrl    = "https://iot-api-gateway.sh.agoralab.co/api";
+    private String mRtmBaseUrl = "https://api.agora.io/agoralink/cn/api/call-service/v1";
 
     ////////////////////////////////////////////////////////////////////////
     ////////////////////////// Public Methods //////////////////////////////
@@ -69,6 +83,7 @@ public class HttpTransport {
 
     public void setBaseUrl(final String baseUrl) {
         mBaseUrl = baseUrl;
+        mRtmBaseUrl = baseUrl + "/call-service/v1";
         Log.d(TAG, "<setBaseUrl> mBaseUrl=" + mBaseUrl);
     }
 
@@ -190,7 +205,193 @@ public class HttpTransport {
         return result;
     }
 
+    //////////////////////////////////////////////////////////////////////////////////
+    ///////////////////// Methods for RTM Management Module ////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////
+    /**
+     * @brief RTM 请求到的账号信息
+     */
+    public static class RtmAccountInfo {
+        public int mErrCode = ErrCode.XOK;
+        public String mToken;           ///< 分配到的RTM 本地uid
+    }
 
+    /**
+     * @brief 向服务器请求RTM通道账号
+     * @param controllerId : APP控制端账号Id
+     * @param controlledId : 被控设备端账号Id
+     * @return AlarmPageResult：包含错误码 和 详细的告警信息
+     */
+    public RtmAccountInfo reqRtmAccount(final String token, final String appId,
+                                        final String controllerId, final String controlledId)  {
+        Map<String, String> params = new HashMap();
+        JSONObject body = new JSONObject();
+        RtmAccountInfo result = new RtmAccountInfo();
+        ALog.getInstance().d(TAG, "<reqRtmAccount> [Enter]"
+                + ", controllerId=" + controllerId
+                + ", controlledId=" + controlledId);
+
+        // 请求URL
+        String requestUrl = mRtmBaseUrl + "/control/start";
+
+        // body内容
+        try {
+            JSONObject headerObj = new JSONObject();
+            headerObj.put("traceId", UUID.randomUUID().toString());
+            headerObj.put("timestamp", System.currentTimeMillis());
+            body.put("header", headerObj);
+
+            JSONObject payloadObj = new JSONObject();
+            payloadObj.put("controllerId", controllerId);
+            payloadObj.put("controlledId", controlledId);
+            body.put("payload", payloadObj);
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+            result.mErrCode = ErrCode.XERR_HTTP_JSON_WRITE;
+            return result;
+        }
+
+        ResponseObj responseObj = requestToServer(requestUrl, "POST",
+                token, params, body);
+        if (responseObj == null) {
+            ALog.getInstance().e(TAG, "<reqRtmAccount> [EXIT] failure with no response!");
+            result.mErrCode = ErrCode.XERR_HTTP_NO_RESPONSE;
+            return result;
+        }
+        if (responseObj.mErrorCode == RESP_CODE_INVALID_TOKEN) {
+            ALog.getInstance().e(TAG, "<reqRtmAccount> errCode invalid token");
+            result.mErrCode = ErrCode.XERR_TOKEN_INVALID;
+            return result;
+
+        } else if (responseObj.mRespCode != ErrCode.XOK) {
+            ALog.getInstance().e(TAG, "<reqRtmAccount> [EXIT] failure, mRespCode="
+                    + responseObj.mRespCode);
+            result.mErrCode = ErrCode.XERR_HTTP_RESP_CODE;
+            return result;
+        }
+        if (responseObj.mErrorCode != ErrCode.XOK) {
+            ALog.getInstance().e(TAG, "<reqRtmAccount> [EXIT] failure, mErrorCode="
+                    + responseObj.mErrorCode);
+            result.mErrCode = ErrCode.XERR_HTTP_RESP_DATA;
+            return result;
+        }
+
+
+        // 解析服务器返回的RTM分配信息
+        try {
+            JSONObject dataObj = responseObj.mRespJsonObj.getJSONObject("data");
+            if (dataObj == null) {
+                ALog.getInstance().e(TAG, "<reqRtmAccount> [EXIT] failure, no dataObj");
+                result.mErrCode = ErrCode.XERR_HTTP_RESP_DATA;
+                return result;
+            }
+
+            result.mToken = parseJsonStringValue(dataObj, "rtmToken", null);
+            result.mErrCode = ErrCode.XOK;
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+            ALog.getInstance().e(TAG, "<reqRtmAccount> failure with JSON exception");
+            result.mErrCode = ErrCode.XERR_HTTP_JSON_PARSE;
+            return result;
+        }
+
+        ALog.getInstance().d(TAG, "<reqRtmAccount> [EXIT] successful"
+                + ", token=" + result.mToken);
+        return result;
+    }
+
+
+    //////////////////////////////////////////////////////////////////////////////////
+    ///////////////////// Methods for Mock JD cloud-cloud Module ////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////
+    /**
+     * @brief RTM 请求到的账号信息
+     */
+    public static class DevConnectRslt {
+        public int mErrCode = ErrCode.XOK;
+        public String mRtmToken;           ///< 分配到的RTM 本地uid
+    }
+
+    /**
+     * @brief 向服务器请求RTM通道账号
+     * @param appId : AppId
+     * @param deviceId : 设备ID
+     * @return AlarmPageResult：包含错误码 和 详细的告警信息
+     */
+    public DevConnectRslt connectDevice(final String appId, final String deviceId,
+                                        final String userId) {
+        Map<String, String> params = new HashMap();
+        JSONObject body = new JSONObject();
+        DevConnectRslt result = new DevConnectRslt();
+        ALog.getInstance().d(TAG, "<connectDevice> [Enter] appId=" + appId
+                + ", deviceId=" + deviceId + ", userId=" + userId);
+
+        // 请求URL
+        String requestUrl = "https://api-test.sd-rtn.com/iot/cn/open-api/v2/iot-core/connect-device";
+
+        // body内容
+        try {
+            body.put("appId", appId);
+            body.put("deviceNo", deviceId);
+            body.put("userId", userId);
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+            result.mErrCode = ErrCode.XERR_HTTP_JSON_WRITE;
+            return result;
+        }
+
+        ResponseObj responseObj = requestToServer(requestUrl, "POST",
+                null, params, body);
+        if (responseObj == null) {
+            ALog.getInstance().e(TAG, "<connectDevice> [EXIT] failure with no response!");
+            result.mErrCode = ErrCode.XERR_HTTP_NO_RESPONSE;
+            return result;
+        }
+        if (responseObj.mErrorCode == RESP_CODE_INVALID_TOKEN) {
+            ALog.getInstance().e(TAG, "<connectDevice> errCode invalid token");
+            result.mErrCode = ErrCode.XERR_TOKEN_INVALID;
+            return result;
+
+        } else if (responseObj.mRespCode != ErrCode.XOK) {
+            ALog.getInstance().e(TAG, "<connectDevice> [EXIT] failure, mRespCode="
+                    + responseObj.mRespCode);
+            result.mErrCode = ErrCode.XERR_HTTP_RESP_CODE;
+            return result;
+        }
+        if (responseObj.mErrorCode != ErrCode.XOK) {
+            ALog.getInstance().e(TAG, "<connectDevice> [EXIT] failure, mErrorCode="
+                    + responseObj.mErrorCode);
+            result.mErrCode = ErrCode.XERR_HTTP_RESP_DATA;
+            return result;
+        }
+
+
+        // 解析服务器返回的RTM分配信息
+        try {
+            JSONObject dataObj = responseObj.mRespJsonObj.getJSONObject("data");
+            if (dataObj == null) {
+                ALog.getInstance().e(TAG, "<connectDevice> [EXIT] failure, no dataObj");
+                result.mErrCode = ErrCode.XERR_HTTP_RESP_DATA;
+                return result;
+            }
+
+            result.mRtmToken = parseJsonStringValue(dataObj, "rtmToken", null);
+            result.mErrCode = ErrCode.XOK;
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+            ALog.getInstance().e(TAG, "<connectDevice> failure with JSON exception");
+            result.mErrCode = ErrCode.XERR_HTTP_JSON_PARSE;
+            return result;
+        }
+
+        ALog.getInstance().d(TAG, "<connectDevice> [EXIT] successful"
+                + ", rtmToken=" + result.mRtmToken);
+        return result;
+    }
 
 
     ////////////////////////////////////////////////////////////////////////

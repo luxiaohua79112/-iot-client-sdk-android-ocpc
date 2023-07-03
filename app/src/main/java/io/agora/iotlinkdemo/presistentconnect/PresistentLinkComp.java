@@ -12,6 +12,7 @@ import java.util.UUID;
 
 import io.agora.iotlink.ErrCode;
 import io.agora.iotlink.base.BaseThreadComp;
+import io.agora.iotlink.logger.ALog;
 import io.agora.iotlink.utils.JsonUtils;
 
 
@@ -784,6 +785,15 @@ public class PresistentLinkComp extends BaseThreadComp
                 connectionCtx.mChnlName = JsonUtils.parseJsonStringValue(payloadJsonObj, "cname", null);
                 connectionCtx.mLocalRtcUid = JsonUtils.parseJsonIntValue(payloadJsonObj, "uid", -1);
             }
+
+//            // 这里模拟获取RTM的token
+//            HttpTransport.DevConnectRslt result = HttpTransport.getInstance().connectDevice(
+//                    mInitParam.mAppId, connectionCtx.mUserId, connectionCtx.mDeviceId);
+//            if (result.mErrCode != ErrCode.XOK) {
+//                ALog.getInstance().e(TAG, "<DoMqttParsePacket> fail to request token");
+//            } else {
+//                connectionCtx.mRtmToken = result.mRtmToken;
+//            }
 
             // 更新连接数据
             mConnectMgr.updateConnection(connectionCtx);
