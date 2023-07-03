@@ -54,7 +54,7 @@ public interface IDevMediaMgr  {
      * @brief 查询到的 设备媒体项
      */
     public static class DevMediaItem {
-        public long mFileId;            ///< 媒体文件Id，是文件唯一标识
+        public String mFileId;            ///< 媒体文件Id，是文件唯一标识
         public long mStartTimestamp;    ///< 录制开始时间，单位秒
         public long mStopTimestamp;     ///< 录制结束时间，单位秒
         public int mType;               ///< 文件类型：0--媒体文件；1--目录
@@ -100,7 +100,7 @@ public interface IDevMediaMgr  {
      * @brief 每一个媒体项删除的结果
      */
     public static class DevMediaDelResult {
-        public long mFileId;            ///< 媒体文件Id，是文件唯一标识
+        public String mFileId;            ///< 媒体文件Id，是文件唯一标识
         public int mErrCode;
 
         @Override
@@ -128,7 +128,7 @@ public interface IDevMediaMgr  {
      * @param deleteListener : 删除结果回调监听器
      * @return 返回错误码
      */
-    int deleteMediaList(final List<Long> deletingList, final OnDeleteListener deleteListener);
+    int deleteMediaList(final List<String> deletingList, final OnDeleteListener deleteListener);
 
 
 
