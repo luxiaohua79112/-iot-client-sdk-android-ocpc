@@ -649,7 +649,7 @@ public class PresistentLinkComp extends BaseThreadComp
         synchronized (mDataLock) {
             mLocalNode.mReady = true;
             mLocalNode.mUserId = prepareParam.mUserId;
-            mLocalNode.mNodeId = "14E2E42E035C6DD2B81629A75C127D99";
+            mLocalNode.mNodeId = prepareParam.mUserId;
             mLocalNode.mRegion = "";
             mLocalNode.mToken = "";
         }
