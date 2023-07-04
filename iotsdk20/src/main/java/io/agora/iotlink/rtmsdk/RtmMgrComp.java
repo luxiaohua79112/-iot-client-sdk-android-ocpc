@@ -9,6 +9,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -501,12 +502,19 @@ public class RtmMgrComp extends BaseThreadComp {
 
             @Override
             public void onMessageReceived(RtmMessage rtmMessage, String peerId) {   // 收到RTM消息
-                ALog.getInstance().d(TAG, "<rtmEngCreate.onMessageReceived> rtmMessage=" + rtmMessage.getText()
-                        + ", peerId=" + peerId);
+                byte[] rawMessage = rtmMessage.getRawMessage();
+                String messageText = null;
+                try {
+                    messageText = new String(rawMessage, "UTF-8");
+                } catch (UnsupportedEncodingException encExp) {
+                    encExp.printStackTrace();
+                }
+                ALog.getInstance().d(TAG, "<rtmEngCreate.onMessageReceived> rawMessage=" + rawMessage
+                        + ", peerId=" + peerId + ", messageText=" + messageText);
 
                 RtmPacket packet = new RtmPacket();
                 packet.mPeerId = peerId;
-                packet.mPktData = rtmMessage.getText();
+                packet.mPktData = messageText;
                 mRecvPktQueue.inqueue(packet);
                 sendSingleMessage(MSGID_RTM_RECV_PKT, 0, 0, null, 0);
             }

@@ -710,19 +710,19 @@ public class PresistentLinkComp extends BaseThreadComp
         int newState = msg.arg1;
         Log.d(TAG, "<onMessageMqttStateChanged> newState=" + newState);
 
-        boolean ready = false;
-        if (newState == MqttTransport.MQTT_TRANS_STATE_CONNECTED) {
-            ready = true;
-            setStateMachine(PRESISTENTLINK_STATE_RUNNING);
-
-        } else if (newState == MqttTransport.MQTT_TRANS_STATE_RECONNECTING) {
-            setStateMachine(PRESISTENTLINK_STATE_RECONNECTING);
-        }
-
-        // 更新当前本地节点就绪状态
-        synchronized (mDataLock) {
-            mLocalNode.mReady = ready;
-        }
+//        boolean ready = false;
+//        if (newState == MqttTransport.MQTT_TRANS_STATE_CONNECTED) {
+//            ready = true;
+//            setStateMachine(PRESISTENTLINK_STATE_RUNNING);
+//
+//        } else if (newState == MqttTransport.MQTT_TRANS_STATE_RECONNECTING) {
+//            setStateMachine(PRESISTENTLINK_STATE_RECONNECTING);
+//        }
+//
+//        // 更新当前本地节点就绪状态
+//        synchronized (mDataLock) {
+//            mLocalNode.mReady = ready;
+//        }
     }
 
     /**
