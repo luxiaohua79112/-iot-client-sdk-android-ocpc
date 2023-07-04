@@ -47,7 +47,7 @@ public class DeviceSessionMgr extends BaseThreadComp
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Constant Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
-    private static final String TAG = "IOTSDK/AgoraIotAppSdk";
+    private static final String TAG = "IOTSDK/DeviceSessionMgr";
     private static final int DEFAULT_DEV_UID = 10;               ///< 设备端uid，固定为10
     private static final long TIMER_INTERVAL = 2000;             ///< 定时器间隔 2秒
     private static final long CONNECT_TIMEOUT = 30000;           ///< 设备连接超时30秒
