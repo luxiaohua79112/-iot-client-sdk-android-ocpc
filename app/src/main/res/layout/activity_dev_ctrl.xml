@@ -96,4 +96,15 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/btn_plz_ctrl" />
 
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvFileList"
+        android:layout_width="match_parent"
+        android:layout_height="240dp"
+        android:layout_marginTop="10dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btn_media_delete"
+        android:elevation="3dp"
+        android:overScrollMode="never" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

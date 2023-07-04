@@ -20,6 +20,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.ActivityKt;
 import androidx.navigation.NavController;
 import androidx.navigation.ui.BottomNavigationViewKt;
+import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.agora.baselibrary.base.BaseDialog;
 import com.agora.baselibrary.listener.ISingleCallback;
@@ -52,7 +53,7 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
 
 
     private UUID mSessionId = null;
-
+    private FileListAdapter mFileListAdapter;
 
 
     ///////////////////////////////////////////////////////////////////////////
@@ -70,6 +71,21 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
         IDeviceSessionMgr.SessionInfo sessionInfo = sessionMgr.getSessionInfo(mSessionId);
         getBinding().tvNodeId.setText(sessionInfo.mPeerDevId);
 
+        //
+        // 初始化文件列表
+        //
+        List<FileInfo> fileList = new ArrayList<>();
+
+        if (mFileListAdapter == null) {
+            mFileListAdapter = new FileListAdapter(fileList);
+            mFileListAdapter.setOwner(this);
+            mFileListAdapter.setRecycleView(getBinding().rvFileList);
+            getBinding().rvFileList.setLayoutManager(new LinearLayoutManager(this));
+            getBinding().rvFileList.setAdapter(mFileListAdapter);
+            mFileListAdapter.setMRVItemClickListener((view, position, data) -> {
+            });
+        }
+        
         Log.d(TAG, "<initView> ");
     }
 
@@ -324,6 +340,22 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
                           popupMessage("Fail to query file list, errCode=" + errCode);
                           return;
                       }
+
+                      List<FileInfo> fileList = new ArrayList<>();
+                      int fileCount = mediaList.size();
+                      for (int i = 0; i < fileCount; i++) {
+                          IDevMediaMgr.DevMediaItem mediaItem = mediaList.get(i);
+
+                          FileInfo newFileInfo = new FileInfo();
+                          newFileInfo.mFileId = mediaItem.mFileId;
+                          newFileInfo.mBeginTime = mediaItem.mStartTimestamp;
+                          newFileInfo.mEndTime = mediaItem.mStopTimestamp;
+                          newFileInfo.mVideoUrl = mediaItem.mVideoUrl;
+                          newFileInfo.mImgUrl = mediaItem.mImgUrl;
+                          newFileInfo.mEvent = mediaItem.mEvent;
+                          fileList.add(newFileInfo);
+                      }
+                      mFileListAdapter.updateItemList(fileList);
 
                       popupMessage("Successful to query file list, fileCount=" + mediaList.size());
                   }
