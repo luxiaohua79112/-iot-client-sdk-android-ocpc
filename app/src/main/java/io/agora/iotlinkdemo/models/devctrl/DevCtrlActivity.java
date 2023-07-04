@@ -24,12 +24,15 @@ import androidx.navigation.ui.BottomNavigationViewKt;
 import com.agora.baselibrary.base.BaseDialog;
 import com.agora.baselibrary.listener.ISingleCallback;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import io.agora.iotlink.AIotAppSdkFactory;
 import io.agora.iotlink.ErrCode;
 //import io.agora.iotlink.ICallkitMgr;
 import io.agora.iotlink.IDevController;
+import io.agora.iotlink.IDevMediaMgr;
 import io.agora.iotlink.IDeviceSessionMgr;
 import io.agora.iotlinkdemo.R;
 import io.agora.iotlinkdemo.base.AgoraApplication;
@@ -92,6 +95,14 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
         getBinding().btnSdcardFmt.setOnClickListener(view -> {
             onBtnSdcardFormat(view);
         });
+
+        getBinding().btnMediaQuery.setOnClickListener(view -> {
+            onBtnMediaQuery(view);
+        });
+
+        getBinding().btnSdcardFmt.setOnClickListener(view -> {
+            onBtnMediaDelete(view);
+        });
     }
 
     @Override
@@ -143,6 +154,7 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
         int action = 0;
         int direction = 1;
         int speed = 1;
+        showLoadingView();
         int ret = devController.sendCmdPtzCtrl(action, direction, speed, new IDevController.OnCommandCmdListener() {
             @Override
             public void onDeviceCmdDone(int errCode, String respData) {
@@ -163,6 +175,7 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
             }
         });
         if (ret != ErrCode.XOK) {
+            hideLoadingView();
             popupMessage("Fail to plz control, errCode=" + ret);
         }
 
@@ -179,6 +192,7 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
             return;
         }
 
+        showLoadingView();
         int ret = devController.sendCmdPtzCtrl(1, 1, 1, new IDevController.OnCommandCmdListener() {
             @Override
             public void onDeviceCmdDone(int errCode, String respData) {
@@ -199,6 +213,7 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
             }
         });
         if (ret != ErrCode.XOK) {
+            hideLoadingView();
             popupMessage("Fail to plz stop, errCode=" + ret);
         }
     }
@@ -214,6 +229,7 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
             return;
         }
 
+        showLoadingView();
         int ret = devController.sendCmdPtzReset( new IDevController.OnCommandCmdListener() {
             @Override
             public void onDeviceCmdDone(int errCode, String respData) {
@@ -234,6 +250,7 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
             }
         });
         if (ret != ErrCode.XOK) {
+            hideLoadingView();
             popupMessage("Fail to plz reset, errCode=" + ret);
         }
     }
@@ -249,6 +266,7 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
             return;
         }
 
+        showLoadingView();
         int ret = devController.sendCmdSdcardFmt( new IDevController.OnCommandCmdListener() {
             @Override
             public void onDeviceCmdDone(int errCode, String respData) {
@@ -269,8 +287,95 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
             }
         });
         if (ret != ErrCode.XOK) {
+            hideLoadingView();
             popupMessage("Fail to sdcard format, errCode=" + ret);
         }
     }
+
+    /**
+    * @brief SD卡媒体文件查询
+    */
+    void onBtnMediaQuery(View view) {
+        IDeviceSessionMgr sessionMgr = AIotAppSdkFactory.getDevSessionMgr();
+        IDevMediaMgr mediaMgr = sessionMgr.getDevMediaMgr(mSessionId);
+        if (mediaMgr == null) {
+          popupMessage("Not found device media mgr with sessionId=" + mSessionId);
+          return;
+        }
+
+        IDevMediaMgr.QueryParam queryParam = new IDevMediaMgr.QueryParam();
+        queryParam.mFileId = null;
+        queryParam.mBeginTimestamp = 0;
+        queryParam.mEndTimestamp = (System.currentTimeMillis() / 1000);
+        queryParam.mPageIndex = 1;
+        queryParam.mPageSize = 20;
+
+        showLoadingView();
+        int ret = mediaMgr.queryMediaList(queryParam, new IDevMediaMgr.OnQueryListener() {
+          @Override
+          public void onDevMediaQueryDone(int errCode, final List<IDevMediaMgr.DevMediaItem> mediaList) {
+              Log.d(TAG, "<onBtnMediaQuery.onDevMediaQueryDone> errCode=" + errCode
+                            + ", mediaList=" + mediaList);
+              runOnUiThread(new Runnable() {
+                  @Override
+                  public void run() {
+                      hideLoadingView();
+                      if (errCode != ErrCode.XOK) {  // 查询媒体文件失败
+                          popupMessage("Fail to query file list, errCode=" + errCode);
+                          return;
+                      }
+
+                      popupMessage("Successful to query file list, fileCount=" + mediaList.size());
+                  }
+              });
+          }
+        });
+        if (ret != ErrCode.XOK) {
+            hideLoadingView();
+          popupMessage("Fail to query media file list, errCode=" + ret);
+        }
+    }
+    /**
+    * @brief SD卡媒体文件删除
+    */
+    void onBtnMediaDelete(View view) {
+        IDeviceSessionMgr sessionMgr = AIotAppSdkFactory.getDevSessionMgr();
+        IDevMediaMgr mediaMgr = sessionMgr.getDevMediaMgr(mSessionId);
+        if (mediaMgr == null) {
+            popupMessage("Not found device media mgr with sessionId=" + mSessionId);
+            return;
+        }
+
+        ArrayList<String> deletingIdList = new ArrayList<>();
+        deletingIdList.add("record01");
+        deletingIdList.add("record02");
+
+        showLoadingView();
+        int ret = mediaMgr.deleteMediaList(deletingIdList, new IDevMediaMgr.OnDeleteListener() {
+            @Override
+            public void onDevMediaDeleteDone(int errCode,
+                                             final List<IDevMediaMgr.DevMediaDelResult> undeletedList) {
+                Log.d(TAG, "<onBtnMediaDelete.onDevMediaDeleteDone> errCode=" + errCode
+                        + ", undeletedList=" + undeletedList);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        hideLoadingView();
+                        if (errCode != ErrCode.XOK) {  // 查询媒体文件失败
+                            popupMessage("Fail to delete file list, errCode=" + errCode);
+                            return;
+                        }
+
+                        popupMessage("Successful to delete file list, undeletedCount=" + undeletedList.size());
+                    }
+                });
+            }
+        });
+        if (ret != ErrCode.XOK) {
+            hideLoadingView();
+            popupMessage("Fail to delete media file list, errCode=" + ret);
+        }
+    }
+
 
 }

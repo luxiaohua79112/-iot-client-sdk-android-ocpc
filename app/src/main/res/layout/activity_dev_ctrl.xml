@@ -55,7 +55,7 @@
         android:id="@+id/btn_plz_reset"
         android:layout_width="100dp"
         android:layout_height="60dp"
-        android:layout_marginStart="280dp"
+        android:layout_marginStart="260dp"
         android:layout_marginTop="10dp"
         android:background="#80D6D6D6"
         android:text="云台校准"
@@ -75,13 +75,24 @@
         app:layout_constraintTop_toBottomOf="@id/btn_plz_ctrl" />
 
     <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btn_sdcard_query"
+        android:id="@+id/btn_media_query"
         android:layout_width="100dp"
         android:layout_height="60dp"
         android:layout_marginStart="140dp"
         android:layout_marginTop="10dp"
         android:background="#80D6D6D6"
-        android:text="SD卡查询"
+        android:text="文件查询"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btn_plz_ctrl" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_media_delete"
+        android:layout_width="100dp"
+        android:layout_height="60dp"
+        android:layout_marginStart="260dp"
+        android:layout_marginTop="10dp"
+        android:background="#80D6D6D6"
+        android:text="文件删除"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/btn_plz_ctrl" />
 
