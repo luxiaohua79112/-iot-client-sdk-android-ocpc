@@ -52,21 +52,21 @@ public class FileListAdapter extends BaseAdapter<FileInfo> {
         mSelectMode = selectMode;
 
         // 所有文件项都设置为：还未选择
-        List<FileInfo> FileInfoList = getDatas();
-        int devCount = FileInfoList.size();
+        List<FileInfo> fileList = getDatas();
+        int devCount = fileList.size();
         int i;
         for (i = 0; i < devCount; i++) {
-            FileInfo FileInfo = FileInfoList.get(i);
-            FileInfo.mSelected = false;
-            FileInfoList.set(i, FileInfo);
+            FileInfo fileInfo = fileList.get(i);
+            fileInfo.mSelected = false;
+            fileList.set(i, fileInfo);
 
             // 控制选择按钮是否显示
-            if (FileInfo.mViewHolder != null) {
-                CheckBox cbSelect = FileInfo.mViewHolder.getView(R.id.cb_file_select);
+            if (fileInfo.mViewHolder != null) {
+                CheckBox cbSelect = fileInfo.mViewHolder.getView(R.id.cb_file_select);
                 cbSelect.setVisibility( selectMode ? View.VISIBLE : View.INVISIBLE);
             }
         }
-        setDatas(FileInfoList);  // 更新到内部数据
+        setDatas(fileList);  // 更新到内部数据
     }
 
     boolean isInSelectMode() {
@@ -81,11 +81,11 @@ public class FileListAdapter extends BaseAdapter<FileInfo> {
             return;
         }
 
-        List<FileInfo> FileInfoList = getDatas();
-        for (int i = 0; i < FileInfoList.size(); i++) {
-            FileInfo FileInfo = FileInfoList.get(i);
+        List<FileInfo> fileList = getDatas();
+        for (int i = 0; i < fileList.size(); i++) {
+            FileInfo FileInfo = fileList.get(i);
             FileInfo.mSelected = selected;
-            FileInfoList.set(i, FileInfo);
+            fileList.set(i, FileInfo);
 
             // 控制选择按钮是否显示
             if (FileInfo.mViewHolder != null) {
@@ -93,24 +93,24 @@ public class FileListAdapter extends BaseAdapter<FileInfo> {
                 cbSelect.setChecked(selected);
             }
         }
-        setDatas(FileInfoList);
+        setDatas(fileList);
     }
 
     /**
      * @brief 设置某个文件项 全选/非全选 状态
      */
-    void setItemSelectStatus(int position, final FileInfo FileInfo) {
+    void setItemSelectStatus(int position, final FileInfo fileInfo) {
         if (!mSelectMode) {  // 非选择模式下不做处理
             return;
         }
 
         // 控制选择按钮是否显示
-        if (FileInfo.mViewHolder != null) {
-            CheckBox cbSelect = FileInfo.mViewHolder.getView(R.id.cb_file_select);
-            cbSelect.setChecked(FileInfo.mSelected);
+        if (fileInfo.mViewHolder != null) {
+            CheckBox cbSelect = fileInfo.mViewHolder.getView(R.id.cb_file_select);
+            cbSelect.setChecked(fileInfo.mSelected);
         }
 
-        getDatas().set(position, FileInfo);
+        getDatas().set(position, fileInfo);
     }
 
 
@@ -118,10 +118,10 @@ public class FileListAdapter extends BaseAdapter<FileInfo> {
      * @brief 判断是否所有文件项都被选中了
      */
     boolean isAllItemsSelected() {
-        List<FileInfo> FileInfoList = getDatas();
-        for (int i = 0; i < FileInfoList.size(); i++) {
-            FileInfo FileInfo = FileInfoList.get(i);
-            if (!FileInfo.mSelected) {
+        List<FileInfo> fileList = getDatas();
+        for (int i = 0; i < fileList.size(); i++) {
+            FileInfo fileInfo = fileList.get(i);
+            if (!fileInfo.mSelected) {
                 return false;
             }
         }
@@ -135,11 +135,11 @@ public class FileListAdapter extends BaseAdapter<FileInfo> {
     List<FileInfo> getSelectedItems() {
         List<FileInfo> selectedList = new ArrayList<>();
 
-        List<FileInfo> FileInfoList = getDatas();
-        for (int i = 0; i < FileInfoList.size(); i++) {
-            FileInfo FileInfo = FileInfoList.get(i);
-            if (FileInfo.mSelected) {
-                selectedList.add(FileInfo);
+        List<FileInfo> fileList = getDatas();
+        for (int i = 0; i < fileList.size(); i++) {
+            FileInfo fileInfo = fileList.get(i);
+            if (fileInfo.mSelected) {
+                selectedList.add(fileInfo);
             }
         }
 
@@ -154,11 +154,11 @@ public class FileListAdapter extends BaseAdapter<FileInfo> {
         int oldCount = getDatas().size();
         List<FileInfo> unselectedList = new ArrayList<>();
 
-        List<FileInfo> FileInfoList = getDatas();
-        for (int i = 0; i < FileInfoList.size(); i++) {
-            FileInfo FileInfo = FileInfoList.get(i);
-            if (!FileInfo.mSelected) {
-                unselectedList.add(FileInfo);
+        List<FileInfo> fileList = getDatas();
+        for (int i = 0; i < fileList.size(); i++) {
+            FileInfo fileInfo = fileList.get(i);
+            if (!fileInfo.mSelected) {
+                unselectedList.add(fileInfo);
             }
         }
 
@@ -214,9 +214,9 @@ public class FileListAdapter extends BaseAdapter<FileInfo> {
     /**
      * @brief 设置文件列表项，同时更新相应控件显示
      */
-    public void setItem(int position, final FileInfo FileInfo) {
-        getDatas().set(position, FileInfo);
-        updateUiWgt(FileInfo);
+    public void setItem(int position, final FileInfo fileInfo) {
+        getDatas().set(position, fileInfo);
+        updateUiWgt(fileInfo);
     }
 
     /**
@@ -251,6 +251,11 @@ public class FileListAdapter extends BaseAdapter<FileInfo> {
         } else {
             fileInfo.mViewHolder.setText(R.id.tvImageUrl, "");
         }
+
+        // 控制选择按钮是否显示
+        CheckBox cbSelect = fileInfo.mViewHolder.getView(R.id.cb_file_select);
+        cbSelect.setChecked(fileInfo.mSelected);
+        cbSelect.setVisibility(mSelectMode ? View.VISIBLE : View.INVISIBLE);
     }
 
     /**
@@ -273,7 +278,7 @@ public class FileListAdapter extends BaseAdapter<FileInfo> {
 
     @Override
     public int getLayoutId(int viewType) {
-        return R.layout.item_device_info;
+        return R.layout.item_file_info;
     }
 
     @Override
@@ -316,6 +321,10 @@ public class FileListAdapter extends BaseAdapter<FileInfo> {
             fileInfo.mViewHolder.setText(R.id.tvImageUrl, "");
         }
 
+        // 控制选择按钮是否显示
+        CheckBox cbSelect = fileInfo.mViewHolder.getView(R.id.cb_file_select);
+        cbSelect.setChecked(fileInfo.mSelected);
+        cbSelect.setVisibility(mSelectMode ? View.VISIBLE : View.INVISIBLE);
     }
 
 
