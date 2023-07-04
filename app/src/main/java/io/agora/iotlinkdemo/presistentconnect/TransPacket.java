@@ -1,6 +1,8 @@
 package io.agora.iotlinkdemo.presistentconnect;
 
 
+import org.json.JSONObject;
+
 import java.util.UUID;
 
 /**
@@ -11,6 +13,9 @@ public class TransPacket {
     public int mMessageId;
     public String mContent;
     public UUID mConnectId;
+
+    public JSONObject mBodyJsonObj;
+    public long mTraceId;
 
     @Override
     public String toString() {

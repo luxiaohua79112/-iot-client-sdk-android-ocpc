@@ -1,10 +1,12 @@
 package io.agora.iotlinkdemo.presistentconnect;
 
 
+import android.util.Base64;
 import android.util.Log;
 
 import io.agora.iotlink.ErrCode;
 import io.agora.iotlink.logger.ALog;
+import io.agora.iotlink.utils.JsonUtils;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -311,40 +313,30 @@ public class HttpTransport {
      */
     public static class DevConnectRslt {
         public int mErrCode = ErrCode.XOK;
-        public String mRtmToken;           ///< 分配到的RTM 本地uid
+
+        public String mChnlName;
+        public int mRtcUid;
+        public String mRtcToken;
+        public String mRtmToken;
+        public String mUserId;
     }
 
     /**
      * @brief 向服务器请求RTM通道账号
-     * @param appId : AppId
-     * @param deviceId : 设备ID
+     * @param bodyJsonObj : 请求内容数据包
      * @return AlarmPageResult：包含错误码 和 详细的告警信息
      */
-    public DevConnectRslt connectDevice(final String appId, final String deviceId,
-                                        final String userId) {
+    public DevConnectRslt connectDevice(final JSONObject bodyJsonObj) {
         Map<String, String> params = new HashMap();
-        JSONObject body = new JSONObject();
         DevConnectRslt result = new DevConnectRslt();
-        ALog.getInstance().d(TAG, "<connectDevice> [Enter] appId=" + appId
-                + ", deviceId=" + deviceId + ", userId=" + userId);
+        ALog.getInstance().d(TAG, "<connectDevice> [Enter] bodyJsonObj=" + bodyJsonObj);
 
         // 请求URL
         String requestUrl = "https://api-test.sd-rtn.com/iot/cn/open-api/v2/iot-core/connect-device";
 
-        // body内容
-        try {
-            body.put("appId", appId);
-            body.put("deviceNo", deviceId);
-            body.put("userId", userId);
-
-        } catch (JSONException e) {
-            e.printStackTrace();
-            result.mErrCode = ErrCode.XERR_HTTP_JSON_WRITE;
-            return result;
-        }
 
         ResponseObj responseObj = requestToServer(requestUrl, "POST",
-                null, params, body);
+                null, params, bodyJsonObj);
         if (responseObj == null) {
             ALog.getInstance().e(TAG, "<connectDevice> [EXIT] failure with no response!");
             result.mErrCode = ErrCode.XERR_HTTP_NO_RESPONSE;
@@ -369,7 +361,7 @@ public class HttpTransport {
         }
 
 
-        // 解析服务器返回的RTM分配信息
+        // 解析服务器返回的设备连接信息
         try {
             JSONObject dataObj = responseObj.mRespJsonObj.getJSONObject("data");
             if (dataObj == null) {
@@ -378,7 +370,11 @@ public class HttpTransport {
                 return result;
             }
 
+            result.mChnlName = parseJsonStringValue(dataObj, "cname", null);
+            result.mRtcUid = parseJsonIntValue(dataObj, "uid", -1);
+            result.mRtcToken = parseJsonStringValue(dataObj, "rtcToken", null);
             result.mRtmToken = parseJsonStringValue(dataObj, "rtmToken", null);
+            result.mUserId = parseJsonStringValue(dataObj, "userId", null);
             result.mErrCode = ErrCode.XOK;
 
         } catch (JSONException e) {
@@ -444,6 +440,13 @@ public class HttpTransport {
             if ((token != null) && (!token.isEmpty())) {
                 connection.setRequestProperty("authorization", "Bearer " + token);
             }
+
+            //设置认证
+            String auth = "8620fd479140455388f99420fd307363:492c18dcdb0a43c5bb10cc1cd217e802";
+            String baseAuth = Base64.encodeToString(auth.getBytes(), Base64.NO_WRAP);
+            connection.setRequestProperty("Authorization", "Basic " + baseAuth);
+            //connection.setRequestProperty("Authorization", "Basic " + auth);
+
             connection.setReadTimeout(HTTP_TIMEOUT);
             connection.setConnectTimeout(HTTP_TIMEOUT);
             switch (method) {

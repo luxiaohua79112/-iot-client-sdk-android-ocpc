@@ -1,9 +1,9 @@
 <resources>
     <!-- 配置声网RTC的AppId -->
-    <string name="AGORA_APPID">your_app_id</string>
+    <string name="AGORA_APPID">cbe3df7bf11e4cf4a4ed4bf755d91013</string>
 
     <!-- 配置声网RTC的ProjectID -->
-    <string name="PROJECT_ID">your_project_id</string>
+    <string name="PROJECT_ID">6ROvoEJSn</string>
 
     <!-- 配置灵隼服务Master Server -->
     <string name="MASTER_SERVER_URL">https://iot-api-gateway.sh.agoralab.co/api</string>
