@@ -10,6 +10,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -663,7 +664,7 @@ public class RtmMgrComp extends BaseThreadComp {
             return ErrCode.XERR_BAD_STATE;
         }
 
-        RtmMessage rtmMsg = mRtmClient.createMessage(rtmPacket.mPktData);
+        RtmMessage rtmMsg = mRtmClient.createMessage(rtmPacket.mPktData.getBytes(StandardCharsets.UTF_8));
         mRtmClient.sendMessageToPeer(rtmPacket.mPeerId, rtmMsg, mSendMsgOptions, new ResultCallback<Void>() {
             @Override
             public void onSuccess(Void aVoid) {
