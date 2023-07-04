@@ -30,6 +30,7 @@ import io.agora.rtm.ResultCallback;
 import io.agora.rtm.RtmClient;
 import io.agora.rtm.RtmClientListener;
 import io.agora.rtm.RtmMessage;
+import io.agora.rtm.RtmMessageType;
 import io.agora.rtm.RtmStatusCode;
 import io.agora.rtm.SendMessageOptions;
 
@@ -503,15 +504,26 @@ public class RtmMgrComp extends BaseThreadComp {
 
             @Override
             public void onMessageReceived(RtmMessage rtmMessage, String peerId) {   // 收到RTM消息
-                byte[] rawMessage = rtmMessage.getRawMessage();
+                int rtmMsgType = rtmMessage.getMessageType();
                 String messageText = null;
-                try {
-                    messageText = new String(rawMessage, "UTF-8");
-                } catch (UnsupportedEncodingException encExp) {
-                    encExp.printStackTrace();
+                if (rtmMsgType == RtmMessageType.TEXT) {  // 文本格式
+                    messageText = rtmMessage.getText();
+
+                } else if (rtmMsgType == RtmMessageType.RAW) {  // 数据流格式
+                    byte[] rawMessage = rtmMessage.getRawMessage();
+                    try {
+                        messageText = new String(rawMessage, "UTF-8");
+                    } catch (UnsupportedEncodingException encExp) {
+                        encExp.printStackTrace();
+                        ALog.getInstance().e(TAG, "<rtmEngCreate.onMessageReceived> [EXP] encExp=" + encExp);
+                    }
+
+                } else {
+                    ALog.getInstance().e(TAG, "<rtmEngCreate.onMessageReceived> rtmMsgType=" + rtmMsgType);
+                    return;
                 }
-                ALog.getInstance().d(TAG, "<rtmEngCreate.onMessageReceived> rawMessage=" + rawMessage
-                        + ", peerId=" + peerId + ", messageText=" + messageText);
+                ALog.getInstance().d(TAG, "<rtmEngCreate.onMessageReceived> messageText=" + messageText
+                        + ", peerId=" + peerId);
 
                 RtmPacket packet = new RtmPacket();
                 packet.mPeerId = peerId;
