@@ -28,33 +28,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <androidx.appcompat.widget.AppCompatEditText
-        android:id="@+id/etPlzDirect"
-        style="@style/def_et_input"
-        android:layout_width="140dp"
-        android:layout_marginStart="10dp"
-        android:layout_marginTop="10dp"
-        android:enabled="true"
-        android:hint="云台方向"
-        android:inputType="number"
-        android:paddingEnd="40dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/svDeviceView"  />
-
-    <androidx.appcompat.widget.AppCompatEditText
-        android:id="@+id/etPlzSpeed"
-        style="@style/def_et_input"
-        android:layout_width="140dp"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="10dp"
-        android:enabled="true"
-        android:hint="控制速度"
-        android:inputType="number"
-        android:paddingEnd="40dp"
-        app:layout_constraintStart_toEndOf="@+id/etPlzDirect"
-        app:layout_constraintTop_toBottomOf="@id/svDeviceView"  />
-
-
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_plz_ctrl"
         android:layout_width="100dp"
@@ -64,7 +37,7 @@
         android:background="#80D6D6D6"
         android:text="云台控制"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/etPlzDirect" />
+        app:layout_constraintTop_toBottomOf="@id/svDeviceView" />
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_plz_stop"
@@ -75,7 +48,7 @@
         android:background="#80D6D6D6"
         android:text="云台停止"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/etPlzDirect" />
+        app:layout_constraintTop_toBottomOf="@id/svDeviceView" />
 
 
     <androidx.appcompat.widget.AppCompatButton
@@ -87,7 +60,7 @@
         android:background="#80D6D6D6"
         android:text="云台校准"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/etPlzDirect" />
+        app:layout_constraintTop_toBottomOf="@id/svDeviceView" />
 
 
     <androidx.appcompat.widget.AppCompatButton

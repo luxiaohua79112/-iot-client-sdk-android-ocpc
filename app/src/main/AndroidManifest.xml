@@ -63,7 +63,7 @@
             android:screenOrientation="portrait" />
 
         <activity
-            android:name=".models.player.DevPreviewActivity"
+            android:name=".models.devctrl.DevCtrlActivity"
             android:screenOrientation="portrait" />
 
         <activity

@@ -27,7 +27,7 @@ import io.agora.iotlinkdemo.base.BaseViewBindingActivity;
 import io.agora.iotlinkdemo.databinding.ActivityMainBinding;
 import io.agora.iotlinkdemo.dialog.CommonDialog;
 import io.agora.iotlinkdemo.models.login.AccountLoginActivity;
-import io.agora.iotlinkdemo.models.player.DevPreviewActivity;
+import io.agora.iotlinkdemo.models.devctrl.DevCtrlActivity;
 
 
 public class MainActivity extends BaseViewBindingActivity<ActivityMainBinding> {

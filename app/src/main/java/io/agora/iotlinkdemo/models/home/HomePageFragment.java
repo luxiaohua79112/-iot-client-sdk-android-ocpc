@@ -37,7 +37,7 @@ import io.agora.iotlinkdemo.base.PermissionItem;
 import io.agora.iotlinkdemo.base.PushApplication;
 import io.agora.iotlinkdemo.databinding.FragmentHomePageBinding;
 import io.agora.iotlinkdemo.dialog.DialogNewDevice;
-import io.agora.iotlinkdemo.models.player.DevPreviewActivity;
+import io.agora.iotlinkdemo.models.devctrl.DevCtrlActivity;
 import io.agora.iotlinkdemo.presistentconnect.PresistentLinkComp;
 import io.agora.iotlinkdemo.utils.AppStorageUtil;
 import io.agora.iotlinkdemo.utils.FileUtils;
@@ -684,7 +684,7 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
     }
 
     void gotoDevPreviewActivity() {
-        Intent intent = new Intent(getActivity(), DevPreviewActivity.class);
+        Intent intent = new Intent(getActivity(), DevCtrlActivity.class);
         startActivity(intent);
     }
 

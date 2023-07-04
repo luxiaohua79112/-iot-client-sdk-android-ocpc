@@ -1,4 +1,4 @@
-package io.agora.iotlinkdemo.models.player;
+package io.agora.iotlinkdemo.models.devctrl;
 
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -35,7 +35,7 @@ import io.agora.iotlinkdemo.R;
 import io.agora.iotlinkdemo.base.AgoraApplication;
 import io.agora.iotlinkdemo.base.BaseViewBindingActivity;
 import io.agora.iotlinkdemo.base.PushApplication;
-import io.agora.iotlinkdemo.databinding.ActivityDevPreviewBinding;
+import io.agora.iotlinkdemo.databinding.ActivityDevCtrlBinding;
 import io.agora.iotlinkdemo.databinding.ActivityMainBinding;
 import io.agora.iotlinkdemo.dialog.CommonDialog;
 import io.agora.iotlinkdemo.models.home.DeviceInfo;
@@ -43,9 +43,9 @@ import io.agora.iotlinkdemo.models.home.DeviceListAdapter;
 import io.agora.iotlinkdemo.presistentconnect.PresistentLinkComp;
 
 
-public class DevPreviewActivity extends BaseViewBindingActivity<ActivityDevPreviewBinding>
+public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBinding>
       {
-    private static final String TAG = "IOTLINK/DevPrevAct";
+    private static final String TAG = "IOTLINK/DevCtrlAct";
 
 
     private UUID mSessionId = null;
@@ -56,8 +56,8 @@ public class DevPreviewActivity extends BaseViewBindingActivity<ActivityDevPrevi
     //////////////////// Methods of Override BaseActivity /////////////////////
     ///////////////////////////////////////////////////////////////////////////
     @Override
-    protected ActivityDevPreviewBinding getViewBinding(@NonNull LayoutInflater inflater) {
-        return ActivityDevPreviewBinding.inflate(inflater);
+    protected ActivityDevCtrlBinding getViewBinding(@NonNull LayoutInflater inflater) {
+        return ActivityDevCtrlBinding.inflate(inflater);
     }
 
     @Override
@@ -66,9 +66,6 @@ public class DevPreviewActivity extends BaseViewBindingActivity<ActivityDevPrevi
         mSessionId = PushApplication.getInstance().getFullscrnSessionId();
         IDeviceSessionMgr.SessionInfo sessionInfo = sessionMgr.getSessionInfo(mSessionId);
         getBinding().tvNodeId.setText(sessionInfo.mPeerDevId);
-
-        getBinding().etPlzDirect.setText("0");
-        getBinding().etPlzSpeed.setText("1");
 
         Log.d(TAG, "<initView> ");
     }
