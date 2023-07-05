@@ -453,6 +453,24 @@ public class RtmMgrComp extends BaseThreadComp {
                 responseCmd = deleteRspCmd;
             } break;
 
+            case IRtmCmd.CMDID_MEDIA_PLAY_ID:
+            case IRtmCmd.CMDID_MEDIA_PLAY_TIMELINE: {      // 播放响应命令
+                RtmPlayRspCmd playRspCmd = new RtmPlayRspCmd();
+                playRspCmd.mSequenceId = sequenceId;
+                playRspCmd.mCmdId = commandId;
+                playRspCmd.mIsRespCmd = true;
+                playRspCmd.mErrCode = errCode;
+                playRspCmd.mDeviceId = deviceId;
+
+                JSONObject respDataObj = JsonUtils.parseJsonObject(recvJsonObj, "data", null);
+                if (respDataObj != null) {
+                    playRspCmd.mRtcUid = JsonUtils.parseJsonIntValue(respDataObj, "rtcUid", -1);
+                    playRspCmd.mChnlName = JsonUtils.parseJsonStringValue(respDataObj, "chnlName", null);
+                    playRspCmd.mRtcToken = JsonUtils.parseJsonStringValue(respDataObj, "rtcToken", null);
+                }
+                responseCmd = playRspCmd;
+            } break;
+
             case IRtmCmd.CMDID_CUSTOMIZE_SEND: {    // 定制化响应命令
                 RtmCustomizeRspCmd customizeRspCmd = new RtmCustomizeRspCmd();
                 customizeRspCmd.mSequenceId = sequenceId;

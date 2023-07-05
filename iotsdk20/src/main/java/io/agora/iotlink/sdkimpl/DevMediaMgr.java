@@ -22,6 +22,8 @@ import io.agora.iotlink.ErrCode;
 import io.agora.iotlink.IDevMediaMgr;
 import io.agora.iotlink.IDeviceSessionMgr;
 import io.agora.iotlink.IVodPlayer;
+import io.agora.iotlink.base.BaseThreadComp;
+import io.agora.iotlink.callkit.SessionCtx;
 import io.agora.iotlink.logger.ALog;
 import io.agora.iotlink.rtmsdk.DevFileDelErrInfo;
 import io.agora.iotlink.rtmsdk.DevFileInfo;
@@ -31,6 +33,7 @@ import io.agora.iotlink.rtmsdk.RtmCmdSeqId;
 import io.agora.iotlink.rtmsdk.RtmDeleteReqCmd;
 import io.agora.iotlink.rtmsdk.RtmDeleteRspCmd;
 import io.agora.iotlink.rtmsdk.RtmPlayReqCmd;
+import io.agora.iotlink.rtmsdk.RtmPlayRspCmd;
 import io.agora.iotlink.rtmsdk.RtmQueryReqCmd;
 import io.agora.iotlink.rtmsdk.RtmQueryRspCmd;
 
@@ -38,14 +41,14 @@ import io.agora.iotlink.rtmsdk.RtmQueryRspCmd;
 /*
  * @brief 设备上媒体文件管理器
  */
-public class DevMediaMgr  implements IDevMediaMgr {
+public class DevMediaMgr implements IDevMediaMgr {
 
 
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Constant Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
     private static final String TAG = "IOTSDK/DevMediaMgr";
-
+    private static final int SESSION_TYPE_PLAYBACK = 0x0004;          ///< 会话类型：媒体回放
 
     //
     // The mesage Id
@@ -60,6 +63,10 @@ public class DevMediaMgr  implements IDevMediaMgr {
     private UUID mSessionId;
     private DeviceSessionMgr mSessionMgr;
     private String mDeviceId;
+
+    private SessionCtx mPlaybackSession;        ///< 媒体回放会话上下文，不在整个的 DeviceSessionMgr中
+    private IPlayingCallback mPlayingCallbk;
+
 
     ///////////////////////////////////////////////////////////////////////
     ////////////////////////// Public Methods  ////////////////////////////
@@ -78,7 +85,6 @@ public class DevMediaMgr  implements IDevMediaMgr {
 
     @Override
     public int queryMediaList(final QueryParam queryParam, final OnQueryListener queryListener) {
-
         RtmQueryReqCmd queryReqCmd = new RtmQueryReqCmd();
         queryReqCmd.mQueryParam.mFileId = queryParam.mFileId;
         queryReqCmd.mQueryParam.mBeginTime = queryParam.mBeginTimestamp;
@@ -120,7 +126,7 @@ public class DevMediaMgr  implements IDevMediaMgr {
 
         int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(queryReqCmd);
 
-        ALog.getInstance().d(TAG, "<sendCmdPtzReset> done, ret=" + ret
+        ALog.getInstance().d(TAG, "<queryMediaList> done, ret=" + ret
                 + ", queryReqCmd=" + queryReqCmd);
         return ret;
     }
@@ -163,7 +169,7 @@ public class DevMediaMgr  implements IDevMediaMgr {
 
         int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(deleteReqCmd);
 
-        ALog.getInstance().d(TAG, "<sendCmdPtzReset> done, ret=" + ret
+        ALog.getInstance().d(TAG, "<deleteMediaList> done, ret=" + ret
                 + ", deleteReqCmd=" + deleteReqCmd);
         return ret;
     }
@@ -176,31 +182,55 @@ public class DevMediaMgr  implements IDevMediaMgr {
 
     @Override
     public int play(long globalStartTime, final IPlayingCallback playingCallback) {
-//        RtmPlayReqCmd playReqCmd = new RtmPlayReqCmd();
-//        playReqCmd.mGlobalStartTime = globalStartTime;
-//        playReqCmd.mSequenceId = RtmCmdSeqId.getSeuenceId();
-//        playReqCmd.mCmdId = IRtmCmd.CMDID_MEDIA_PLAY_TIMELINE;
-//        playReqCmd.mDeviceId = mDeviceId;
-//        playReqCmd.mSendTimestamp = System.currentTimeMillis();
-//
-//        playReqCmd.mRespListener = new IRtmCmd.OnRtmCmdRespListener() {
-//            @Override
-//            public void onRtmCmdResponsed(int commandId, int errCode, IRtmCmd reqCmd, IRtmCmd rspCmd) {
-//                ALog.getInstance().d(TAG, "<play.onRtmCmdResponsed> errCode=" + errCode);
-//                if (errCode != ErrCode.XOK) {
-//                    return;
-//                }
-//
-//                playingCallback.on(errCode, delRsltList);
-//            }
-//        };
-//
-//        int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(deleteReqCmd);
-//
-//        ALog.getInstance().d(TAG, "<sendCmdPtzReset> done, ret=" + ret
-//                + ", deleteReqCmd=" + deleteReqCmd);
-//        return ret;
-        return ErrCode.XOK;
+        RtmPlayReqCmd playReqCmd = new RtmPlayReqCmd();
+        playReqCmd.mGlobalStartTime = globalStartTime;
+        playReqCmd.mSequenceId = RtmCmdSeqId.getSeuenceId();
+        playReqCmd.mCmdId = IRtmCmd.CMDID_MEDIA_PLAY_TIMELINE;
+        playReqCmd.mDeviceId = mDeviceId;
+        playReqCmd.mSendTimestamp = System.currentTimeMillis();
+
+        playReqCmd.mRespListener = new IRtmCmd.OnRtmCmdRespListener() {
+            @Override
+            public void onRtmCmdResponsed(int commandId, int errCode, IRtmCmd reqCmd, IRtmCmd rspCmd) {
+                ALog.getInstance().d(TAG, "<play.onRtmCmdResponsed> errCode=" + errCode);
+                RtmPlayRspCmd playRspCmd = (RtmPlayRspCmd)rspCmd;
+                if (errCode != ErrCode.XOK) {
+                    if (mPlayingCallbk != null) {
+                        mPlayingCallbk.onDevMediaOpenDone(null, errCode);
+                    }
+                    return;
+                }
+
+
+                IDeviceSessionMgr.SessionInfo sessionInfo = mSessionMgr.getSessionInfo(mSessionId);
+
+                // 进入频道进行音视频拉流
+                mPlaybackSession = new SessionCtx();
+                mPlaybackSession.mSessionId = UUID.randomUUID();
+                mPlaybackSession.mUserId = sessionInfo.mUserId;
+                mPlaybackSession.mDeviceId = mDeviceId;
+                mPlaybackSession.mLocalRtcUid = playRspCmd.mRtcUid;
+                mPlaybackSession.mChnlName = playRspCmd.mChnlName;
+                mPlaybackSession.mRtcToken = playRspCmd.mRtcToken;
+                mPlaybackSession.mType = SESSION_TYPE_PLAYBACK;  // 会话类型
+                mPlaybackSession.mUserCount = 1;      // 至少有一个用户
+                mPlaybackSession.mSeesionCallback = null;
+                mPlaybackSession.mState = IDeviceSessionMgr.SESSION_STATE_CONNECTED;   // 直接连接到设备
+                mPlaybackSession.mConnectTimestamp = System.currentTimeMillis();
+
+                mSessionMgr.talkingStart(mPlaybackSession, false);
+
+                if (mPlayingCallbk != null) {
+                    mPlayingCallbk.onDevMediaOpenDone(null, ErrCode.XOK);
+                }
+            }
+        };
+
+        int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(playReqCmd);
+
+        ALog.getInstance().d(TAG, "<play> done, ret=" + ret
+                + ", playReqCmd=" + playReqCmd);
+        return ret;
     }
 
     @Override
@@ -211,17 +241,41 @@ public class DevMediaMgr  implements IDevMediaMgr {
 
     @Override
     public int stop() {
-        return ErrCode.XOK;
+        RtmBaseCmd stopReqCmd = new RtmBaseCmd();
+        stopReqCmd.mSequenceId = RtmCmdSeqId.getSeuenceId();
+        stopReqCmd.mCmdId = IRtmCmd.CMDID_MEDIA_STOP;
+        stopReqCmd.mDeviceId = mDeviceId;
+        stopReqCmd.mSendTimestamp = System.currentTimeMillis();
+
+        stopReqCmd.mRespListener = new IRtmCmd.OnRtmCmdRespListener() {
+            @Override
+            public void onRtmCmdResponsed(int commandId, int errCode, IRtmCmd reqCmd, IRtmCmd rspCmd) {
+                ALog.getInstance().d(TAG, "<stop.onRtmCmdResponsed> errCode=" + errCode);
+                if (errCode != ErrCode.XOK) {
+                    return;
+                }
+
+                // 退出频道
+                mSessionMgr.talkingStop(mPlaybackSession);
+                mPlaybackSession = null;
+            }
+        };
+
+        int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(stopReqCmd);
+
+        ALog.getInstance().d(TAG, "<stop> done, ret=" + ret
+                + ", stopReqCmd=" + stopReqCmd);
+        return ret;
     }
 
     @Override
     public int resume() {
-        return ErrCode.XOK;
+        return ErrCode.XERR_UNSUPPORTED;
     }
 
     @Override
     public int pause() {
-        return ErrCode.XOK;
+        return ErrCode.XERR_UNSUPPORTED;
     }
 
     @Override
