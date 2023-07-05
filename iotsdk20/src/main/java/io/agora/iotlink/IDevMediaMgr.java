@@ -174,41 +174,41 @@ public interface IDevMediaMgr  {
     public static interface IPlayingCallback {
         /**
          * @brief 当前播放状态变化事件
-         * @param mediaUrl : 媒体文件Url
+         * @param fileId : 媒体文件Id
          * @param newState : 切换后的新状态
          */
-        default void onDevPlayingStateChanged(final String mediaUrl, int newState) {}
+        default void onDevPlayingStateChanged(final String fileId, int newState) {}
 
         /**
          * @brief 设备媒体文件打开完成事件
-         * @param mediaUrl : 媒体文件Url
+         * @param fileId : 媒体文件Id
          * @param errCode : 错误码，0表示打开成功
          */
-        default void onDevMediaOpenDone(final String mediaUrl, int errCode) { }
+        default void onDevMediaOpenDone(final String fileId, int errCode) { }
 
         /**
          * @brief 设备媒体文件Seek完成事件
-         * @param mediaUrl : 媒体文件Url
+         * @param fileId : 媒体文件Id
          * @param errCode : 错误码，0表示Seek成功
          * @param targetPos : 要seek到的时间戳
          * @param seekedPos : 实际跳转到的时间戳
          */
-        default void onDevMediaSeekDone(final String mediaUrl, int errCode,
+        default void onDevMediaSeekDone(final String fileId, int errCode,
                                         long targetPos, long seekedPos) { }
 
         /**
          * @brief 当前媒体文件播放完成事件，通常此时可以调用 stop()回到开始重新play()，或者close()关闭播放器
-         * @param mediaUrl : 媒体文件Url
+         * @param fileId : 媒体文件Id
          * @param duration : 整个播放时长
          */
-        default void onDevMediaPlayingDone(final String mediaUrl, long duration) {}
+        default void onDevMediaPlayingDone(final String fileId, long duration) {}
 
         /**
          * @brief 播放过程中遇到错误，并且不能恢复，此时上层只能调用 close()关闭播放器
-         * @param mediaUrl : 媒体文件Url
+         * @param fileId : 媒体文件Id
          * @param errCode : 错误码
          */
-        default void onDevPlayingError(final String mediaUrl, int errCode) {}
+        default void onDevPlayingError(final String fileId, int errCode) {}
     }
 
 

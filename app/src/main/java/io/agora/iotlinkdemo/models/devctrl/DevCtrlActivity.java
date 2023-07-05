@@ -48,7 +48,8 @@ import io.agora.iotlinkdemo.presistentconnect.PresistentLinkComp;
 
 
 public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBinding>
-      {
+    implements IDevMediaMgr.IPlayingCallback    {
+
     private static final String TAG = "IOTLINK/DevCtrlAct";
 
 
@@ -118,6 +119,14 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
 
         getBinding().btnMediaDelete.setOnClickListener(view -> {
             onBtnMediaDelete(view);
+        });
+
+        getBinding().btnPlayStop.setOnClickListener(view -> {
+            onBtnPlayStop(view);
+        });
+
+        getBinding().btnPauseResume.setOnClickListener(view -> {
+            onBtnPauseResume(view);
         });
     }
 
@@ -420,4 +429,80 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
     }
 
 
+
+    /**
+    * @brief 媒体文件 播放/停止
+    */
+    void onBtnPlayStop(View view) {
+      IDeviceSessionMgr sessionMgr = AIotAppSdkFactory.getDevSessionMgr();
+      IDevMediaMgr mediaMgr = sessionMgr.getDevMediaMgr(mSessionId);
+      if (mediaMgr == null) {
+          popupMessage("Not found device media mgr with sessionId=" + mSessionId);
+          return;
+      }
+
+      int playingState = mediaMgr.getPlayingState();
+      int ret;
+      if (playingState == IDevMediaMgr.DEVPLAYER_STATE_STOPPED) {
+          // 播放媒体文件
+          ret = mediaMgr.play(1000, this);
+          if (ret != ErrCode.XOK) {
+              popupMessage("Fail to start Media playing, errCode=" + ret);
+              return;
+          }
+          getBinding().btnPlayStop.setText("停止");
+
+      } else {
+        // 停止播放
+        ret = mediaMgr.stop();
+        popupMessage("Media playing stopped!");
+        getBinding().btnPlayStop.setText("播放");
+      }
+    }
+
+
+    /**
+    * @brief 媒体文件 暂停/恢复
+    */
+    void onBtnPauseResume(View view) {
+      IDeviceSessionMgr sessionMgr = AIotAppSdkFactory.getDevSessionMgr();
+      IDevMediaMgr mediaMgr = sessionMgr.getDevMediaMgr(mSessionId);
+      if (mediaMgr == null) {
+          popupMessage("Not found device media mgr with sessionId=" + mSessionId);
+          return;
+      }
+    }
+
+
+    //////////////////////////////////////////////////////////////////////////////////
+    //////////////////////// Override Methods of IPlayingCallback ///////////////////
+    //////////////////////////////////////////////////////////////////////////////////
+
+    @Override
+    public void onDevPlayingStateChanged(final String fileId, int newState) {
+        Log.d(TAG, "<onDevPlayingStateChanged> fileId=" + fileId + ", newState=" + newState);
+    }
+
+    @Override
+    public void onDevMediaOpenDone(final String fileId, int errCode) {
+        Log.d(TAG, "<onDevMediaOpenDone> fileId=" + fileId + ", errCode=" + errCode);
+
+    }
+
+    @Override
+    public void onDevMediaSeekDone(final String fileId, int errCode,
+                                   long targetPos, long seekedPos) {
+
+    }
+
+    @Override
+    public void onDevMediaPlayingDone(final String fileId, long duration) {
+        Log.d(TAG, "<onDevMediaOpenDone> fileId=" + fileId + ", duration=" + duration);
+    }
+
+    @Override
+    public void onDevPlayingError(final String fileId, int errCode) {
+        Log.d(TAG, "<onDevPlayingError> fileId=" + fileId + ", errCode=" + errCode);
+
+    }
 }

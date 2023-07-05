@@ -64,6 +64,7 @@ public class DevMediaMgr implements IDevMediaMgr {
 
     private UUID mSessionId;
     private DeviceSessionMgr mSessionMgr;
+    private String mUserId;
     private String mDeviceId;
 
     private View mDisplayView;
@@ -78,6 +79,7 @@ public class DevMediaMgr implements IDevMediaMgr {
         mSessionId = sessionId;
         mSessionMgr = sessionMgr;
         IDeviceSessionMgr.SessionInfo sessionInfo = mSessionMgr.getSessionInfo(sessionId);
+        mUserId = sessionInfo.mUserId;
         mDeviceId = sessionInfo.mPeerDevId;
         mPlayingState.setValue(DEVPLAYER_STATE_STOPPED);  // 停止播放状态
     }
@@ -213,34 +215,8 @@ public class DevMediaMgr implements IDevMediaMgr {
                     return;
                 }
 
-
-                IDeviceSessionMgr.SessionInfo sessionInfo = mSessionMgr.getSessionInfo(mSessionId);
-
-                // 进入频道进行音视频拉流
-                SessionCtx playbackSession = new SessionCtx();
-                playbackSession.mSessionId = UUID.randomUUID();
-                playbackSession.mUserId = sessionInfo.mUserId;
-                playbackSession.mDeviceId = mDeviceId;
-                playbackSession.mLocalRtcUid = playRspCmd.mRtcUid;
-                playbackSession.mChnlName = playRspCmd.mChnlName;
-                playbackSession.mRtcToken = playRspCmd.mRtcToken;
-                playbackSession.mType = SESSION_TYPE_PLAYBACK;  // 会话类型
-                playbackSession.mUserCount = 1;      // 至少有一个用户
-                playbackSession.mSeesionCallback = null;
-                playbackSession.mState = IDeviceSessionMgr.SESSION_STATE_CONNECTED;   // 直接连接到设备
-                playbackSession.mConnectTimestamp = System.currentTimeMillis();
-
-                // 开始进入频道
-                mSessionMgr.talkingPrepare(playbackSession, true, true, false);
-
-                // 设置显示控件
-                if (mDisplayView != null) {
-                    mSessionMgr.setDisplayView(playbackSession, mDisplayView);
-                }
-
-                synchronized (mDataLock) {
-                    mPlaybackSession = playbackSession;
-                }
+                // 进入RTC频道拉流
+                RtcChnlEnter(playRspCmd.mRtcUid, playRspCmd.mChnlName, playRspCmd.mRtcToken);
 
                 if (mPlayingCallbk != null) {
                     mPlayingCallbk.onDevMediaOpenDone(null, ErrCode.XOK);
@@ -266,7 +242,7 @@ public class DevMediaMgr implements IDevMediaMgr {
     public int stop() {
         int playingState = mPlayingState.getValue();
         if (playingState == DEVPLAYER_STATE_STOPPED) {
-            ALog.getInstance().d(TAG, "<stop> bad playing state, state=" + playingState);
+            ALog.getInstance().d(TAG, "<stop> bad state, already stopped!");
             return ErrCode.XERR_BAD_STATE;
         }
 
@@ -275,26 +251,13 @@ public class DevMediaMgr implements IDevMediaMgr {
         stopReqCmd.mCmdId = IRtmCmd.CMDID_MEDIA_STOP;
         stopReqCmd.mDeviceId = mDeviceId;
         stopReqCmd.mSendTimestamp = System.currentTimeMillis();
-
-        stopReqCmd.mRespListener = new IRtmCmd.OnRtmCmdRespListener() {
-            @Override
-            public void onRtmCmdResponsed(int commandId, int errCode, IRtmCmd reqCmd, IRtmCmd rspCmd) {
-                ALog.getInstance().d(TAG, "<stop.onRtmCmdResponsed> errCode=" + errCode);
-                mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_STOPPED); // 状态机: 停止播放
-
-                // 退出频道
-                SessionCtx playingSession;
-                synchronized (mDataLock) {
-                    playingSession = mPlaybackSession;
-                }
-                mSessionMgr.talkingStop(playingSession);
-                synchronized (mDataLock) {
-                    mPlaybackSession = null;
-                }
-            }
-        };
-
+        stopReqCmd.mRespListener = null;    // 不需要管设备端是否收到
         int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(stopReqCmd);
+
+        // 退出频道
+        RtcChnlExit();
+
+        mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_STOPPED); // 状态机: 停止播放
 
         ALog.getInstance().d(TAG, "<stop> done, ret=" + ret
                 + ", stopReqCmd=" + stopReqCmd);
@@ -329,7 +292,65 @@ public class DevMediaMgr implements IDevMediaMgr {
 
     @Override
     public int getPlayingState() {
+        int playingState = mPlayingState.getValue();
+        return playingState;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    /////////////////////////// Methods of RtcEngine ///////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    /**
+     * @brief 进行频道进行音视频拉流
+     */
+    int RtcChnlEnter(int rtcUid, final String chnlName, final String rtcToken) {
+
+        // 进入频道进行音视频拉流
+        SessionCtx playbackSession = new SessionCtx();
+        playbackSession.mSessionId = UUID.randomUUID();
+        playbackSession.mUserId = mUserId;
+        playbackSession.mDeviceId = mDeviceId;
+        playbackSession.mLocalRtcUid = rtcUid;
+        playbackSession.mChnlName = chnlName;
+        playbackSession.mRtcToken = rtcToken;
+        playbackSession.mType = SESSION_TYPE_PLAYBACK;  // 会话类型
+        playbackSession.mUserCount = 1;      // 至少有一个用户
+        playbackSession.mSeesionCallback = null;
+        playbackSession.mState = IDeviceSessionMgr.SESSION_STATE_CONNECTED;   // 直接连接到设备
+        playbackSession.mConnectTimestamp = System.currentTimeMillis();
+
+        // 开始进入频道
+        mSessionMgr.talkingPrepare(playbackSession, true, true, false);
+
+        // 设置显示控件
+        if (mDisplayView != null) {
+            mSessionMgr.setDisplayView(playbackSession, mDisplayView);
+        }
+
+        synchronized (mDataLock) {
+            mPlaybackSession = playbackSession;
+        }
+
+        ALog.getInstance().d(TAG, "<RtcChnlEnter> done, rtcUid=" + rtcUid
+                + ", chnlName=" + chnlName + ", rtcToken=" + rtcToken);
         return ErrCode.XOK;
     }
 
+    /**
+     * @brief 退出频道
+     */
+    int RtcChnlExit() {
+        SessionCtx playingSession;
+        synchronized (mDataLock) {
+            playingSession = mPlaybackSession;
+        }
+        if (playingSession != null) {
+            mSessionMgr.talkingStop(playingSession);
+        }
+        synchronized (mDataLock) {
+            mPlaybackSession = null;
+        }
+
+        ALog.getInstance().d(TAG, "<RtcChnlExit> done");
+        return ErrCode.XOK;
+    }
 }
