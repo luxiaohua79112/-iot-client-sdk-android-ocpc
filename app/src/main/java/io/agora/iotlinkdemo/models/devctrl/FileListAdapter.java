@@ -255,7 +255,7 @@ public class FileListAdapter extends BaseAdapter<FileInfo> {
         // 控制选择按钮是否显示
         CheckBox cbSelect = fileInfo.mViewHolder.getView(R.id.cb_file_select);
         cbSelect.setChecked(fileInfo.mSelected);
-        cbSelect.setVisibility(mSelectMode ? View.VISIBLE : View.INVISIBLE);
+        //cbSelect.setVisibility(mSelectMode ? View.VISIBLE : View.INVISIBLE);
     }
 
     /**
@@ -324,7 +324,12 @@ public class FileListAdapter extends BaseAdapter<FileInfo> {
         // 控制选择按钮是否显示
         CheckBox cbSelect = fileInfo.mViewHolder.getView(R.id.cb_file_select);
         cbSelect.setChecked(fileInfo.mSelected);
-        cbSelect.setVisibility(mSelectMode ? View.VISIBLE : View.INVISIBLE);
+        cbSelect.setOnClickListener(view -> {
+            boolean selected = (!fileInfo.mSelected);
+            fileInfo.mSelected = selected;
+            getDatas().set(position, fileInfo);
+        });
+        //cbSelect.setVisibility(mSelectMode ? View.VISIBLE : View.INVISIBLE);
     }
 
 

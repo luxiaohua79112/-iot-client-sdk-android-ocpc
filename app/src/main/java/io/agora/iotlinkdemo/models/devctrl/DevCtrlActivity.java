@@ -116,7 +116,7 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
             onBtnMediaQuery(view);
         });
 
-        getBinding().btnSdcardFmt.setOnClickListener(view -> {
+        getBinding().btnMediaDelete.setOnClickListener(view -> {
             onBtnMediaDelete(view);
         });
     }
@@ -378,9 +378,19 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
             return;
         }
 
+        List<FileInfo> selectedList = mFileListAdapter.getSelectedItems();
+        int selectedCount = selectedList.size();
+        if (selectedCount <= 0) {
+            popupMessage("Please select one file at least!");
+            return;
+        }
+
         ArrayList<String> deletingIdList = new ArrayList<>();
-        deletingIdList.add("record01");
-        deletingIdList.add("record02");
+        for (int i = 0; i < selectedCount; i++) {
+            FileInfo fileInfo = selectedList.get(i);
+            deletingIdList.add(fileInfo.mFileId);
+        }
+
 
         showLoadingView();
         int ret = mediaMgr.deleteMediaList(deletingIdList, new IDevMediaMgr.OnDeleteListener() {
