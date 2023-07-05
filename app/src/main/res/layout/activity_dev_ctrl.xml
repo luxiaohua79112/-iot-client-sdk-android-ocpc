@@ -96,6 +96,40 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/btn_plz_ctrl" />
 
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_play_stop"
+        android:layout_width="100dp"
+        android:layout_height="60dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="10dp"
+        android:background="#80D6D6D6"
+        android:text="播放"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btn_sdcard_fmt" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_pause_resume"
+        android:layout_width="100dp"
+        android:layout_height="60dp"
+        android:layout_marginStart="140dp"
+        android:layout_marginTop="10dp"
+        android:background="#80D6D6D6"
+        android:text="暂停"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btn_sdcard_fmt" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_speed"
+        android:layout_width="100dp"
+        android:layout_height="60dp"
+        android:layout_marginStart="260dp"
+        android:layout_marginTop="10dp"
+        android:background="#80D6D6D6"
+        android:text="倍速"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btn_sdcard_fmt" />
+
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvFileList"
         android:layout_width="match_parent"
@@ -103,7 +137,7 @@
         android:layout_marginTop="10dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/btn_media_delete"
+        app:layout_constraintTop_toBottomOf="@id/btn_play_stop"
         android:elevation="3dp"
         android:overScrollMode="never" />
 
