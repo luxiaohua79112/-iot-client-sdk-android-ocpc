@@ -22,6 +22,7 @@ import io.agora.iotlink.ErrCode;
 import io.agora.iotlink.IDevMediaMgr;
 import io.agora.iotlink.IDeviceSessionMgr;
 import io.agora.iotlink.IVodPlayer;
+import io.agora.iotlink.base.AtomicInteger;
 import io.agora.iotlink.base.BaseThreadComp;
 import io.agora.iotlink.callkit.SessionCtx;
 import io.agora.iotlink.logger.ALog;
@@ -59,14 +60,16 @@ public class DevMediaMgr implements IDevMediaMgr {
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Variable Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
+    private final Object mDataLock = new Object();    ///< 同步访问锁
 
     private UUID mSessionId;
     private DeviceSessionMgr mSessionMgr;
     private String mDeviceId;
 
+    private View mDisplayView;
     private SessionCtx mPlaybackSession;        ///< 媒体回放会话上下文，不在整个的 DeviceSessionMgr中
     private IPlayingCallback mPlayingCallbk;
-
+    private AtomicInteger mPlayingState = new AtomicInteger();
 
     ///////////////////////////////////////////////////////////////////////
     ////////////////////////// Public Methods  ////////////////////////////
@@ -76,6 +79,7 @@ public class DevMediaMgr implements IDevMediaMgr {
         mSessionMgr = sessionMgr;
         IDeviceSessionMgr.SessionInfo sessionInfo = mSessionMgr.getSessionInfo(sessionId);
         mDeviceId = sessionInfo.mPeerDevId;
+        mPlayingState.setValue(DEVPLAYER_STATE_STOPPED);  // 停止播放状态
     }
 
 
@@ -177,11 +181,18 @@ public class DevMediaMgr implements IDevMediaMgr {
 
     @Override
     public int setDisplayView(final View displayView) {
+        mDisplayView = displayView;
         return ErrCode.XOK;
     }
 
     @Override
     public int play(long globalStartTime, final IPlayingCallback playingCallback) {
+        int playingState = mPlayingState.getValue();
+        if (playingState != DEVPLAYER_STATE_STOPPED) {
+            ALog.getInstance().d(TAG, "<play> bad playing state, state=" + playingState);
+            return ErrCode.XERR_BAD_STATE;
+        }
+
         RtmPlayReqCmd playReqCmd = new RtmPlayReqCmd();
         playReqCmd.mGlobalStartTime = globalStartTime;
         playReqCmd.mSequenceId = RtmCmdSeqId.getSeuenceId();
@@ -195,6 +206,7 @@ public class DevMediaMgr implements IDevMediaMgr {
                 ALog.getInstance().d(TAG, "<play.onRtmCmdResponsed> errCode=" + errCode);
                 RtmPlayRspCmd playRspCmd = (RtmPlayRspCmd)rspCmd;
                 if (errCode != ErrCode.XOK) {
+                    mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_STOPPED);   // 状态机: 停止播放
                     if (mPlayingCallbk != null) {
                         mPlayingCallbk.onDevMediaOpenDone(null, errCode);
                     }
@@ -205,20 +217,30 @@ public class DevMediaMgr implements IDevMediaMgr {
                 IDeviceSessionMgr.SessionInfo sessionInfo = mSessionMgr.getSessionInfo(mSessionId);
 
                 // 进入频道进行音视频拉流
-                mPlaybackSession = new SessionCtx();
-                mPlaybackSession.mSessionId = UUID.randomUUID();
-                mPlaybackSession.mUserId = sessionInfo.mUserId;
-                mPlaybackSession.mDeviceId = mDeviceId;
-                mPlaybackSession.mLocalRtcUid = playRspCmd.mRtcUid;
-                mPlaybackSession.mChnlName = playRspCmd.mChnlName;
-                mPlaybackSession.mRtcToken = playRspCmd.mRtcToken;
-                mPlaybackSession.mType = SESSION_TYPE_PLAYBACK;  // 会话类型
-                mPlaybackSession.mUserCount = 1;      // 至少有一个用户
-                mPlaybackSession.mSeesionCallback = null;
-                mPlaybackSession.mState = IDeviceSessionMgr.SESSION_STATE_CONNECTED;   // 直接连接到设备
-                mPlaybackSession.mConnectTimestamp = System.currentTimeMillis();
+                SessionCtx playbackSession = new SessionCtx();
+                playbackSession.mSessionId = UUID.randomUUID();
+                playbackSession.mUserId = sessionInfo.mUserId;
+                playbackSession.mDeviceId = mDeviceId;
+                playbackSession.mLocalRtcUid = playRspCmd.mRtcUid;
+                playbackSession.mChnlName = playRspCmd.mChnlName;
+                playbackSession.mRtcToken = playRspCmd.mRtcToken;
+                playbackSession.mType = SESSION_TYPE_PLAYBACK;  // 会话类型
+                playbackSession.mUserCount = 1;      // 至少有一个用户
+                playbackSession.mSeesionCallback = null;
+                playbackSession.mState = IDeviceSessionMgr.SESSION_STATE_CONNECTED;   // 直接连接到设备
+                playbackSession.mConnectTimestamp = System.currentTimeMillis();
 
-                mSessionMgr.talkingStart(mPlaybackSession, false);
+                // 开始进入频道
+                mSessionMgr.talkingPrepare(playbackSession, true, true, false);
+
+                // 设置显示控件
+                if (mDisplayView != null) {
+                    mSessionMgr.setDisplayView(playbackSession, mDisplayView);
+                }
+
+                synchronized (mDataLock) {
+                    mPlaybackSession = playbackSession;
+                }
 
                 if (mPlayingCallbk != null) {
                     mPlayingCallbk.onDevMediaOpenDone(null, ErrCode.XOK);
@@ -226,6 +248,7 @@ public class DevMediaMgr implements IDevMediaMgr {
             }
         };
 
+        mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_PLAYING); // 状态机: 正在播放
         int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(playReqCmd);
 
         ALog.getInstance().d(TAG, "<play> done, ret=" + ret
@@ -241,6 +264,12 @@ public class DevMediaMgr implements IDevMediaMgr {
 
     @Override
     public int stop() {
+        int playingState = mPlayingState.getValue();
+        if (playingState == DEVPLAYER_STATE_STOPPED) {
+            ALog.getInstance().d(TAG, "<stop> bad playing state, state=" + playingState);
+            return ErrCode.XERR_BAD_STATE;
+        }
+
         RtmBaseCmd stopReqCmd = new RtmBaseCmd();
         stopReqCmd.mSequenceId = RtmCmdSeqId.getSeuenceId();
         stopReqCmd.mCmdId = IRtmCmd.CMDID_MEDIA_STOP;
@@ -251,13 +280,17 @@ public class DevMediaMgr implements IDevMediaMgr {
             @Override
             public void onRtmCmdResponsed(int commandId, int errCode, IRtmCmd reqCmd, IRtmCmd rspCmd) {
                 ALog.getInstance().d(TAG, "<stop.onRtmCmdResponsed> errCode=" + errCode);
-                if (errCode != ErrCode.XOK) {
-                    return;
-                }
+                mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_STOPPED); // 状态机: 停止播放
 
                 // 退出频道
-                mSessionMgr.talkingStop(mPlaybackSession);
-                mPlaybackSession = null;
+                SessionCtx playingSession;
+                synchronized (mDataLock) {
+                    playingSession = mPlaybackSession;
+                }
+                mSessionMgr.talkingStop(playingSession);
+                synchronized (mDataLock) {
+                    mPlaybackSession = null;
+                }
             }
         };
 

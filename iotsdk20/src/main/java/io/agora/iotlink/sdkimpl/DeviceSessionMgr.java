@@ -665,6 +665,20 @@ public class DeviceSessionMgr extends BaseThreadComp
         return (ret ? ErrCode.XOK : ErrCode.XERR_UNSUPPORTED);
     }
 
+
+    int setDisplayView(final SessionCtx sessionCtx, final View displayView) {
+        boolean ret = true;
+        synchronized (mTalkEngLock) {
+            if (mTalkEngine.isReady()) {
+                ret = mTalkEngine.setRemoteVideoView(sessionCtx, displayView);
+            }
+        }
+
+        ALog.getInstance().d(TAG, "<setDisplayView> done, sessionId=" + sessionCtx.mSessionId
+                + ", ret=" + ret);
+        return (ret ? ErrCode.XOK : ErrCode.XERR_UNSUPPORTED);
+    }
+
     public int previewStart(final UUID sessionId, final IDevPreviewMgr.OnPreviewListener previewListener) {
         SessionCtx sessionCtx = mSessionMgr.getSession(sessionId);
         if (sessionCtx == null) {
