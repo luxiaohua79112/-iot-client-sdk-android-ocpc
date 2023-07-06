@@ -271,9 +271,52 @@ public class DevMediaMgr implements IDevMediaMgr {
     }
 
     @Override
-    public int play(long fileId, long startPos, int playSpeed,
+    public int play(final String fileId, long startPos, int playSpeed,
                     final IPlayingCallback playingCallback) {
-        return ErrCode.XOK;
+        int playingState = mPlayingState.getValue();
+        if (playingState != DEVPLAYER_STATE_STOPPED) {
+            ALog.getInstance().d(TAG, "<play> bad playing state, state=" + playingState);
+            return ErrCode.XERR_BAD_STATE;
+        }
+
+        RtmPlayReqCmd playReqCmd = new RtmPlayReqCmd();
+        playReqCmd.mFileId = fileId;
+        playReqCmd.mOffset = startPos;
+        playReqCmd.mRate = playSpeed;
+
+        playReqCmd.mSequenceId = RtmCmdSeqId.getSeuenceId();
+        playReqCmd.mCmdId = IRtmCmd.CMDID_MEDIA_PLAY_TIMELINE;
+        playReqCmd.mDeviceId = mDeviceId;
+        playReqCmd.mSendTimestamp = System.currentTimeMillis();
+
+        playReqCmd.mRespListener = new IRtmCmd.OnRtmCmdRespListener() {
+            @Override
+            public void onRtmCmdResponsed(int commandId, int errCode, IRtmCmd reqCmd, IRtmCmd rspCmd) {
+                ALog.getInstance().d(TAG, "<play.onRtmCmdResponsed> errCode=" + errCode);
+                RtmPlayRspCmd playRspCmd = (RtmPlayRspCmd)rspCmd;
+                if (errCode != ErrCode.XOK) {
+                    mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_STOPPED);   // 状态机: 停止播放
+                    if (mPlayingCallbk != null) {
+                        mPlayingCallbk.onDevMediaOpenDone(null, errCode);
+                    }
+                    return;
+                }
+
+                // 进入RTC频道拉流
+                RtcChnlEnter(playRspCmd.mRtcUid, playRspCmd.mChnlName, playRspCmd.mRtcToken);
+
+                if (mPlayingCallbk != null) {
+                    mPlayingCallbk.onDevMediaOpenDone(null, ErrCode.XOK);
+                }
+            }
+        };
+
+        mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_PLAYING); // 状态机: 正在播放
+        int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(playReqCmd);
+
+        ALog.getInstance().d(TAG, "<play> done, ret=" + ret
+                + ", playReqCmd=" + playReqCmd);
+        return ret;
     }
 
     @Override

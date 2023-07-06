@@ -32,7 +32,7 @@ public class RtmPlayReqCmd extends RtmBaseCmd  {
     public long mGlobalStartTime;       ///< 全局的播放开始时间戳
 
     public String mFileId;              ///< 要播放的 fileId
-    public long mStartTime;              ///< 播放开始时间戳
+    public long mOffset;                ///< 播放开始时间戳
 
     public int mRate;                   ///< 播放倍速
 
@@ -48,7 +48,7 @@ public class RtmPlayReqCmd extends RtmBaseCmd  {
                 + ", mSendTimestamp=" + mSendTimestamp
                 + ", mGlobalStartTime=" + mGlobalStartTime
                 + ", mFileId=" + mFileId
-                + ", mStartTime=" + mStartTime
+                + ", mOffset=" + mOffset
                 + ", mRate=" + mRate + " }";
         return infoText;
     }
@@ -71,7 +71,7 @@ public class RtmPlayReqCmd extends RtmBaseCmd  {
             JSONObject paramObj = new JSONObject();
             if (!TextUtils.isEmpty(mFileId)) {
                 paramObj.put("id", mFileId);
-                paramObj.put("offset", mStartTime);
+                paramObj.put("offset", mOffset);
             } else {
                 paramObj.put("begin", mGlobalStartTime);
             }

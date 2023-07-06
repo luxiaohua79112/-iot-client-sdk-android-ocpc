@@ -256,7 +256,7 @@ public interface IDevMediaMgr  {
      * @param playingCallback : 播放回调接口
      * @return 返回错误码
      */
-    int play(long fileId, long startPos, int playSpeed, final IPlayingCallback playingCallback);
+    int play(final String fileId, long startPos, int playSpeed, final IPlayingCallback playingCallback);
 
     /**
      * @brief 停止当前播放，成功后切换到 DEVPLAYER_STATE_STOPPED 状态

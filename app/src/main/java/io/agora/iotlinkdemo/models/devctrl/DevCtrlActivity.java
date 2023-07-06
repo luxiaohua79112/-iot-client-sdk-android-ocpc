@@ -499,6 +499,9 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
           long currTimeSec = (System.currentTimeMillis() / 1000);
           long globalTime = currTimeSec - (12*3600);
           ret = mediaMgr.play(globalTime, 1, this);
+
+//          String fileId = "record01";
+//          ret = mediaMgr.play(fileId, 5000, 1, this);
           if (ret != ErrCode.XOK) {
               popupMessage("Fail to start Media playing, errCode=" + ret);
               return;
