@@ -452,9 +452,9 @@ public class DeviceSessionMgr extends BaseThreadComp
         ALog.getInstance().d(TAG, "<onMessageDeviceFirstFrame> sessionCtx=" + sessionCtx
                 + ", width=" + width + ", height=" + height);
 
-        if (sessionCtx.mState == SESSION_STATE_CONNECTED) {
+        if (sessionCtx.mState == SESSION_STATE_CONNECTED || sessionCtx.mState == SESSION_STATE_CONNECTING) {
             // 回调对端首帧出图
-//            CallbackPeerFirstVideo(sessionCtx, width, height);
+            CallbackPeerFirstVideo(sessionCtx, width, height);
         }
     }
 
@@ -1019,5 +1019,12 @@ public class DeviceSessionMgr extends BaseThreadComp
             sessionCtx.mSeesionCallback.onSessionOtherUserOffline(sessionCtx.mSessionId, sessionCtx.mUserCount);
         }
     }
+
+    void CallbackPeerFirstVideo(final SessionCtx sessionCtx, int width, int height) {
+        if (sessionCtx.mPreviewListener != null) {
+            sessionCtx.mPreviewListener.onDeviceFirstVideo(sessionCtx.mSessionId, width, height);
+        }
+    }
+
 
 }
