@@ -108,6 +108,28 @@
         app:layout_constraintTop_toBottomOf="@id/btn_sdcard_fmt" />
 
     <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_customize_cmd"
+        android:layout_width="100dp"
+        android:layout_height="50dp"
+        android:layout_marginStart="140dp"
+        android:layout_marginTop="10dp"
+        android:background="#80D6D6D6"
+        android:text="自定义命令"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btn_sdcard_fmt" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_play_globaltime"
+        android:layout_width="100dp"
+        android:layout_height="50dp"
+        android:layout_marginStart="260dp"
+        android:layout_marginTop="10dp"
+        android:background="#80D6D6D6"
+        android:text="全局播放"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btn_sdcard_fmt" />
+
+    <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_play_stop"
         android:layout_width="100dp"
         android:layout_height="50dp"

@@ -125,6 +125,14 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
             onBtnMediaCover(view);
         });
 
+        getBinding().btnCustomizeCmd.setOnClickListener(view -> {
+            onBtnCustomizeCmd(view);
+        });
+
+        getBinding().btnPlayGlobaltime.setOnClickListener(view -> {
+            onBtnPlayGlobalTime(view);
+        });
+
         getBinding().btnPlayStop.setOnClickListener(view -> {
             onBtnPlayStop(view);
         });
@@ -484,6 +492,61 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
         }
     }
 
+    /**
+     * @brief 定制命令
+     */
+    void onBtnCustomizeCmd(View view) {
+        IDeviceSessionMgr sessionMgr = AIotAppSdkFactory.getDevSessionMgr();
+        IDevController devController = sessionMgr.getDevController(mSessionId);
+        if (devController == null) {
+            popupMessage("Not found device dev controller with sessionId=" + mSessionId);
+            return;
+        }
+
+        // 自定义命令
+        int ret = devController.sendCmdCustomize("This is customize command", new IDevController.OnCommandCmdListener() {
+            @Override
+            public void onDeviceCmdDone(int errCode, String respData) {
+                popupMessage("Customize response: errCode=" + errCode + ", respData=" + respData);
+            }
+        });
+        if (ret != ErrCode.XOK) {
+            popupMessage("Fail to send customize command, errCode=" + ret);
+            return;
+        }
+    }
+
+
+    /**
+     * @brief 全局时间轴播放命令
+     */
+    void onBtnPlayGlobalTime(View view) {
+        IDeviceSessionMgr sessionMgr = AIotAppSdkFactory.getDevSessionMgr();
+        IDevMediaMgr mediaMgr = sessionMgr.getDevMediaMgr(mSessionId);
+        if (mediaMgr == null) {
+            popupMessage("Not found device media mgr with sessionId=" + mSessionId);
+            return;
+        }
+
+        int playingState = mediaMgr.getPlayingState();
+        int ret;
+        if (playingState != IDevMediaMgr.DEVPLAYER_STATE_STOPPED) {
+            popupMessage("Meida is playing!");
+            return;
+        }
+
+        // 播放媒体文件
+        long currTimeSec = (System.currentTimeMillis() / 1000);
+        long globalTime = currTimeSec - (12*3600);
+        ret = mediaMgr.play(globalTime, 1, this);
+        if (ret != ErrCode.XOK) {
+            popupMessage("Fail to start Media global timeline playing, errCode=" + ret);
+            return;
+        }
+        getBinding().btnPlayStop.setText("停止");
+
+    }
+
 
     /**
     * @brief 媒体文件 播放/停止
@@ -500,10 +563,6 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
       int ret;
       if (playingState == IDevMediaMgr.DEVPLAYER_STATE_STOPPED) {
           // 播放媒体文件
-//          long currTimeSec = (System.currentTimeMillis() / 1000);
-//          long globalTime = currTimeSec - (12*3600);
-//          ret = mediaMgr.play(globalTime, 1, this);
-
           String fileId = "record01";
           ret = mediaMgr.play(fileId, 5000, 1, this);
           if (ret != ErrCode.XOK) {
