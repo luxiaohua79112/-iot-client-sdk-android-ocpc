@@ -44,7 +44,7 @@ public class RtmMgrComp extends BaseThreadComp {
     //////////////////////// Constant Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
     private static final String TAG = "IOTSDK/RtmMgrComp";
-    private static final long COMMAND_TIMEOUT = 120000;  // 30000;   ///< 命令响应超时30秒
+    private static final long COMMAND_TIMEOUT = 10000;               ///< 命令响应超时10秒
     private static final long TIMER_INTERVAL = 4000;                ///< 定时器间隔 4秒
 
     //

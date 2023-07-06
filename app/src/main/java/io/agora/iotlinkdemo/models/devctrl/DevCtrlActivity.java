@@ -328,10 +328,11 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
           return;
         }
 
+        long currTimeSec = (System.currentTimeMillis() / 1000);
         IDevMediaMgr.QueryParam queryParam = new IDevMediaMgr.QueryParam();
         queryParam.mFileId = null;
-        queryParam.mBeginTimestamp = 0;
-        queryParam.mEndTimestamp = (System.currentTimeMillis() / 1000);
+        queryParam.mBeginTimestamp = currTimeSec - (24*3600);
+        queryParam.mEndTimestamp = currTimeSec;
         queryParam.mPageIndex = 1;
         queryParam.mPageSize = 20;
 
