@@ -72,11 +72,11 @@ public class RtmQueryReqCmd extends RtmBaseCmd  {
                 paramObj.put("fileId", mQueryParam.mFileId);
             }
             if (mQueryParam.mBeginTime >= 0) {
-                paramObj.put("beginTime", mQueryParam.mBeginTime);
+                paramObj.put("begin", mQueryParam.mBeginTime);
             }
-            paramObj.put("endTime", mQueryParam.mEndTime);
-            paramObj.put("pageIndex", mQueryParam.mPageIndex);
-            paramObj.put("pageSize", mQueryParam.mPageSize);
+            paramObj.put("end", mQueryParam.mEndTime);
+            paramObj.put("index", mQueryParam.mPageIndex);
+            paramObj.put("size", mQueryParam.mPageSize);
             bodyObj.put("param", paramObj);
 
         } catch (JSONException jsonExp) {

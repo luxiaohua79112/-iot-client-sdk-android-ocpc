@@ -408,12 +408,12 @@ public class RtmMgrComp extends BaseThreadComp {
 
                             DevFileInfo fileInfo = new DevFileInfo();
                             fileInfo.mFileType = JsonUtils.parseJsonIntValue(fileInfoObj, "type", 0);
-                            fileInfo.mFileId = JsonUtils.parseJsonStringValue(fileInfoObj, "fileId", null);
+                            fileInfo.mFileId = JsonUtils.parseJsonStringValue(fileInfoObj, "id", null);
                             fileInfo.mEvent = JsonUtils.parseJsonIntValue(fileInfoObj, "event", 0);
-                            fileInfo.mStartTime = JsonUtils.parseJsonLongValue(fileInfoObj, "startTime", -1);
-                            fileInfo.mStopTime = JsonUtils.parseJsonLongValue(fileInfoObj, "stopTime", -1);
-                            fileInfo.mImgUrl = JsonUtils.parseJsonStringValue(fileInfoObj, "imgUrl", null);
-                            fileInfo.mVideoUrl = JsonUtils.parseJsonStringValue(fileInfoObj, "videoUrl", null);
+                            fileInfo.mStartTime = JsonUtils.parseJsonLongValue(fileInfoObj, "start", -1);
+                            fileInfo.mStopTime = JsonUtils.parseJsonLongValue(fileInfoObj, "stop", -1);
+                            fileInfo.mImgUrl = JsonUtils.parseJsonStringValue(fileInfoObj, "pic", null);
+                            fileInfo.mVideoUrl = JsonUtils.parseJsonStringValue(fileInfoObj, "url", null);
                             queryRspCmd.mFileList.add(fileInfo);
                         }
                     }
@@ -445,7 +445,7 @@ public class RtmMgrComp extends BaseThreadComp {
 
                             DevFileDelErrInfo errInfo = new DevFileDelErrInfo();
                             errInfo.mDelErrCode = JsonUtils.parseJsonIntValue(undelItemObj, "error", 0);
-                            errInfo.mFileId = JsonUtils.parseJsonStringValue(undelItemObj, "fileId", null);
+                            errInfo.mFileId = JsonUtils.parseJsonStringValue(undelItemObj, "id", null);
                             deleteRspCmd.mErrorList.add(errInfo);
                         }
                     }
