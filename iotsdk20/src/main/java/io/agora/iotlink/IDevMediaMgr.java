@@ -286,7 +286,7 @@ public interface IDevMediaMgr  {
 
     /**
      * @brief 设置快进、快退播放倍速，默认是正常播放速度（speed=1）
-     * @param speed: 固定几个倍速：-4；-2；1；2；4
+     * @param speed: 固定几个倍速：1; 2; 3;
      * @return 返回错误码
      */
     int setPlayingSpeed(int speed);

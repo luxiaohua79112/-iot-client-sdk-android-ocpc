@@ -132,6 +132,10 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
         getBinding().btnPauseResume.setOnClickListener(view -> {
             onBtnPauseResume(view);
         });
+
+        getBinding().btnSpeed.setOnClickListener(view -> {
+            onBtnPlaySpeed(view);
+        });
     }
 
     @Override
@@ -496,12 +500,12 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
       int ret;
       if (playingState == IDevMediaMgr.DEVPLAYER_STATE_STOPPED) {
           // 播放媒体文件
-          long currTimeSec = (System.currentTimeMillis() / 1000);
-          long globalTime = currTimeSec - (12*3600);
-          ret = mediaMgr.play(globalTime, 1, this);
+//          long currTimeSec = (System.currentTimeMillis() / 1000);
+//          long globalTime = currTimeSec - (12*3600);
+//          ret = mediaMgr.play(globalTime, 1, this);
 
-//          String fileId = "record01";
-//          ret = mediaMgr.play(fileId, 5000, 1, this);
+          String fileId = "record01";
+          ret = mediaMgr.play(fileId, 5000, 1, this);
           if (ret != ErrCode.XOK) {
               popupMessage("Fail to start Media playing, errCode=" + ret);
               return;
@@ -527,6 +531,31 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
           popupMessage("Not found device media mgr with sessionId=" + mSessionId);
           return;
       }
+    }
+
+    /**
+     * @brief 设置播放倍速
+     */
+    int mPlayingSpeed = 1;
+    void onBtnPlaySpeed(View view) {
+        IDeviceSessionMgr sessionMgr = AIotAppSdkFactory.getDevSessionMgr();
+        IDevMediaMgr mediaMgr = sessionMgr.getDevMediaMgr(mSessionId);
+        if (mediaMgr == null) {
+            popupMessage("Not found device media mgr with sessionId=" + mSessionId);
+            return;
+        }
+
+        mPlayingSpeed++;
+        if (mPlayingSpeed > 3) {
+            mPlayingSpeed = 1;
+        }
+
+        int ret = mediaMgr.setPlayingSpeed(mPlayingSpeed);
+        if (ret != ErrCode.XOK) {
+            popupMessage("Fail to set playing speed, errCode=" + ret);
+        } else {
+            popupMessage("Successful to set playing speed, mPlayingSpeed=" + mPlayingSpeed);
+        }
     }
 
 

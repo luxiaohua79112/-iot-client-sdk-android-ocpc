@@ -285,7 +285,7 @@ public class DevMediaMgr implements IDevMediaMgr {
         playReqCmd.mRate = playSpeed;
 
         playReqCmd.mSequenceId = RtmCmdSeqId.getSeuenceId();
-        playReqCmd.mCmdId = IRtmCmd.CMDID_MEDIA_PLAY_TIMELINE;
+        playReqCmd.mCmdId = IRtmCmd.CMDID_MEDIA_PLAY_ID;
         playReqCmd.mDeviceId = mDeviceId;
         playReqCmd.mSendTimestamp = System.currentTimeMillis();
 
