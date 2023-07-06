@@ -111,19 +111,26 @@ public class ErrCode {
 
 
     //
-    // 呼叫系统相关错误
+    // 设备命令相关错误
     //
-    public static final int XERR_CALLKIT_BASE = -30000;
-    public static final int XERR_CALLKIT_TIMEOUT = -30001;          ///< 呼叫超时无响应
-    public static final int XERR_CALLKIT_DIAL = -30002;             ///< 呼叫拨号失败
-    public static final int XERR_CALLKIT_HANGUP = -30003;           ///< 呼叫挂断失败
-    public static final int XERR_CALLKIT_ANSWER = -30004;           ///< 呼叫接听失败
-    public static final int XERR_CALLKIT_REJECT = -30005;           ///< 呼叫拒绝失败
-    public static final int XERR_CALLKIT_PEER_BUSY = -30006;        ///< 对端忙
-    public static final int XERR_CALLKIT_PEERTIMEOUT = -30007;      ///< 对端超时无响应
-    public static final int XERR_CALLKIT_LOCAL_BUSY = -30008;       ///< 本地端忙
-    public static final int XERR_CALLKIT_ERR_OPT = -30009;          ///< 不支持的错误操作
-    public static final int XERR_CALLKIT_PEER_UNREG = -30010;       ///< 对端未注册
+    public static final int XERR_DEVCMD_BASE = -30000;
+    public static final int XERR_DEVCMD_TIMEOUT = -30001;          ///< 设备命令超时无回应
+    public static final int XERR_DEVCMD_SDCARD_FMT = -30002;       ///< SD卡格式化失败
+
+    //
+    // SD卡媒体文件管理相关错误
+    //
+    public static final int XERR_MEDIAMGR_BASE = -40000;
+    public static final int XERR_MEDIAMGR_QUERYLIST = -40001;       ///< 查询媒体文件列表失败
+    public static final int XERR_MEDIAMGR_DEL_EXCEPT = -40002;      ///< 删除时存储卡状态异常（格式不对，被系统推出）
+    public static final int XERR_MEDIAMGR_DEL_SDCARD = -40003;      ///< 删除时存储卡不存在
+    public static final int XERR_MEDIAMGR_DEL_PARTIAL = -40004;     ///< 只删除了部分文件
+    public static final int XERR_MEDIAMGR_DEL_UNKNOWN = -40005;     ///< 未知原因删除失败
+    public static final int XERR_MEDIAMGR_DEL_NOT_EXIST = -40006;   ///< 删除的文件不存在
+    public static final int XERR_MEDIAMGR_DEL_IN_USE = -40007;      ///< 正在使用中导致删除失败
+    public static final int XERR_MEDIAMGR_COVER_GET = -40008;       ///< 获取封面失败
+    public static final int XERR_MEDIAMGR_PLAY_READFILE = -40009;   ///< 读取文件失败导致不能播放
+    public static final int XERR_MEDIAMGR_PLAY_UNKNOWN = -40010;    ///< 未知原因导致播放失败
 
 
     //

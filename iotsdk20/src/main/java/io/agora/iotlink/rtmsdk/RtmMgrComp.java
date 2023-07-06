@@ -351,7 +351,7 @@ public class RtmMgrComp extends BaseThreadComp {
             ALog.getInstance().d(TAG, "<onMessageTimer> callback command timeout, rtmCmd=" + rtmCmd);
             IRtmCmd.OnRtmCmdRespListener cmdRespListener = rtmCmd.getRespListener();
             if (cmdRespListener != null) {
-                cmdRespListener.onRtmCmdResponsed(rtmCmd.getCommandId(), ErrCode.XERR_TIMEOUT, rtmCmd, null );
+                cmdRespListener.onRtmCmdResponsed(rtmCmd.getCommandId(), ErrCode.XERR_DEVCMD_TIMEOUT, rtmCmd, null );
             }
         }
 
@@ -380,7 +380,7 @@ public class RtmMgrComp extends BaseThreadComp {
         // 解析基本的回应命令信息
         long sequenceId = JsonUtils.parseJsonLongValue(recvJsonObj, "sequenceId", -1);
         int commandId = JsonUtils.parseJsonIntValue(recvJsonObj, "commandId", -1);
-        int errCode = JsonUtils.parseJsonIntValue(recvJsonObj, "code", 0);
+        int codeValue = JsonUtils.parseJsonIntValue(recvJsonObj, "code", 0);
         if (sequenceId < 0 || commandId < 0) {
             ALog.getInstance().e(TAG, "<parseRspCmdData> END, no sequenceId or commandId!");
             return null;
@@ -393,7 +393,7 @@ public class RtmMgrComp extends BaseThreadComp {
                 queryRspCmd.mSequenceId = sequenceId;
                 queryRspCmd.mCmdId = commandId;
                 queryRspCmd.mIsRespCmd = true;
-                queryRspCmd.mErrCode = errCode;
+                queryRspCmd.mErrCode = (codeValue == 0) ? ErrCode.XOK : ErrCode.XERR_MEDIAMGR_QUERYLIST;
                 queryRspCmd.mDeviceId = deviceId;
 
                 JSONObject respDataObj = JsonUtils.parseJsonObject(recvJsonObj, "data", null);
@@ -430,7 +430,17 @@ public class RtmMgrComp extends BaseThreadComp {
                 deleteRspCmd.mSequenceId = sequenceId;
                 deleteRspCmd.mCmdId = commandId;
                 deleteRspCmd.mIsRespCmd = true;
-                deleteRspCmd.mErrCode = errCode;
+                if (codeValue == 0) {
+                    deleteRspCmd.mErrCode = ErrCode.XOK;
+                } else if (codeValue == 1) {
+                    deleteRspCmd.mErrCode = ErrCode.XERR_MEDIAMGR_DEL_EXCEPT;
+                } else if (codeValue == 2) {
+                    deleteRspCmd.mErrCode = ErrCode.XERR_MEDIAMGR_DEL_SDCARD;
+                } else if (codeValue == 3) {
+                    deleteRspCmd.mErrCode = ErrCode.XERR_MEDIAMGR_DEL_PARTIAL;
+                } else {
+                    deleteRspCmd.mErrCode = ErrCode.XERR_MEDIAMGR_DEL_UNKNOWN;
+                }
                 deleteRspCmd.mDeviceId = deviceId;
 
                 JSONObject respDataObj = JsonUtils.parseJsonObject(recvJsonObj, "data", null);
@@ -444,7 +454,16 @@ public class RtmMgrComp extends BaseThreadComp {
                             }
 
                             DevFileDelErrInfo errInfo = new DevFileDelErrInfo();
-                            errInfo.mDelErrCode = JsonUtils.parseJsonIntValue(undelItemObj, "error", 0);
+                            int errorValue = JsonUtils.parseJsonIntValue(undelItemObj, "error", 0);
+                            if (errorValue == 0) {
+                                errInfo.mDelErrCode = ErrCode.XOK;
+                            } else if (errorValue == 1) {
+                                errInfo.mDelErrCode = ErrCode.XERR_MEDIAMGR_DEL_NOT_EXIST;
+                            } else if (errorValue == 2) {
+                                errInfo.mDelErrCode = ErrCode.XERR_MEDIAMGR_DEL_IN_USE;
+                            } else {
+                                errInfo.mDelErrCode = ErrCode.XERR_MEDIAMGR_DEL_UNKNOWN;
+                            }
                             errInfo.mFileId = JsonUtils.parseJsonStringValue(undelItemObj, "id", null);
                             deleteRspCmd.mErrorList.add(errInfo);
                         }
@@ -459,7 +478,13 @@ public class RtmMgrComp extends BaseThreadComp {
                 playRspCmd.mSequenceId = sequenceId;
                 playRspCmd.mCmdId = commandId;
                 playRspCmd.mIsRespCmd = true;
-                playRspCmd.mErrCode = errCode;
+                if (codeValue == 0) {
+                    playRspCmd.mErrCode = ErrCode.XOK;
+                } else if (codeValue == 1) {
+                    playRspCmd.mErrCode = ErrCode.XERR_MEDIAMGR_PLAY_READFILE;
+                } else {
+                    playRspCmd.mErrCode = ErrCode.XERR_MEDIAMGR_PLAY_UNKNOWN;
+                }
                 playRspCmd.mDeviceId = deviceId;
 
                 JSONObject respDataObj = JsonUtils.parseJsonObject(recvJsonObj, "data", null);
@@ -476,7 +501,7 @@ public class RtmMgrComp extends BaseThreadComp {
                 customizeRspCmd.mSequenceId = sequenceId;
                 customizeRspCmd.mCmdId = commandId;
                 customizeRspCmd.mIsRespCmd = true;
-                customizeRspCmd.mErrCode = errCode;
+                customizeRspCmd.mErrCode = (codeValue == 0) ? ErrCode.XOK : ErrCode.XERR_UNKNOWN;
                 customizeRspCmd.mDeviceId = deviceId;
 
                 JSONObject respDataObj = JsonUtils.parseJsonObject(recvJsonObj, "data", null);
@@ -491,12 +516,10 @@ public class RtmMgrComp extends BaseThreadComp {
                 baseCmd.mSequenceId = sequenceId;
                 baseCmd.mCmdId = commandId;
                 baseCmd.mIsRespCmd = true;
-                baseCmd.mErrCode = errCode;
+                baseCmd.mErrCode = (codeValue == 0) ? ErrCode.XOK : ErrCode.XERR_UNKNOWN;
                 baseCmd.mDeviceId = deviceId;
                 responseCmd = baseCmd;
             } break;
-
-
         }
 
         ALog.getInstance().d(TAG, "<parseRspCmdData> END, responseCmd=" + responseCmd);

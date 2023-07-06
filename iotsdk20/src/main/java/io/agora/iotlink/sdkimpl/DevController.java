@@ -157,12 +157,12 @@ public class DevController  implements IDevController {
             @Override
             public void onRtmCmdResponsed(int commandId, int errCode, IRtmCmd reqCmd, IRtmCmd rspCmd) {
                 ALog.getInstance().d(TAG, "<sendCmdCustomize.onRtmCmdResponsed> errCode=" + errCode);
-                if (errCode == ErrCode.XERR_TIMEOUT) {
-                    cmdListener.onDeviceCmdDone(errCode, null);
-                } else {
-                    RtmCustomizeRspCmd respCmd = (RtmCustomizeRspCmd)rspCmd;
-                    cmdListener.onDeviceCmdDone(errCode, respCmd.mRecvData);
+                RtmCustomizeRspCmd respCmd = (RtmCustomizeRspCmd)rspCmd;
+                String recvData = null;
+                if (respCmd != null) {
+                    recvData = respCmd.mRecvData;
                 }
+                cmdListener.onDeviceCmdDone(errCode, recvData);
             }
         };
 
