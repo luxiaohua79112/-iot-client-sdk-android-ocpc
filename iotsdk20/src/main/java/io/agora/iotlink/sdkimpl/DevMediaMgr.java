@@ -40,6 +40,7 @@ import io.agora.iotlink.rtmsdk.RtmPlayReqCmd;
 import io.agora.iotlink.rtmsdk.RtmPlayRspCmd;
 import io.agora.iotlink.rtmsdk.RtmQueryReqCmd;
 import io.agora.iotlink.rtmsdk.RtmQueryRspCmd;
+import io.agora.iotlink.rtmsdk.RtmSpeedReqCmd;
 
 
 /*
@@ -362,7 +363,33 @@ public class DevMediaMgr implements IDevMediaMgr {
 
     @Override
     public int setPlayingSpeed(int speed) {
-        return ErrCode.XOK;
+        int playingState = mPlayingState.getValue();
+        if (playingState == DEVPLAYER_STATE_STOPPED) {
+            ALog.getInstance().d(TAG, "<setPlayingSpeed> bad state, playing stopped!");
+            return ErrCode.XERR_BAD_STATE;
+        }
+
+        RtmSpeedReqCmd speedReqCmd = new RtmSpeedReqCmd();
+        speedReqCmd.mRate = speed;
+
+        speedReqCmd.mSequenceId = RtmCmdSeqId.getSeuenceId();
+        speedReqCmd.mCmdId = IRtmCmd.CMDID_MEDIA_RATE;
+        speedReqCmd.mDeviceId = mDeviceId;
+        speedReqCmd.mSendTimestamp = System.currentTimeMillis();
+
+        speedReqCmd.mRespListener = new IRtmCmd.OnRtmCmdRespListener() {
+            @Override
+            public void onRtmCmdResponsed(int commandId, int errCode, IRtmCmd reqCmd, IRtmCmd rspCmd) {
+                ALog.getInstance().d(TAG, "<setPlayingSpeed.onRtmCmdResponsed> errCode=" + errCode);
+
+            }
+        };
+
+        int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(speedReqCmd);
+
+        ALog.getInstance().d(TAG, "<setPlayingSpeed> done, ret=" + ret
+                + ", speedReqCmd=" + speedReqCmd);
+        return ret;
     }
 
 
