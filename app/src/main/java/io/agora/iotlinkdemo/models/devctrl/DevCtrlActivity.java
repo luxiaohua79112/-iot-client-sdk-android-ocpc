@@ -2,6 +2,8 @@ package io.agora.iotlinkdemo.models.devctrl;
 
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
@@ -42,6 +44,8 @@ import io.agora.iotlinkdemo.base.PushApplication;
 import io.agora.iotlinkdemo.databinding.ActivityDevCtrlBinding;
 import io.agora.iotlinkdemo.databinding.ActivityMainBinding;
 import io.agora.iotlinkdemo.dialog.CommonDialog;
+import io.agora.iotlinkdemo.dialog.DialogImageDisplay;
+import io.agora.iotlinkdemo.dialog.NoPowerDialog;
 import io.agora.iotlinkdemo.models.home.DeviceInfo;
 import io.agora.iotlinkdemo.models.home.DeviceListAdapter;
 import io.agora.iotlinkdemo.presistentconnect.PresistentLinkComp;
@@ -52,9 +56,11 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
 
     private static final String TAG = "IOTLINK/DevCtrlAct";
 
-
+    private DevCtrlActivity mActivity;
     private UUID mSessionId = null;
     private FileListAdapter mFileListAdapter;
+
+    private DialogImageDisplay mImgDisplayDlg;
 
 
     ///////////////////////////////////////////////////////////////////////////
@@ -67,6 +73,7 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
 
     @Override
     public void initView(@Nullable Bundle savedInstanceState) {
+        mActivity = this;
         IDeviceSessionMgr sessionMgr = AIotAppSdkFactory.getDevSessionMgr();
         mSessionId = PushApplication.getInstance().getFullscrnSessionId();
         IDeviceSessionMgr.SessionInfo sessionInfo = sessionMgr.getSessionInfo(mSessionId);
@@ -479,6 +486,27 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
                         hideLoadingView();
                         if (errCode == ErrCode.XOK) {
                             popupMessage("Media cover get successful!");
+
+                            try {
+                                Bitmap recvBmp = BitmapFactory.decodeByteArray(data, 0, data.length);
+                                if (recvBmp != null) {
+                                    if (mImgDisplayDlg == null) {
+                                        mImgDisplayDlg = new DialogImageDisplay(mActivity);
+                                    }
+                                    mImgDisplayDlg.setDisplayBmp(recvBmp);
+                                    mImgDisplayDlg.show();
+
+                                    int width = recvBmp.getWidth();
+                                    int height = recvBmp.getHeight();
+                                    Log.d(TAG, "<onDevMediaCoverDataDone> width=" + width
+                                            + ", height=" + height);
+                                }
+
+                            } catch (Exception exp) {
+                                exp.printStackTrace();
+                            }
+
+
                         } else {
                             popupMessage("Media cover get failure: errCode=" + errCode);
                         }
