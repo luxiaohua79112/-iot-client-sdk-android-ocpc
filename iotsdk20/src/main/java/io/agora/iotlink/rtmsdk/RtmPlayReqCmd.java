@@ -69,7 +69,7 @@ public class RtmPlayReqCmd extends RtmBaseCmd  {
             bodyObj.put("commandId", mCmdId);
 
             JSONObject paramObj = new JSONObject();
-            if (TextUtils.isEmpty(mFileId)) {
+            if (!TextUtils.isEmpty(mFileId)) {
                 paramObj.put("id", mFileId);
                 paramObj.put("offset", mStartTime);
             } else {

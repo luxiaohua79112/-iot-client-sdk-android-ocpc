@@ -496,7 +496,9 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
       int ret;
       if (playingState == IDevMediaMgr.DEVPLAYER_STATE_STOPPED) {
           // 播放媒体文件
-          ret = mediaMgr.play(1000, this);
+          long currTimeSec = (System.currentTimeMillis() / 1000);
+          long globalTime = currTimeSec - (12*3600);
+          ret = mediaMgr.play(globalTime, 1, this);
           if (ret != ErrCode.XOK) {
               popupMessage("Fail to start Media playing, errCode=" + ret);
               return;

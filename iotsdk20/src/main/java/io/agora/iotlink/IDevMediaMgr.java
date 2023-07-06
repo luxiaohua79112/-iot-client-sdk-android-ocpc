@@ -242,10 +242,11 @@ public interface IDevMediaMgr  {
     /**
      * @brief 开始播放，成功后切换到 DEVPLAYER_STATE_PLAYING 状态
      * @param globalStartTime: 全局开始时间
+     * @param playSpeed: 播放倍速
      * @param playingCallback : 播放回调接口
      * @return 返回错误码
      */
-    int play(long globalStartTime, final IPlayingCallback playingCallback);
+    int play(long globalStartTime, int playSpeed, final IPlayingCallback playingCallback);
 
     /**
      * @brief 开始播放，成功后切换到 DEVPLAYER_STATE_PLAYING 状态

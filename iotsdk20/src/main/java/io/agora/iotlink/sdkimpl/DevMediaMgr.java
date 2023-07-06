@@ -224,7 +224,7 @@ public class DevMediaMgr implements IDevMediaMgr {
     }
 
     @Override
-    public int play(long globalStartTime, final IPlayingCallback playingCallback) {
+    public int play(long globalStartTime, int playSpeed, final IPlayingCallback playingCallback) {
         int playingState = mPlayingState.getValue();
         if (playingState != DEVPLAYER_STATE_STOPPED) {
             ALog.getInstance().d(TAG, "<play> bad playing state, state=" + playingState);
@@ -233,6 +233,8 @@ public class DevMediaMgr implements IDevMediaMgr {
 
         RtmPlayReqCmd playReqCmd = new RtmPlayReqCmd();
         playReqCmd.mGlobalStartTime = globalStartTime;
+        playReqCmd.mRate = playSpeed;
+
         playReqCmd.mSequenceId = RtmCmdSeqId.getSeuenceId();
         playReqCmd.mCmdId = IRtmCmd.CMDID_MEDIA_PLAY_TIMELINE;
         playReqCmd.mDeviceId = mDeviceId;
