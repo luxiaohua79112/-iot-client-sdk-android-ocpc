@@ -342,31 +342,31 @@ public class DevMediaMgr implements IDevMediaMgr {
      */
     int RtcChnlEnter(int rtcUid, final String chnlName, final String rtcToken) {
 
-        // 进入频道进行音视频拉流
-        SessionCtx playbackSession = new SessionCtx();
-        playbackSession.mSessionId = UUID.randomUUID();
-        playbackSession.mUserId = mUserId;
-        playbackSession.mDeviceId = mDeviceId;
-        playbackSession.mLocalRtcUid = rtcUid;
-        playbackSession.mChnlName = chnlName;
-        playbackSession.mRtcToken = rtcToken;
-        playbackSession.mType = SESSION_TYPE_PLAYBACK;  // 会话类型
-        playbackSession.mUserCount = 1;      // 至少有一个用户
-        playbackSession.mSeesionCallback = null;
-        playbackSession.mState = IDeviceSessionMgr.SESSION_STATE_CONNECTED;   // 直接连接到设备
-        playbackSession.mConnectTimestamp = System.currentTimeMillis();
-
-        // 开始进入频道
-        mSessionMgr.talkingPrepare(playbackSession, true, true, false);
-
-        // 设置显示控件
-        if (mDisplayView != null) {
-            mSessionMgr.setDisplayView(playbackSession, mDisplayView);
-        }
-
-        synchronized (mDataLock) {
-            mPlaybackSession = playbackSession;
-        }
+//        // 进入频道进行音视频拉流
+//        SessionCtx playbackSession = new SessionCtx();
+//        playbackSession.mSessionId = UUID.randomUUID();
+//        playbackSession.mUserId = mUserId;
+//        playbackSession.mDeviceId = mDeviceId;
+//        playbackSession.mLocalRtcUid = rtcUid;
+//        playbackSession.mChnlName = chnlName;
+//        playbackSession.mRtcToken = rtcToken;
+//        playbackSession.mType = SESSION_TYPE_PLAYBACK;  // 会话类型
+//        playbackSession.mUserCount = 1;      // 至少有一个用户
+//        playbackSession.mSeesionCallback = null;
+//        playbackSession.mState = IDeviceSessionMgr.SESSION_STATE_CONNECTED;   // 直接连接到设备
+//        playbackSession.mConnectTimestamp = System.currentTimeMillis();
+//
+//        // 开始进入频道
+//        mSessionMgr.talkingPrepare(playbackSession, true, true, false);
+//
+//        // 设置显示控件
+//        if (mDisplayView != null) {
+//            mSessionMgr.setDisplayView(playbackSession, mDisplayView);
+//        }
+//
+//        synchronized (mDataLock) {
+//            mPlaybackSession = playbackSession;
+//        }
 
         ALog.getInstance().d(TAG, "<RtcChnlEnter> done, rtcUid=" + rtcUid
                 + ", chnlName=" + chnlName + ", rtcToken=" + rtcToken);
@@ -377,16 +377,16 @@ public class DevMediaMgr implements IDevMediaMgr {
      * @brief 退出频道
      */
     int RtcChnlExit() {
-        SessionCtx playingSession;
-        synchronized (mDataLock) {
-            playingSession = mPlaybackSession;
-        }
-        if (playingSession != null) {
-            mSessionMgr.talkingStop(playingSession);
-        }
-        synchronized (mDataLock) {
-            mPlaybackSession = null;
-        }
+//        SessionCtx playingSession;
+//        synchronized (mDataLock) {
+//            playingSession = mPlaybackSession;
+//        }
+//        if (playingSession != null) {
+//            mSessionMgr.talkingStop(playingSession);
+//        }
+//        synchronized (mDataLock) {
+//            mPlaybackSession = null;
+//        }
 
         ALog.getInstance().d(TAG, "<RtcChnlExit> done");
         return ErrCode.XOK;
