@@ -413,12 +413,21 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
                     @Override
                     public void run() {
                         hideLoadingView();
-                        if (errCode != ErrCode.XOK) {  // 查询媒体文件失败
-                            popupMessage("Fail to delete file list, errCode=" + errCode);
-                            return;
-                        }
+                        if (errCode == ErrCode.XOK) {
+                            popupMessage("Media files delete successful!");
 
-                        popupMessage("Successful to delete file list, undeletedCount=" + undeletedList.size());
+                        } else if (errCode == ErrCode.XERR_MEDIAMGR_DEL_PARTIAL) {
+                            popupMessage("Media files delete only partial  undelCount=" + undeletedList.size());
+
+                        } else  if (errCode == ErrCode.XERR_MEDIAMGR_DEL_EXCEPT) {
+                            popupMessage("Media files delete failure: sdcard exception!");
+
+                        } else  if (errCode == ErrCode.XERR_MEDIAMGR_DEL_SDCARD) {
+                            popupMessage("Media files delete failure: no sdcard!");
+
+                        } else {
+                            popupMessage("Media files delete failure: errCode=" + errCode);
+                        }
                     }
                 });
             }
