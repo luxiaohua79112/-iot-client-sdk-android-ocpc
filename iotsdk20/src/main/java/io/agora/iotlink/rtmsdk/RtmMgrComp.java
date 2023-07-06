@@ -489,9 +489,9 @@ public class RtmMgrComp extends BaseThreadComp {
 
                 JSONObject respDataObj = JsonUtils.parseJsonObject(recvJsonObj, "data", null);
                 if (respDataObj != null) {
-                    playRspCmd.mRtcUid = JsonUtils.parseJsonIntValue(respDataObj, "rtcUid", -1);
-                    playRspCmd.mChnlName = JsonUtils.parseJsonStringValue(respDataObj, "chnlName", null);
-                    playRspCmd.mRtcToken = JsonUtils.parseJsonStringValue(respDataObj, "rtcToken", null);
+                    playRspCmd.mRtcUid = JsonUtils.parseJsonIntValue(respDataObj, "uid", -1);
+                    playRspCmd.mChnlName = JsonUtils.parseJsonStringValue(respDataObj, "cname", null);
+                    playRspCmd.mRtcToken = JsonUtils.parseJsonStringValue(respDataObj, "token", null);
                 }
                 responseCmd = playRspCmd;
             } break;
