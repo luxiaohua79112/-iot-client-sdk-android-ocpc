@@ -121,6 +121,10 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
             onBtnMediaDelete(view);
         });
 
+        getBinding().btnMediaCover.setOnClickListener(view -> {
+            onBtnMediaCover(view);
+        });
+
         getBinding().btnPlayStop.setOnClickListener(view -> {
             onBtnPlayStop(view);
         });
@@ -438,6 +442,43 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
         }
     }
 
+    /**
+     * @brief 获取媒体文件封面
+     */
+    void onBtnMediaCover(View view) {
+        IDeviceSessionMgr sessionMgr = AIotAppSdkFactory.getDevSessionMgr();
+        IDevMediaMgr mediaMgr = sessionMgr.getDevMediaMgr(mSessionId);
+        if (mediaMgr == null) {
+            popupMessage("Not found device media mgr with sessionId=" + mSessionId);
+            return;
+        }
+
+        String imgUrl = "media_01_cover.jpg";
+
+        showLoadingView();
+        int ret = mediaMgr.getMediaCoverData(imgUrl, new IDevMediaMgr.OnCoverDataListener() {
+            @Override
+            public void onDevMediaCoverDataDone(int errCode, final String imgUrl, final byte[] data) {
+                 Log.d(TAG, "<onBtnMediaCover.onDevMediaCoverDataDone> errCode=" + errCode
+                        + ", imgUrl=" + imgUrl + ", data=" + data);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        hideLoadingView();
+                        if (errCode == ErrCode.XOK) {
+                            popupMessage("Media cover get successful!");
+                        } else {
+                            popupMessage("Media cover get failure: errCode=" + errCode);
+                        }
+                    }
+                });
+            }
+        });
+        if (ret != ErrCode.XOK) {
+            hideLoadingView();
+            popupMessage("Fail to get media cover, errCode=" + ret);
+        }
+    }
 
 
     /**

@@ -132,6 +132,26 @@ public interface IDevMediaMgr  {
 
 
 
+    /**
+     * @brief 查询封面数据回调监听器
+     */
+    public static interface OnCoverDataListener {
+        /**
+         * @brief 媒体项删除完成事件
+         * @param errCode : 查询结果错误码，0标识查询成功
+         * @param imgUrl : 封面文件路径
+         * @param coverData : 封面图像的数据
+         */
+        default void onDevMediaCoverDataDone(int errCode, final String imgUrl, final byte[] coverData) {}
+    }
+
+    /**
+     * @brief 查询媒体文件封面，该方法是异步调用，通过回调返回删除结果
+     * @param imgUrl: 封面文件路径
+     * @param coverDataListener : 查询结果回调监听器
+     * @return 返回错误码
+     */
+    int getMediaCoverData(final String imgUrl, final OnCoverDataListener coverDataListener);
 
 
 

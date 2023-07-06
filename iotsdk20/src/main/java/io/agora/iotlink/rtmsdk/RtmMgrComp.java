@@ -422,7 +422,22 @@ public class RtmMgrComp extends BaseThreadComp {
             } break;
 
             case IRtmCmd.CMDID_MEDIA_COVER: {       // 封面图片响应命令
+                RtmCoverRspCmd coverRspCmd = new RtmCoverRspCmd();
+                coverRspCmd.mSequenceId = sequenceId;
+                coverRspCmd.mCmdId = commandId;
+                coverRspCmd.mIsRespCmd = true;
+                if (codeValue == 0) {
+                    coverRspCmd.mErrCode = ErrCode.XOK;
+                } else {
+                    coverRspCmd.mErrCode = ErrCode.XERR_MEDIAMGR_COVER_GET;
+                }
+                coverRspCmd.mDeviceId = deviceId;
 
+                JSONObject respDataObj = JsonUtils.parseJsonObject(recvJsonObj, "data", null);
+                if (respDataObj != null) {
+                    coverRspCmd.mContentBase64 = JsonUtils.parseJsonStringValue(respDataObj, "fileContent", null);
+                }
+                responseCmd = coverRspCmd;
             } break;
 
             case IRtmCmd.CMDID_MEDIA_DELETE: {      // 删除响应命令

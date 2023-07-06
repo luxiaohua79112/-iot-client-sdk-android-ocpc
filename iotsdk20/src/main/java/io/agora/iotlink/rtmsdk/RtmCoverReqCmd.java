@@ -63,7 +63,7 @@ public class RtmCoverReqCmd extends RtmBaseCmd  {
             bodyObj.put("commandId", mCmdId);
 
             JSONObject paramObj = new JSONObject();
-            paramObj.put("imgUrl", mImgUrl);
+            paramObj.put("pic", mImgUrl);
             bodyObj.put("param", paramObj);
 
         } catch (JSONException jsonExp) {

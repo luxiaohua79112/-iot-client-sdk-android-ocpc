@@ -12,6 +12,7 @@ package io.agora.iotlink.sdkimpl;
 
 
 
+import android.util.Base64;
 import android.view.View;
 
 import java.util.ArrayList;
@@ -31,6 +32,8 @@ import io.agora.iotlink.rtmsdk.DevFileInfo;
 import io.agora.iotlink.rtmsdk.IRtmCmd;
 import io.agora.iotlink.rtmsdk.RtmBaseCmd;
 import io.agora.iotlink.rtmsdk.RtmCmdSeqId;
+import io.agora.iotlink.rtmsdk.RtmCoverReqCmd;
+import io.agora.iotlink.rtmsdk.RtmCoverRspCmd;
 import io.agora.iotlink.rtmsdk.RtmDeleteReqCmd;
 import io.agora.iotlink.rtmsdk.RtmDeleteRspCmd;
 import io.agora.iotlink.rtmsdk.RtmPlayReqCmd;
@@ -179,6 +182,39 @@ public class DevMediaMgr implements IDevMediaMgr {
                 + ", deleteReqCmd=" + deleteReqCmd);
         return ret;
     }
+
+
+    @Override
+    public int getMediaCoverData(final String imgUrl, final OnCoverDataListener coverDataListener) {
+        RtmCoverReqCmd coverReqCmd = new RtmCoverReqCmd();
+        coverReqCmd.mImgUrl = imgUrl;
+
+        coverReqCmd.mSequenceId = RtmCmdSeqId.getSeuenceId();
+        coverReqCmd.mCmdId = IRtmCmd.CMDID_MEDIA_COVER;
+        coverReqCmd.mDeviceId = mDeviceId;
+        coverReqCmd.mSendTimestamp = System.currentTimeMillis();
+
+        coverReqCmd.mRespListener = new IRtmCmd.OnRtmCmdRespListener() {
+            @Override
+            public void onRtmCmdResponsed(int commandId, int errCode, IRtmCmd reqCmd, IRtmCmd rspCmd) {
+                ALog.getInstance().d(TAG, "<getMediaCoverData.onRtmCmdResponsed> errCode=" + errCode);
+                RtmCoverRspCmd coverRspCmd = (RtmCoverRspCmd)rspCmd;
+                byte[] imgData = null;
+                if ((coverRspCmd != null) && (coverRspCmd.mContentBase64 != null)) {
+                    imgData = Base64.decode(coverRspCmd.mContentBase64, Base64.NO_WRAP);
+                }
+                coverDataListener.onDevMediaCoverDataDone(errCode, imgUrl, imgData);
+            }
+        };
+
+        int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(coverReqCmd);
+
+        ALog.getInstance().d(TAG, "<getMediaCoverData> done, ret=" + ret
+                + ", coverReqCmd=" + coverReqCmd);
+        return ret;
+    }
+
+
 
 
     @Override
