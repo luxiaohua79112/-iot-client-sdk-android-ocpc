@@ -49,8 +49,8 @@ public interface IRtmCmd  {
     public static final int CMDID_PTZ_RESET = 1002;        ///< 云台校准命令
     public static final int CMDID_SDCARD_FMT = 2001;       ///< SD卡格式化
     public static final int CMDID_MEDIA_QUERY = 2002;      ///< 查询存储卡视频文件列表
-    public static final int CMDID_MEDIA_COVER = 2003;      ///< 查询视频文件封面图片
-    public static final int CMDID_MEDIA_DELETE = 2004;     ///< 删除媒体文件
+    public static final int CMDID_MEDIA_DELETE = 2003;     ///< 删除媒体文件
+    public static final int CMDID_MEDIA_COVER = 2004;      ///< 查询视频文件封面图片
     public static final int CMDID_MEDIA_PLAY_TIMELINE = 2005; ///< 根据开始时间播放SD卡视频
     public static final int CMDID_MEDIA_PLAY_ID = 2006;    ///< 根据FileId播放单个SDK视频
     public static final int CMDID_MEDIA_STOP = 2007;       ///< 停止当前回看
