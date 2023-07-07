@@ -73,7 +73,8 @@ public class DevMediaMgr implements IDevMediaMgr {
     private String mDeviceId;
 
     private View mDisplayView;
-    private AtomicUuid mPlaySessionId = new AtomicUuid();          ///< 设备播放器的会话Id
+    private DevPlayerChnlInfo mPlayChnlInfo = new DevPlayerChnlInfo();    ///< 设备播放器频道信息
+    private AtomicUuid mPlaySessionId = new AtomicUuid();                 ///< 设备播放器的会话Id
     private IPlayingCallback mPlayingCallbk;
     private AtomicInteger mPlayingState = new AtomicInteger();
 
@@ -413,14 +414,10 @@ public class DevMediaMgr implements IDevMediaMgr {
      */
     int RtcChnlEnter(int rtcUid, final String chnlName, final String rtcToken) {
         // 进入播放器频道
-        DeviceSessionMgr.DevPlayerChnlParam chnlParam = new DeviceSessionMgr.DevPlayerChnlParam();
-        chnlParam.mDeviceId = mDeviceId;
-        chnlParam.mRtcUid = rtcUid;
-        chnlParam.mChnlName = chnlName;
-        chnlParam.mRtcToken = rtcToken;
-        chnlParam.mDisplayView = mDisplayView;
-        DeviceSessionMgr.DevPlayerChnlRslt result = mSessionMgr.devPlayerChnlEnter(chnlParam);
+        mPlayChnlInfo.clear();
+        mPlayChnlInfo.setInfo(mDeviceId, rtcUid, chnlName, rtcToken, mDisplayView);
 
+        DeviceSessionMgr.DevPlayerChnlRslt result = mSessionMgr.devPlayerChnlEnter(mPlayChnlInfo);
         mPlaySessionId.setValue(result.mSessionId);
 
         return result.mErrCode;
@@ -432,8 +429,82 @@ public class DevMediaMgr implements IDevMediaMgr {
     int RtcChnlExit() {
         mSessionMgr.devPlayerChnlExit(mPlaySessionId.getValue());
         mPlaySessionId.setValue(null);
+        mPlayChnlInfo.clear();
 
         ALog.getInstance().d(TAG, "<RtcChnlExit> done");
         return ErrCode.XOK;
     }
+
+    /////////////////////////////////////////////////////////////////////////////
+    //////////////////// TalkingEngine.ICallback 回调处理 ////////////////////////
+    /////////////////////////////////////////////////////////////////////////////
+    public void onTalkingJoinDone(final UUID sessionId, final String channel, int uid) {
+        ALog.getInstance().d(TAG, "<onTalkingJoinDone> sessionId=" + sessionId
+                + ", channel=" + channel + ", uid=" + uid);
+        UUID playSessionId = mPlaySessionId.getValue();
+        if ((playSessionId == null) || (sessionId.compareTo(playSessionId) == 0)) {
+            ALog.getInstance().e(TAG, "<onTalkingJoinDone> NOT playing sessionId=" + sessionId
+                    + ", playSessionId=" + playSessionId);
+            return;
+        }
+    }
+
+    public void onTalkingLeftDone(final UUID sessionId) {
+        ALog.getInstance().d(TAG, "<onTalkingLeftDone> sessionId=" + sessionId);
+        UUID playSessionId = mPlaySessionId.getValue();
+        if ((playSessionId == null) || (sessionId.compareTo(playSessionId) == 0)) {
+            ALog.getInstance().e(TAG, "<onTalkingLeftDone> NOT playing sessionId=" + sessionId
+                    + ", playSessionId=" + playSessionId);
+            return;
+        }
+    }
+
+    public void onUserOnline(final UUID sessionId, int uid, int elapsed) {
+        ALog.getInstance().d(TAG, "<onUserOnline> sessionId=" + sessionId + ", uid=" + uid);
+        UUID playSessionId = mPlaySessionId.getValue();
+        if ((playSessionId == null) || (sessionId.compareTo(playSessionId) == 0)) {
+            ALog.getInstance().e(TAG, "<onUserOnline> NOT playing sessionId=" + sessionId
+                    + ", playSessionId=" + playSessionId);
+            return;
+        }
+
+    }
+
+    public void onUserOffline(final UUID sessionId, int uid, int reason) {
+        ALog.getInstance().d(TAG, "<onUserOffline> sessionId=" + sessionId
+                + ", uid=" + uid + ", reason=" + reason);
+        UUID playSessionId = mPlaySessionId.getValue();
+        if ((playSessionId == null) || (sessionId.compareTo(playSessionId) == 0)) {
+            ALog.getInstance().e(TAG, "<onUserOffline> NOT playing sessionId=" + sessionId
+                    + ", playSessionId=" + playSessionId);
+            return;
+        }
+
+    }
+
+    public void onPeerFirstVideoDecoded(final UUID sessionId, int peerUid, int videoWidth, int videoHeight) {
+        ALog.getInstance().d(TAG, "<onPeerFirstVideoDecoded> sessionId=" + sessionId
+                + ", peerUid=" + peerUid + ", videoWidth=" + videoWidth + ", videoHeight=" + videoHeight);
+        UUID playSessionId = mPlaySessionId.getValue();
+        if ((playSessionId == null) || (sessionId.compareTo(playSessionId) == 0)) {
+            ALog.getInstance().e(TAG, "<onPeerFirstVideoDecoded> NOT playing sessionId=" + sessionId
+                    + ", playSessionId=" + playSessionId);
+            return;
+        }
+
+
+    }
+
+    public void onRecordingError(final UUID sessionId, int errCode) {
+        ALog.getInstance().d(TAG, "<onRecordingError> sessionId=" + sessionId + ", errCode=" + errCode);
+        UUID playSessionId = mPlaySessionId.getValue();
+        if ((playSessionId == null) || (sessionId.compareTo(playSessionId) == 0)) {
+            ALog.getInstance().e(TAG, "<onRecordingError> NOT playing sessionId=" + sessionId
+                    + ", playSessionId=" + playSessionId);
+            return;
+        }
+    }
+
+
+
 }

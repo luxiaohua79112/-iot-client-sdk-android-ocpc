@@ -467,14 +467,31 @@ public class DeviceSessionMgr extends BaseThreadComp
     /////////////////////////////////////////////////////////////////////////////
     @Override
     public void onTalkingJoinDone(final UUID sessionId, final String channel, int uid) {
+        SessionCtx playerSession = mDevPlayerMgr.getSession(sessionId);
+        if ((playerSession != null) && (playerSession.mDevMediaMgr != null)) {
+            playerSession.mDevMediaMgr.onTalkingJoinDone(sessionId, channel, uid);
+        }
     }
 
     @Override
     public void onTalkingLeftDone(final UUID sessionId) {
+        SessionCtx playerSession = mDevPlayerMgr.getSession(sessionId);
+        if ((playerSession != null) && (playerSession.mDevMediaMgr != null)) {
+            playerSession.mDevMediaMgr.onTalkingLeftDone(sessionId);
+        }
     }
 
     @Override
     public void onUserOnline(final UUID sessionId, int uid, int elapsed) {
+
+        // 先处理设备播放的会话
+        SessionCtx playerSession = mDevPlayerMgr.getSession(sessionId);
+        if ((playerSession != null) && (playerSession.mDevMediaMgr != null)) {
+            playerSession.mDevMediaMgr.onUserOnline(sessionId, uid, elapsed);
+            return;
+        }
+
+        // 再处理设备通话的会话
         SessionCtx sessionCtx = mSessionMgr.getSession(sessionId);
         if (sessionCtx == null) {
             ALog.getInstance().w(TAG, "<onUserOnline> session removed, sessionId=" + sessionId
@@ -502,6 +519,15 @@ public class DeviceSessionMgr extends BaseThreadComp
 
     @Override
     public void onUserOffline(final UUID sessionId, int uid, int reason) {
+
+        // 先处理设备播放的会话
+        SessionCtx playerSession = mDevPlayerMgr.getSession(sessionId);
+        if ((playerSession != null) && (playerSession.mDevMediaMgr != null)) {
+            playerSession.mDevMediaMgr.onUserOffline(sessionId, uid, reason);
+            return;
+        }
+
+        // 再处理设备通话的会话
         SessionCtx sessionCtx = mSessionMgr.getSession(sessionId);
         if (sessionCtx == null) {
             ALog.getInstance().w(TAG, "<onUserOffline> session removed, sessionId=" + sessionId
@@ -530,6 +556,14 @@ public class DeviceSessionMgr extends BaseThreadComp
 
     @Override
     public void onPeerFirstVideoDecoded(final UUID sessionId, int peerUid, int videoWidth, int videoHeight) {
+        // 先处理设备播放的会话
+        SessionCtx playerSession = mDevPlayerMgr.getSession(sessionId);
+        if ((playerSession != null) && (playerSession.mDevMediaMgr != null)) {
+            playerSession.mDevMediaMgr.onPeerFirstVideoDecoded(sessionId, peerUid, videoWidth, videoHeight);
+            return;
+        }
+
+        // 再处理设备通话的会话
         SessionCtx sessionCtx = mSessionMgr.getSession(sessionId);
         if (sessionCtx == null) {
             ALog.getInstance().d(TAG, "<onPeerFirstVideoDecoded> session removed"
@@ -545,6 +579,14 @@ public class DeviceSessionMgr extends BaseThreadComp
 
     @Override
     public void onRecordingError(final UUID sessionId, int errCode) {
+        // 先处理设备播放的会话
+        SessionCtx playerSession = mDevPlayerMgr.getSession(sessionId);
+        if ((playerSession != null) && (playerSession.mDevMediaMgr != null)) {
+            playerSession.mDevMediaMgr.onRecordingError(sessionId, errCode);
+            return;
+        }
+
+        // 再处理设备通话的会话
         SessionCtx sessionCtx = mSessionMgr.getSession(sessionId);
         if (sessionCtx == null) {
             ALog.getInstance().d(TAG, "<onRecordingError> session removed"
@@ -645,28 +687,6 @@ public class DeviceSessionMgr extends BaseThreadComp
     }
 
 
-
-    /**
-     * @brief 设备播放器的频道参数
-     */
-    public static class DevPlayerChnlParam {
-        public String mDeviceId;
-        public int mRtcUid;
-        public String mChnlName;
-        public String mRtcToken;
-        public View mDisplayView;
-
-        @Override
-        public String toString() {
-            String infoText = "{ mDeviceId=" + mDeviceId
-                    + ", mRtcUid=" + mRtcUid
-                    + ", mChannelName=" + mChnlName
-                    + ", mDisplayView=" + mDisplayView
-                    + ",\n mRtcToken=" + mRtcToken + " }";
-            return infoText;
-        }
-    }
-
     /**
      * @brief 设备播放器的频道加入结果
      */
@@ -684,16 +704,16 @@ public class DeviceSessionMgr extends BaseThreadComp
     /**
      * @brief 进入 设备播放器频道
      */
-    DevPlayerChnlRslt devPlayerChnlEnter(final DevPlayerChnlParam chnlParam) {
+    DevPlayerChnlRslt devPlayerChnlEnter(final DevPlayerChnlInfo chnlInfo) {
         DevPlayerChnlRslt result = new DevPlayerChnlRslt();
 
         SessionCtx playerSession = new SessionCtx();
         playerSession.mSessionId = UUID.randomUUID();
         playerSession.mUserId = mInitParam.mUserId;
-        playerSession.mDeviceId = chnlParam.mDeviceId;
-        playerSession.mLocalRtcUid = chnlParam.mRtcUid;
-        playerSession.mChnlName = chnlParam.mChnlName;
-        playerSession.mRtcToken = chnlParam.mRtcToken;
+        playerSession.mDeviceId = chnlInfo.getDeviceId();
+        playerSession.mLocalRtcUid = chnlInfo.getRtcUid();
+        playerSession.mChnlName = chnlInfo.getChannelName();
+        playerSession.mRtcToken = chnlInfo.getRtcToken();
         playerSession.mType = SESSION_TYPE_PLAYBACK;  // 会话类型
         playerSession.mUserCount = 1;      // 至少有一个用户
         playerSession.mSeesionCallback = null;
@@ -711,11 +731,12 @@ public class DeviceSessionMgr extends BaseThreadComp
         }
 
         // 设置显示控件
-        if (chnlParam.mDisplayView != null) {
-            setDisplayView(playerSession, chnlParam.mDisplayView);
+        View displayView = chnlInfo.getDisplayView();
+        if (displayView != null) {
+            setDisplayView(playerSession, displayView);
         }
 
-        ALog.getInstance().d(TAG, "<devPlayerChnlEnter> done, chnlParam=" + chnlParam
+        ALog.getInstance().d(TAG, "<devPlayerChnlEnter> done, chnlInfo=" + chnlInfo
             + ", result=" + result);
         return result;
     }
