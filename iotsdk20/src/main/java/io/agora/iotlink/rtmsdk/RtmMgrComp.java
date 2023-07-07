@@ -46,6 +46,8 @@ public class RtmMgrComp extends BaseThreadComp {
     private static final String TAG = "IOTSDK/RtmMgrComp";
     private static final long COMMAND_TIMEOUT = 10000;               ///< 命令响应超时10秒
     private static final long TIMER_INTERVAL = 4000;                ///< 定时器间隔 4秒
+    private static final long HEARTBEAT_INTVAL = 10000;             ///< 心跳包定时10秒发送一次
+    private static final String HEARTBEAT_CONTENT = "{ }";
 
     //
     // RTM的状态机
@@ -76,6 +78,7 @@ public class RtmMgrComp extends BaseThreadComp {
     private RtmClient mRtmClient;                               ///< RTM客户端实例
     private AtomicInteger mState = new AtomicInteger();         ///< RTM状态机
     private SendMessageOptions mSendMsgOptions;                 ///< RTM消息配置
+    private long mHeartbeatTimestamp = 0;                       ///< 上次发送心跳包的时间戳
 
     private RtmPktQueue mRecvPktQueue = new RtmPktQueue();  ///< 接收数据包队列
     private RtmPktQueue mSendPktQueue = new RtmPktQueue();  ///< 发送数据包队列
@@ -354,6 +357,27 @@ public class RtmMgrComp extends BaseThreadComp {
                 cmdRespListener.onRtmCmdResponsed(rtmCmd.getCommandId(), ErrCode.XERR_DEVCMD_TIMEOUT, rtmCmd, null );
             }
         }
+
+        //
+        // 定时给所有设备发送心跳空包
+        //
+        long interval = System.currentTimeMillis() - mHeartbeatTimestamp;
+        if (interval > HEARTBEAT_INTVAL) {
+            mHeartbeatTimestamp = System.currentTimeMillis();
+
+            // 轮询正在会话的各个设备，依次发送心跳处理包
+            List<IDeviceSessionMgr.SessionInfo> sessionList = mSessionMgr.getSessionList();
+            for (IDeviceSessionMgr.SessionInfo sessionInfo: sessionList) {
+                RtmPacket packet = new RtmPacket();
+                packet.mSequenceId = RtmCmdSeqId.getSeuenceId();
+                packet.mPeerId = sessionInfo.mPeerDevId;
+                packet.mPktData = HEARTBEAT_CONTENT;
+                mSendPktQueue.inqueue(packet);
+            }
+
+            sendSingleMessage(MSGID_RTM_SEND_PKT, 0, 0, null, 0);
+        }
+
 
         // 下次定时器处理
         sendSingleMessage(MSGID_RTM_TIMER, 0, 0, null, TIMER_INTERVAL);
