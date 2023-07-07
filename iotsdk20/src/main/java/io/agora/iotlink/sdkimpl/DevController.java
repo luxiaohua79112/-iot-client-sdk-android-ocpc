@@ -173,4 +173,27 @@ public class DevController  implements IDevController {
         return ret;
     }
 
+
+    @Override
+    public int sendCmdDevReset(final OnCommandCmdListener cmdListener) {
+        RtmBaseCmd resetCmd = new RtmBaseCmd();
+        resetCmd.mSequenceId = RtmCmdSeqId.getSeuenceId();
+        resetCmd.mCmdId = IRtmCmd.CMDID_DEVICE_RESET;
+        resetCmd.mDeviceId = mDeviceId;
+        resetCmd.mSendTimestamp = System.currentTimeMillis();
+        resetCmd.mRespListener = new IRtmCmd.OnRtmCmdRespListener() {
+            @Override
+            public void onRtmCmdResponsed(int commandId, int errCode, IRtmCmd reqCmd, IRtmCmd rspCmd) {
+                ALog.getInstance().d(TAG, "<sendCmdDevReset.onRtmCmdResponsed> errCode=" + errCode);
+                cmdListener.onDeviceCmdDone(errCode, null);
+            }
+        };
+
+        int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(resetCmd);
+
+        ALog.getInstance().d(TAG, "<sendCmdDevReset> done, ret=" + ret
+                + ", resetCmd=" + resetCmd);
+        return ret;
+    }
+
 }

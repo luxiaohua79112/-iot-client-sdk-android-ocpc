@@ -46,7 +46,7 @@ public class RtmMgrComp extends BaseThreadComp {
     private static final String TAG = "IOTSDK/RtmMgrComp";
     private static final long COMMAND_TIMEOUT = 10000;               ///< 命令响应超时10秒
     private static final long TIMER_INTERVAL = 4000;                ///< 定时器间隔 4秒
-    private static final long HEARTBEAT_INTVAL = 10000;             ///< 心跳包定时10秒发送一次
+    private static final long HEARTBEAT_INTVAL = 120000;            ///< 心跳包定时2分钟发送一次
     private static final String HEARTBEAT_CONTENT = "{ }";
 
     //
@@ -69,6 +69,7 @@ public class RtmMgrComp extends BaseThreadComp {
     private static final int MSGID_RTM_LOGOUT_DONE = 0x2005;        ///< 登出完成消息（暂时用不到）
     private static final int MSGID_RTM_RENEWTOKEN_DONE = 0x2006;    ///< token刷新完成消息
     private static final int MSGID_RTM_TIMER = 0x2009;              ///< 定时广播消息，防止无消息退出
+    private static final int MSGID_RTM_STATE_ABORT = 0x200A;        ///<
 
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Variable Definition ///////////////////////////
@@ -103,7 +104,7 @@ public class RtmMgrComp extends BaseThreadComp {
             return ret;
         }
         mState.setValue(RTM_STATE_IDLE);  // 未登录状态
-
+        mHeartbeatTimestamp = System.currentTimeMillis();
 
         // 启动组件线程
         runStart(TAG);
@@ -189,6 +190,10 @@ public class RtmMgrComp extends BaseThreadComp {
 
             case MSGID_RTM_RENEWTOKEN_DONE:
                 onMessageRenewTokenDone(msg);
+                break;
+
+            case MSGID_RTM_STATE_ABORT:
+                onMessageStateAbort(msg);
                 break;
 
             case MSGID_RTM_TIMER:
@@ -333,6 +338,14 @@ public class RtmMgrComp extends BaseThreadComp {
             }
 
         }
+    }
+
+    /**
+     * @brief 工作线程中运行，RTM账号被踢
+     */
+    void onMessageStateAbort(Message msg) {
+        ALog.getInstance().d(TAG, "<onMessageStateAbort> ");
+
     }
 
     /**
@@ -580,6 +593,9 @@ public class RtmMgrComp extends BaseThreadComp {
             public void onConnectionStateChanged(int state, int reason) {   //连接状态改变
                 ALog.getInstance().d(TAG, "<rtmEngCreate.onConnectionStateChanged> state=" + state
                         + ", reason=" + reason);
+                if (state == RtmStatusCode.ConnectionState.CONNECTION_STATE_ABORTED) {
+                    sendSingleMessage(MSGID_RTM_STATE_ABORT, 0, 0, null, 0);
+                }
             }
 
             @Override

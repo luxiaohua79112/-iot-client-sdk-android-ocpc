@@ -56,7 +56,7 @@ public interface IRtmCmd  {
     public static final int CMDID_MEDIA_STOP = 2007;       ///< 停止当前回看
     public static final int CMDID_MEDIA_RATE = 2008;       ///< 设置回看播放的倍速
     public static final int CMDID_CUSTOMIZE_SEND = 3001;   ///< 定制化命令
-
+    public static final int CMDID_DEVICE_RESET = 3002;     ///< 设备重启命令
 
 
 
