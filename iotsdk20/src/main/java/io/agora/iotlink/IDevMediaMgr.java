@@ -160,6 +160,7 @@ public interface IDevMediaMgr  {
     ////////////////////////////////////////////////////////////////////////
     ////////////////// Methods for Device Media Playing ////////////////////
     ////////////////////////////////////////////////////////////////////////
+    public static final String FILE_ID_GLOBALT_IMELINE = "GlobalTimeline";     ///< 全局时间轴播放的FileId
 
     //
     // 设备媒体文件播放状态机
@@ -219,9 +220,8 @@ public interface IDevMediaMgr  {
         /**
          * @brief 当前媒体文件播放完成事件，通常此时可以调用 stop()回到开始重新play()，或者close()关闭播放器
          * @param fileId : 媒体文件Id
-         * @param duration : 整个播放时长
          */
-        default void onDevMediaPlayingDone(final String fileId, long duration) {}
+        default void onDevMediaPlayingDone(final String fileId) {}
 
         /**
          * @brief 播放过程中遇到错误，并且不能恢复，此时上层只能调用 close()关闭播放器

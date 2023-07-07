@@ -668,8 +668,8 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
     }
 
     @Override
-    public void onDevMediaPlayingDone(final String fileId, long duration) {
-        Log.d(TAG, "<onDevMediaOpenDone> fileId=" + fileId + ", duration=" + duration);
+    public void onDevMediaPlayingDone(final String fileId) {
+        Log.d(TAG, "<onDevMediaOpenDone> fileId=" + fileId);
     }
 
     @Override

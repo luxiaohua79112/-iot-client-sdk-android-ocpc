@@ -75,7 +75,6 @@ public class DevMediaMgr implements IDevMediaMgr {
     private View mDisplayView;
     private DevPlayerChnlInfo mPlayChnlInfo = new DevPlayerChnlInfo();    ///< 设备播放器频道信息
     private AtomicUuid mPlaySessionId = new AtomicUuid();                 ///< 设备播放器的会话Id
-    private IPlayingCallback mPlayingCallbk;
     private AtomicInteger mPlayingState = new AtomicInteger();
 
     ///////////////////////////////////////////////////////////////////////
@@ -234,6 +233,9 @@ public class DevMediaMgr implements IDevMediaMgr {
             return ErrCode.XERR_BAD_STATE;
         }
 
+        // 设置当前播放信息
+        mPlayChnlInfo.setPlayingInfo(FILE_ID_GLOBALT_IMELINE, playingCallback);
+
         RtmPlayReqCmd playReqCmd = new RtmPlayReqCmd();
         playReqCmd.mGlobalStartTime = globalStartTime;
         playReqCmd.mRate = playSpeed;
@@ -250,8 +252,8 @@ public class DevMediaMgr implements IDevMediaMgr {
                 RtmPlayRspCmd playRspCmd = (RtmPlayRspCmd)rspCmd;
                 if (errCode != ErrCode.XOK) {
                     mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_STOPPED);   // 状态机: 停止播放
-                    if (mPlayingCallbk != null) {
-                        mPlayingCallbk.onDevMediaOpenDone(null, errCode);
+                    if (playingCallback != null) {
+                        playingCallback.onDevMediaOpenDone(null, errCode);
                     }
                     return;
                 }
@@ -259,8 +261,8 @@ public class DevMediaMgr implements IDevMediaMgr {
                 // 进入RTC频道拉流
                 RtcChnlEnter(playRspCmd.mRtcUid, playRspCmd.mChnlName, playRspCmd.mRtcToken);
 
-                if (mPlayingCallbk != null) {
-                    mPlayingCallbk.onDevMediaOpenDone(null, ErrCode.XOK);
+                if (playingCallback != null) {
+                    playingCallback.onDevMediaOpenDone(null, ErrCode.XOK);
                 }
             }
         };
@@ -282,6 +284,9 @@ public class DevMediaMgr implements IDevMediaMgr {
             return ErrCode.XERR_BAD_STATE;
         }
 
+        // 设置当前播放信息
+        mPlayChnlInfo.setPlayingInfo(fileId, playingCallback);
+
         RtmPlayReqCmd playReqCmd = new RtmPlayReqCmd();
         playReqCmd.mFileId = fileId;
         playReqCmd.mOffset = startPos;
@@ -299,8 +304,8 @@ public class DevMediaMgr implements IDevMediaMgr {
                 RtmPlayRspCmd playRspCmd = (RtmPlayRspCmd)rspCmd;
                 if (errCode != ErrCode.XOK) {
                     mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_STOPPED);   // 状态机: 停止播放
-                    if (mPlayingCallbk != null) {
-                        mPlayingCallbk.onDevMediaOpenDone(null, errCode);
+                    if (playingCallback != null) {
+                        playingCallback.onDevMediaOpenDone(null, errCode);
                     }
                     return;
                 }
@@ -308,8 +313,8 @@ public class DevMediaMgr implements IDevMediaMgr {
                 // 进入RTC频道拉流
                 RtcChnlEnter(playRspCmd.mRtcUid, playRspCmd.mChnlName, playRspCmd.mRtcToken);
 
-                if (mPlayingCallbk != null) {
-                    mPlayingCallbk.onDevMediaOpenDone(null, ErrCode.XOK);
+                if (playingCallback != null) {
+                    playingCallback.onDevMediaOpenDone(null, ErrCode.XOK);
                 }
             }
         };
@@ -468,6 +473,8 @@ public class DevMediaMgr implements IDevMediaMgr {
             return;
         }
 
+        // 设备端进入设备播放频道
+
     }
 
     public void onUserOffline(final UUID sessionId, int uid, int reason) {
@@ -480,6 +487,12 @@ public class DevMediaMgr implements IDevMediaMgr {
             return;
         }
 
+        // 设备端退出设备播放频道
+        IPlayingCallback playingCallback = mPlayChnlInfo.getPlayingCallback();
+        String fileId = mPlayChnlInfo.getPlayingFileId();
+        if (playingCallback != null) {
+            playingCallback.onDevMediaPlayingDone(fileId);
+        }
     }
 
     public void onPeerFirstVideoDecoded(final UUID sessionId, int peerUid, int videoWidth, int videoHeight) {
@@ -491,8 +504,6 @@ public class DevMediaMgr implements IDevMediaMgr {
                     + ", playSessionId=" + playSessionId);
             return;
         }
-
-
     }
 
     public void onRecordingError(final UUID sessionId, int errCode) {

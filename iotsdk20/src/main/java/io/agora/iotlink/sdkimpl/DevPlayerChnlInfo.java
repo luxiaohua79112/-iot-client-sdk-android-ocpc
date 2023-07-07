@@ -43,6 +43,9 @@ import io.agora.rtm.jni.PEER_ONLINE_STATE;
  */
 public class DevPlayerChnlInfo  {
 
+    private String mFileId;
+    private IDevMediaMgr.IPlayingCallback mPlayingCallback;
+
     private String mDeviceId;
     private int mRtcUid;
     private String mChnlName;
@@ -58,6 +61,21 @@ public class DevPlayerChnlInfo  {
                 + ",\n mRtcToken=" + mRtcToken + " }";
         return infoText;
     }
+
+    public synchronized void setPlayingInfo(final String fileId,
+                                         final IDevMediaMgr.IPlayingCallback playingCallback) {
+        mFileId = fileId;
+        mPlayingCallback = playingCallback;
+    }
+
+    public synchronized String getPlayingFileId() {
+        return mFileId;
+    }
+
+    public synchronized IDevMediaMgr.IPlayingCallback getPlayingCallback() {
+        return mPlayingCallback;
+    }
+
 
 
     public synchronized void setInfo(final String deviceId, int uid, final String chnlName,
