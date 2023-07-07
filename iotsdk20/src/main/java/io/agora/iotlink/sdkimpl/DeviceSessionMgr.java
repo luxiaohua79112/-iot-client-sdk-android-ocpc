@@ -52,6 +52,8 @@ public class DeviceSessionMgr extends BaseThreadComp
     private static final long TIMER_INTERVAL = 2000;             ///< 定时器间隔 2秒
     private static final long CONNECT_TIMEOUT = 30000;           ///< 设备连接超时30秒
 
+
+
     //
     // The message Id
     //
@@ -72,6 +74,7 @@ public class DeviceSessionMgr extends BaseThreadComp
 
     private DisplayViewMgr mViewMgr = new DisplayViewMgr();
     private SessionMgr mSessionMgr = new SessionMgr();          ///< 设备会话管理器
+    private SessionMgr mDevPlayerMgr = new SessionMgr();        ///< 设备播放器管理器，用来管理SD卡播放的
 
     private TalkingEngine mTalkEngine = new TalkingEngine();    ///< 通话引擎
     private static final Object mTalkEngLock = new Object();    ///< 通话引擎同步访问锁
@@ -562,8 +565,9 @@ public class DeviceSessionMgr extends BaseThreadComp
     /**
      * @brief 通话准备处理，创建RTC并且进入频道
      */
-    void talkingPrepare(final SessionCtx sessionCtx, boolean subPeerVideo, boolean subPeerAudio,
+    int talkingPrepare(final SessionCtx sessionCtx, boolean subPeerVideo, boolean subPeerAudio,
                         boolean pubLocalAudio) {
+        boolean bRet = true;
 
         synchronized (mTalkEngLock) {
 
@@ -578,7 +582,7 @@ public class DeviceSessionMgr extends BaseThreadComp
             }
 
             // 加入频道
-            mTalkEngine.joinChannel(sessionCtx, subPeerVideo, subPeerAudio, pubLocalAudio);
+            bRet = mTalkEngine.joinChannel(sessionCtx, subPeerVideo, subPeerAudio, pubLocalAudio);
 
             // 设置音频效果
             //mTalkEngine.setAudioEffect(mAudioEffect);
@@ -589,6 +593,8 @@ public class DeviceSessionMgr extends BaseThreadComp
                 mTalkEngine.setRemoteVideoView(sessionCtx, displayView);
             }
         }
+
+        return (bRet ? ErrCode.XOK : ErrCode.XERR_INVALID_PARAM);
     }
 
     /**
@@ -638,6 +644,98 @@ public class DeviceSessionMgr extends BaseThreadComp
         ALog.getInstance().d(TAG, "<talkingRelease> done, sessionCount=" + sessionCount);
     }
 
+
+
+    /**
+     * @brief 设备播放器的频道参数
+     */
+    public static class DevPlayerChnlParam {
+        public String mDeviceId;
+        public int mRtcUid;
+        public String mChnlName;
+        public String mRtcToken;
+        public View mDisplayView;
+
+        @Override
+        public String toString() {
+            String infoText = "{ mDeviceId=" + mDeviceId
+                    + ", mRtcUid=" + mRtcUid
+                    + ", mChannelName=" + mChnlName
+                    + ", mDisplayView=" + mDisplayView
+                    + ",\n mRtcToken=" + mRtcToken + " }";
+            return infoText;
+        }
+    }
+
+    /**
+     * @brief 设备播放器的频道加入结果
+     */
+    public static class DevPlayerChnlRslt {
+        public int mErrCode;
+        public UUID mSessionId;
+
+        @Override
+        public String toString() {
+            String infoText = "{ mErrCode=" + mErrCode + ", mSessionId=" + mSessionId + " }";
+            return infoText;
+        }
+    }
+
+    /**
+     * @brief 进入 设备播放器频道
+     */
+    DevPlayerChnlRslt devPlayerChnlEnter(final DevPlayerChnlParam chnlParam) {
+        DevPlayerChnlRslt result = new DevPlayerChnlRslt();
+
+        SessionCtx playerSession = new SessionCtx();
+        playerSession.mSessionId = UUID.randomUUID();
+        playerSession.mUserId = mInitParam.mUserId;
+        playerSession.mDeviceId = chnlParam.mDeviceId;
+        playerSession.mLocalRtcUid = chnlParam.mRtcUid;
+        playerSession.mChnlName = chnlParam.mChnlName;
+        playerSession.mRtcToken = chnlParam.mRtcToken;
+        playerSession.mType = SESSION_TYPE_PLAYBACK;  // 会话类型
+        playerSession.mUserCount = 1;      // 至少有一个用户
+        playerSession.mSeesionCallback = null;
+        playerSession.mState = IDeviceSessionMgr.SESSION_STATE_CONNECTED;   // 直接连接到设备
+        playerSession.mConnectTimestamp = System.currentTimeMillis();
+        mDevPlayerMgr.addSession(playerSession);
+
+        // 开始进入频道
+        int ret = talkingPrepare(playerSession, true, true, false);
+        if (ret != ErrCode.XOK) {
+            ALog.getInstance().e(TAG, "<devPlayerChnlEnter> fail to prepare, ret=" + ret);
+            mDevPlayerMgr.removeSession(playerSession.mSessionId);
+            result.mErrCode = ret;
+            return result;
+        }
+
+        // 设置显示控件
+        if (chnlParam.mDisplayView != null) {
+            setDisplayView(playerSession, chnlParam.mDisplayView);
+        }
+
+        ALog.getInstance().d(TAG, "<devPlayerChnlEnter> done, chnlParam=" + chnlParam
+            + ", result=" + result);
+        return result;
+    }
+
+    /**
+     * @brief 退出 设备播放器频道
+     */
+    int devPlayerChnlExit(final UUID playerSessionId) {
+        SessionCtx playerSession = mDevPlayerMgr.removeSession(playerSessionId);
+        if (playerSession == null) {
+            ALog.getInstance().e(TAG, "<devPlayerChnlExit> not found playerSession"
+                    + ", sessionId=" + playerSessionId);
+            return ErrCode.XERR_INVALID_PARAM;
+        }
+
+        talkingStop(playerSession);
+
+        ALog.getInstance().d(TAG, "<devPlayerChnlExit> done");
+        return ErrCode.XOK;
+    }
 
 
 

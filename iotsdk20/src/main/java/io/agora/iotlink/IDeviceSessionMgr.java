@@ -116,6 +116,7 @@ public interface IDeviceSessionMgr  {
     public static final int SESSION_TYPE_UNKNOWN = 0x0000;           ///< 会话类型：未知
     public static final int SESSION_TYPE_DIAL = 0x0001;              ///< 会话类型：主叫
     public static final int SESSION_TYPE_INCOMING = 0x0002;          ///< 会话类型：来电被叫
+    public static final int SESSION_TYPE_PLAYBACK = 0x0003;          ///< 会话类型：媒体回放
 
     /**
      * @brief 会话状态机
@@ -158,8 +159,6 @@ public interface IDeviceSessionMgr  {
 
             return infoText;
         }
-
-
     }
 
     ////////////////////////////////////////////////////////////////////////

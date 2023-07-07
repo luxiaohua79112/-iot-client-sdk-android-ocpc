@@ -24,6 +24,7 @@ import io.agora.iotlink.IDevMediaMgr;
 import io.agora.iotlink.IDeviceSessionMgr;
 import io.agora.iotlink.IVodPlayer;
 import io.agora.iotlink.base.AtomicInteger;
+import io.agora.iotlink.base.AtomicUuid;
 import io.agora.iotlink.base.BaseThreadComp;
 import io.agora.iotlink.callkit.SessionCtx;
 import io.agora.iotlink.logger.ALog;
@@ -53,7 +54,7 @@ public class DevMediaMgr implements IDevMediaMgr {
     //////////////////////// Constant Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
     private static final String TAG = "IOTSDK/DevMediaMgr";
-    private static final int SESSION_TYPE_PLAYBACK = 0x0004;          ///< 会话类型：媒体回放
+
 
     //
     // The mesage Id
@@ -66,13 +67,13 @@ public class DevMediaMgr implements IDevMediaMgr {
     ////////////////////////////////////////////////////////////////////////
     private final Object mDataLock = new Object();    ///< 同步访问锁
 
-    private UUID mSessionId;
+    private UUID mDevSessionId;
     private DeviceSessionMgr mSessionMgr;
     private String mUserId;
     private String mDeviceId;
 
     private View mDisplayView;
-    private SessionCtx mPlaybackSession;        ///< 媒体回放会话上下文，不在整个的 DeviceSessionMgr中
+    private AtomicUuid mPlaySessionId = new AtomicUuid();          ///< 设备播放器的会话Id
     private IPlayingCallback mPlayingCallbk;
     private AtomicInteger mPlayingState = new AtomicInteger();
 
@@ -80,7 +81,7 @@ public class DevMediaMgr implements IDevMediaMgr {
     ////////////////////////// Public Methods  ////////////////////////////
     ///////////////////////////////////////////////////////////////////////
     public DevMediaMgr(final UUID sessionId, final DeviceSessionMgr sessionMgr) {
-        mSessionId = sessionId;
+        mDevSessionId = sessionId;
         mSessionMgr = sessionMgr;
         IDeviceSessionMgr.SessionInfo sessionInfo = mSessionMgr.getSessionInfo(sessionId);
         mUserId = sessionInfo.mUserId;
@@ -411,52 +412,26 @@ public class DevMediaMgr implements IDevMediaMgr {
      * @brief 进行频道进行音视频拉流
      */
     int RtcChnlEnter(int rtcUid, final String chnlName, final String rtcToken) {
+        // 进入播放器频道
+        DeviceSessionMgr.DevPlayerChnlParam chnlParam = new DeviceSessionMgr.DevPlayerChnlParam();
+        chnlParam.mDeviceId = mDeviceId;
+        chnlParam.mRtcUid = rtcUid;
+        chnlParam.mChnlName = chnlName;
+        chnlParam.mRtcToken = rtcToken;
+        chnlParam.mDisplayView = mDisplayView;
+        DeviceSessionMgr.DevPlayerChnlRslt result = mSessionMgr.devPlayerChnlEnter(chnlParam);
 
-//        // 进入频道进行音视频拉流
-//        SessionCtx playbackSession = new SessionCtx();
-//        playbackSession.mSessionId = UUID.randomUUID();
-//        playbackSession.mUserId = mUserId;
-//        playbackSession.mDeviceId = mDeviceId;
-//        playbackSession.mLocalRtcUid = rtcUid;
-//        playbackSession.mChnlName = chnlName;
-//        playbackSession.mRtcToken = rtcToken;
-//        playbackSession.mType = SESSION_TYPE_PLAYBACK;  // 会话类型
-//        playbackSession.mUserCount = 1;      // 至少有一个用户
-//        playbackSession.mSeesionCallback = null;
-//        playbackSession.mState = IDeviceSessionMgr.SESSION_STATE_CONNECTED;   // 直接连接到设备
-//        playbackSession.mConnectTimestamp = System.currentTimeMillis();
-//
-//        // 开始进入频道
-//        mSessionMgr.talkingPrepare(playbackSession, true, true, false);
-//
-//        // 设置显示控件
-//        if (mDisplayView != null) {
-//            mSessionMgr.setDisplayView(playbackSession, mDisplayView);
-//        }
-//
-//        synchronized (mDataLock) {
-//            mPlaybackSession = playbackSession;
-//        }
+        mPlaySessionId.setValue(result.mSessionId);
 
-        ALog.getInstance().d(TAG, "<RtcChnlEnter> done, rtcUid=" + rtcUid
-                + ", chnlName=" + chnlName + ", rtcToken=" + rtcToken);
-        return ErrCode.XOK;
+        return result.mErrCode;
     }
 
     /**
      * @brief 退出频道
      */
     int RtcChnlExit() {
-//        SessionCtx playingSession;
-//        synchronized (mDataLock) {
-//            playingSession = mPlaybackSession;
-//        }
-//        if (playingSession != null) {
-//            mSessionMgr.talkingStop(playingSession);
-//        }
-//        synchronized (mDataLock) {
-//            mPlaybackSession = null;
-//        }
+        mSessionMgr.devPlayerChnlExit(mPlaySessionId.getValue());
+        mPlaySessionId.setValue(null);
 
         ALog.getInstance().d(TAG, "<RtcChnlExit> done");
         return ErrCode.XOK;
