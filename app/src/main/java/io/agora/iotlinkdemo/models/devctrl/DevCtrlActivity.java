@@ -93,7 +93,15 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
             mFileListAdapter.setMRVItemClickListener((view, position, data) -> {
             });
         }
-        
+
+        // 设置SD卡播放的视频控件
+        IDevMediaMgr mediaMgr = sessionMgr.getDevMediaMgr(mSessionId);
+        if (mediaMgr == null) {
+            popupMessage("Not found device media mgr with sessionId=" + mSessionId);
+            return;
+        }
+        mediaMgr.setDisplayView(getBinding().svDeviceView);
+
         Log.d(TAG, "<initView> ");
     }
 
