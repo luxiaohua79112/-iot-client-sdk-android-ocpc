@@ -51,6 +51,7 @@ public class DevPlayerChnlInfo  {
     private String mChnlName;
     private String mRtcToken;
     private View mDisplayView;
+    private DevMediaMgr mMediaMgr;
 
     @Override
     public String toString() {
@@ -79,12 +80,14 @@ public class DevPlayerChnlInfo  {
 
 
     public synchronized void setInfo(final String deviceId, int uid, final String chnlName,
-                                     final String rtcToken, final View displayView ) {
+                                     final String rtcToken, final View displayView,
+                                     final DevMediaMgr mediaMgr) {
         mDeviceId = deviceId;
         mRtcUid = uid;
         mChnlName = chnlName;
         mRtcToken = rtcToken;
         mDisplayView = displayView;
+        mMediaMgr = mediaMgr;
     }
 
     public synchronized String getDeviceId() {
@@ -105,6 +108,10 @@ public class DevPlayerChnlInfo  {
 
     public synchronized View getDisplayView() {
         return mDisplayView;
+    }
+
+    public synchronized DevMediaMgr getMediaMgr() {
+        return mMediaMgr;
     }
 
     public synchronized void clear() {

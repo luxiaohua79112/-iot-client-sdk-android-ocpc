@@ -420,7 +420,7 @@ public class DevMediaMgr implements IDevMediaMgr {
     int RtcChnlEnter(int rtcUid, final String chnlName, final String rtcToken) {
         // 进入播放器频道
         mPlayChnlInfo.clear();
-        mPlayChnlInfo.setInfo(mDeviceId, rtcUid, chnlName, rtcToken, mDisplayView);
+        mPlayChnlInfo.setInfo(mDeviceId, rtcUid, chnlName, rtcToken, mDisplayView, this);
 
         DeviceSessionMgr.DevPlayerChnlRslt result = mSessionMgr.devPlayerChnlEnter(mPlayChnlInfo);
         mPlaySessionId.setValue(result.mSessionId);
@@ -447,7 +447,7 @@ public class DevMediaMgr implements IDevMediaMgr {
         ALog.getInstance().d(TAG, "<onTalkingJoinDone> sessionId=" + sessionId
                 + ", channel=" + channel + ", uid=" + uid);
         UUID playSessionId = mPlaySessionId.getValue();
-        if ((playSessionId == null) || (sessionId.compareTo(playSessionId) == 0)) {
+        if ((playSessionId == null) || (sessionId.compareTo(playSessionId) != 0)) {
             ALog.getInstance().e(TAG, "<onTalkingJoinDone> NOT playing sessionId=" + sessionId
                     + ", playSessionId=" + playSessionId);
             return;
@@ -457,7 +457,7 @@ public class DevMediaMgr implements IDevMediaMgr {
     public void onTalkingLeftDone(final UUID sessionId) {
         ALog.getInstance().d(TAG, "<onTalkingLeftDone> sessionId=" + sessionId);
         UUID playSessionId = mPlaySessionId.getValue();
-        if ((playSessionId == null) || (sessionId.compareTo(playSessionId) == 0)) {
+        if ((playSessionId == null) || (sessionId.compareTo(playSessionId) != 0)) {
             ALog.getInstance().e(TAG, "<onTalkingLeftDone> NOT playing sessionId=" + sessionId
                     + ", playSessionId=" + playSessionId);
             return;
@@ -467,7 +467,7 @@ public class DevMediaMgr implements IDevMediaMgr {
     public void onUserOnline(final UUID sessionId, int uid, int elapsed) {
         ALog.getInstance().d(TAG, "<onUserOnline> sessionId=" + sessionId + ", uid=" + uid);
         UUID playSessionId = mPlaySessionId.getValue();
-        if ((playSessionId == null) || (sessionId.compareTo(playSessionId) == 0)) {
+        if ((playSessionId == null) || (sessionId.compareTo(playSessionId) != 0)) {
             ALog.getInstance().e(TAG, "<onUserOnline> NOT playing sessionId=" + sessionId
                     + ", playSessionId=" + playSessionId);
             return;
@@ -481,7 +481,7 @@ public class DevMediaMgr implements IDevMediaMgr {
         ALog.getInstance().d(TAG, "<onUserOffline> sessionId=" + sessionId
                 + ", uid=" + uid + ", reason=" + reason);
         UUID playSessionId = mPlaySessionId.getValue();
-        if ((playSessionId == null) || (sessionId.compareTo(playSessionId) == 0)) {
+        if ((playSessionId == null) || (sessionId.compareTo(playSessionId) != 0)) {
             ALog.getInstance().e(TAG, "<onUserOffline> NOT playing sessionId=" + sessionId
                     + ", playSessionId=" + playSessionId);
             return;
@@ -499,7 +499,7 @@ public class DevMediaMgr implements IDevMediaMgr {
         ALog.getInstance().d(TAG, "<onPeerFirstVideoDecoded> sessionId=" + sessionId
                 + ", peerUid=" + peerUid + ", videoWidth=" + videoWidth + ", videoHeight=" + videoHeight);
         UUID playSessionId = mPlaySessionId.getValue();
-        if ((playSessionId == null) || (sessionId.compareTo(playSessionId) == 0)) {
+        if ((playSessionId == null) || (sessionId.compareTo(playSessionId) != 0)) {
             ALog.getInstance().e(TAG, "<onPeerFirstVideoDecoded> NOT playing sessionId=" + sessionId
                     + ", playSessionId=" + playSessionId);
             return;
@@ -509,7 +509,7 @@ public class DevMediaMgr implements IDevMediaMgr {
     public void onRecordingError(final UUID sessionId, int errCode) {
         ALog.getInstance().d(TAG, "<onRecordingError> sessionId=" + sessionId + ", errCode=" + errCode);
         UUID playSessionId = mPlaySessionId.getValue();
-        if ((playSessionId == null) || (sessionId.compareTo(playSessionId) == 0)) {
+        if ((playSessionId == null) || (sessionId.compareTo(playSessionId) != 0)) {
             ALog.getInstance().e(TAG, "<onRecordingError> NOT playing sessionId=" + sessionId
                     + ", playSessionId=" + playSessionId);
             return;

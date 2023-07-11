@@ -719,6 +719,7 @@ public class DeviceSessionMgr extends BaseThreadComp
         playerSession.mSeesionCallback = null;
         playerSession.mState = IDeviceSessionMgr.SESSION_STATE_CONNECTED;   // 直接连接到设备
         playerSession.mConnectTimestamp = System.currentTimeMillis();
+        playerSession.mDevMediaMgr = chnlInfo.getMediaMgr();
         mDevPlayerMgr.addSession(playerSession);
 
         // 开始进入频道
@@ -736,6 +737,7 @@ public class DeviceSessionMgr extends BaseThreadComp
             setDisplayView(playerSession, displayView);
         }
 
+        result.mSessionId = playerSession.mSessionId;
         ALog.getInstance().d(TAG, "<devPlayerChnlEnter> done, chnlInfo=" + chnlInfo
             + ", result=" + result);
         return result;
