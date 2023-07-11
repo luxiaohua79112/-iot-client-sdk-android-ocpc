@@ -712,6 +712,7 @@ public class DeviceSessionMgr extends BaseThreadComp
         playerSession.mUserId = mInitParam.mUserId;
         playerSession.mDeviceId = chnlInfo.getDeviceId();
         playerSession.mLocalRtcUid = chnlInfo.getRtcUid();
+        playerSession.mDeviceRtcUid = chnlInfo.getDevRtcUid();
         playerSession.mChnlName = chnlInfo.getChannelName();
         playerSession.mRtcToken = chnlInfo.getRtcToken();
         playerSession.mType = SESSION_TYPE_PLAYBACK;  // 会话类型

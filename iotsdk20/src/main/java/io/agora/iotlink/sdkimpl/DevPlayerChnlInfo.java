@@ -50,6 +50,7 @@ public class DevPlayerChnlInfo  {
     private int mRtcUid;
     private String mChnlName;
     private String mRtcToken;
+    private int mDevUid;
     private View mDisplayView;
     private DevMediaMgr mMediaMgr;
 
@@ -57,6 +58,7 @@ public class DevPlayerChnlInfo  {
     public String toString() {
         String infoText = "{ mDeviceId=" + mDeviceId
                 + ", mRtcUid=" + mRtcUid
+                + ", mDevUid=" + mDevUid
                 + ", mChannelName=" + mChnlName
                 + ", mDisplayView=" + mDisplayView
                 + ",\n mRtcToken=" + mRtcToken + " }";
@@ -80,12 +82,13 @@ public class DevPlayerChnlInfo  {
 
 
     public synchronized void setInfo(final String deviceId, int uid, final String chnlName,
-                                     final String rtcToken, final View displayView,
+                                     final String rtcToken, int devUid, final View displayView,
                                      final DevMediaMgr mediaMgr) {
         mDeviceId = deviceId;
         mRtcUid = uid;
         mChnlName = chnlName;
         mRtcToken = rtcToken;
+        mDevUid = devUid;
         mDisplayView = displayView;
         mMediaMgr = mediaMgr;
     }
@@ -97,6 +100,10 @@ public class DevPlayerChnlInfo  {
     public synchronized int getRtcUid() {
         return mRtcUid;
     }
+    public synchronized int getDevRtcUid() {
+        return mDevUid;
+    }
+
 
     public synchronized String getChannelName() {
         return mChnlName;

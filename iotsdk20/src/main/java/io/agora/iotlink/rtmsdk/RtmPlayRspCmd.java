@@ -32,6 +32,7 @@ public class RtmPlayRspCmd extends RtmBaseCmd  {
     public int mRtcUid;         ///< RTC uid
     public String mChnlName;    ///< 播放的频道名
     public String mRtcToken;    ///< token
+    public int mDevRtcUid;      ///< 设备端的 RTC uid
 
 
 
@@ -44,6 +45,7 @@ public class RtmPlayRspCmd extends RtmBaseCmd  {
                 + ", mDeviceId=" + mDeviceId
                 + ", mCmdId=" + mCmdId
                 + ", mRtcUid=" + mRtcUid
+                + ", mDevRtcUid=" + mDevRtcUid
                 + ", mChnlName=" + mChnlName
                 + ", mRtcToken=" + mRtcToken
                 + ", mIsRespCmd=" + mIsRespCmd

@@ -259,7 +259,7 @@ public class DevMediaMgr implements IDevMediaMgr {
                 }
 
                 // 进入RTC频道拉流
-                RtcChnlEnter(playRspCmd.mRtcUid, playRspCmd.mChnlName, playRspCmd.mRtcToken);
+                RtcChnlEnter(playRspCmd.mRtcUid, playRspCmd.mChnlName, playRspCmd.mRtcToken, playRspCmd.mDevRtcUid);
 
                 if (playingCallback != null) {
                     playingCallback.onDevMediaOpenDone(null, ErrCode.XOK);
@@ -311,7 +311,7 @@ public class DevMediaMgr implements IDevMediaMgr {
                 }
 
                 // 进入RTC频道拉流
-                RtcChnlEnter(playRspCmd.mRtcUid, playRspCmd.mChnlName, playRspCmd.mRtcToken);
+                RtcChnlEnter(playRspCmd.mRtcUid, playRspCmd.mChnlName, playRspCmd.mRtcToken, playRspCmd.mDevRtcUid);
 
                 if (playingCallback != null) {
                     playingCallback.onDevMediaOpenDone(null, ErrCode.XOK);
@@ -417,10 +417,10 @@ public class DevMediaMgr implements IDevMediaMgr {
     /**
      * @brief 进行频道进行音视频拉流
      */
-    int RtcChnlEnter(int rtcUid, final String chnlName, final String rtcToken) {
+    int RtcChnlEnter(int rtcUid, final String chnlName, final String rtcToken, int devUid) {
         // 进入播放器频道
         mPlayChnlInfo.clear();
-        mPlayChnlInfo.setInfo(mDeviceId, rtcUid, chnlName, rtcToken, mDisplayView, this);
+        mPlayChnlInfo.setInfo(mDeviceId, rtcUid, chnlName, rtcToken, devUid, mDisplayView, this);
 
         DeviceSessionMgr.DevPlayerChnlRslt result = mSessionMgr.devPlayerChnlEnter(mPlayChnlInfo);
         mPlaySessionId.setValue(result.mSessionId);
