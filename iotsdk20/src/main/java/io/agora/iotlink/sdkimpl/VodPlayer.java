@@ -52,7 +52,7 @@ public class VodPlayer implements IVodPlayer {
     private ICallback mCallback;
 
     private IjkMediaPlayer mIjkPlayer;
-    private VodMediaInfo mMediaInfo;
+    private VodMediaInfo mMediaInfo = new VodMediaInfo();
     private AtomicInteger mState = new AtomicInteger();
 
 
@@ -70,6 +70,7 @@ public class VodPlayer implements IVodPlayer {
     public int open(final String mediaUrl, final ICallback callback) {
         mState.setValue(IVodPlayer.VODPLAYER_STATE_OPENING);
         mIjkPlayer = new IjkMediaPlayer();
+        mMediaInfo.clear();
 
         try {
             mIjkPlayer.setDataSource(mediaUrl);
@@ -101,7 +102,6 @@ public class VodPlayer implements IVodPlayer {
                  @Override
                  public void onPrepared(IMediaPlayer iMediaPlayer) {
                      mState.setValue(IVodPlayer.VODPLAYER_STATE_PLAYING);  // 准备就绪后自动播放
-                     mMediaInfo = new VodMediaInfo();
                      mMediaInfo.mMediaUrl = mediaUrl;
                      mMediaInfo.mDuration = mIjkPlayer.getDuration();
                      mMediaInfo.mVideoWidth = mIjkPlayer.getVideoWidth();
@@ -109,7 +109,7 @@ public class VodPlayer implements IVodPlayer {
 
                      ALog.getInstance().d(TAG, "<open.onPrepared> mMediaInfo=" + mMediaInfo);
                      if (mCallback != null) {    // 直接回调给上层
-                         mCallback.onVodOpenDone(mMediaInfo.mMediaUrl);
+                         mCallback.onVodOpenDone(mediaUrl);
                      }
                  }
              });
@@ -120,7 +120,7 @@ public class VodPlayer implements IVodPlayer {
                     ALog.getInstance().d(TAG, "<open.onCompletion> ");
                     mState.setValue(IVodPlayer.VODPLAYER_STATE_PAUSED);
                     if (mCallback != null) {    // 直接回调给上层
-                        mCallback.onVodPlayingDone(mMediaInfo.mMediaUrl, mMediaInfo.mDuration);
+                        mCallback.onVodPlayingDone(mediaUrl, mMediaInfo.mDuration);
                     }
                 }
             });
@@ -131,7 +131,7 @@ public class VodPlayer implements IVodPlayer {
                     ALog.getInstance().e(TAG, "<open.onError> what=" + what + ", extra=" + extra);
                     mState.setValue(IVodPlayer.VODPLAYER_STATE_PAUSED);
                     if (mCallback != null) {    // 直接回调给上层
-                        mCallback.onVodPlayingError(mMediaInfo.mMediaUrl, what);
+                        mCallback.onVodPlayingError(mediaUrl, what);
                     }
                     return false;
                 }
@@ -174,7 +174,7 @@ public class VodPlayer implements IVodPlayer {
         }
 
 
-        ALog.getInstance().e(TAG, "<open> done, mediaUrl=" + mediaUrl);
+        ALog.getInstance().d(TAG, "<open> done, mediaUrl=" + mediaUrl);
         return ErrCode.XOK;
     }
 
@@ -183,7 +183,6 @@ public class VodPlayer implements IVodPlayer {
         if (mIjkPlayer != null) {
             mIjkPlayer.release();
             mIjkPlayer = null;
-            mMediaInfo = null;
             mState.setValue(IVodPlayer.VODPLAYER_STATE_CLOSED);
             ALog.getInstance().d(TAG, "<close> done");
         }

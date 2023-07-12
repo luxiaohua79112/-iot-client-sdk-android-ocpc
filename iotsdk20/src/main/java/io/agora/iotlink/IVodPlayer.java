@@ -46,6 +46,13 @@ public interface IVodPlayer  {
                     + ", mVideoHeight=" + mVideoHeight + " }";
             return infoText;
         }
+
+        public void clear() {
+            mMediaUrl = null;
+            mDuration = 0;
+            mVideoWidth = 0;
+            mVideoHeight = 0;
+        }
     }
 
 
