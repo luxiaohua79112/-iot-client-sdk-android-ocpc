@@ -74,7 +74,7 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
 
         getBinding().titleView.hideLeftImage();
         mVodPlayer = AIotAppSdkFactory.getVodPlayer();
-        mVodPlayer.setDisplayView(getBinding().svDisplay);
+        mVodPlayer.setDisplayLayout(getBinding().flDisplay);
         getBinding().sbPlaying.setEnabled(false);
         getBinding().sbPlaying.setProgress(0);
         getBinding().btnPlayPause.setEnabled(false);
@@ -228,8 +228,8 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
      * @brief 打开或者关闭媒体文件 按钮
      */
     void onBtnOpenClose(View view) {
-        //String mediaFilePath = "/sdcard/test.mp4";
-        String mediaFilePath = "https://cloud-store-test.s3.cn-east-1.jdcloud-oss.com/ts_muxer.m3u8?AWSAccessKeyId=JDC_3FE13D2FBEF921CF56B330716EA5&Expires=1691722344&Signature=8HfpKnS0p1KBiK7oZi6fYqCsuv0%3D";
+        String mediaFilePath = "/sdcard/test.mp4";
+        //String mediaFilePath = "https://cloud-store-test.s3.cn-east-1.jdcloud-oss.com/ts_muxer.m3u8?AWSAccessKeyId=JDC_3FE13D2FBEF921CF56B330716EA5&Expires=1691722344&Signature=8HfpKnS0p1KBiK7oZi6fYqCsuv0%3D";
 
         int playState = mVodPlayer.getPlayingState();
         if (playState == IVodPlayer.VODPLAYER_STATE_CLOSED) {

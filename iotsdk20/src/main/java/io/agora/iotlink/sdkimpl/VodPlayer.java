@@ -12,8 +12,15 @@ package io.agora.iotlink.sdkimpl;
 
 
 
+import android.graphics.Canvas;
+import android.graphics.Rect;
+import android.graphics.SurfaceTexture;
+import android.view.Gravity;
+import android.view.Surface;
+import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.widget.FrameLayout;
 
 import java.io.IOException;
 
@@ -47,22 +54,24 @@ public class VodPlayer implements IVodPlayer {
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Variable Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
-    private SurfaceView mDisplayView;
+    private FrameLayout mDisplayLayout;
 
     private ICallback mCallback;
 
     private IjkMediaPlayer mIjkPlayer;
     private VodMediaInfo mMediaInfo = new VodMediaInfo();
     private AtomicInteger mState = new AtomicInteger();
+    private SurfaceView mDisplayView;
+
+
 
 
     ///////////////////////////////////////////////////////////////////////
     /////////////////// Methods of Override IVodPlayer  ///////////////////
     ///////////////////////////////////////////////////////////////////////
-
     @Override
-    public int setDisplayView(final SurfaceView displayView) {
-        mDisplayView = displayView;
+    public int setDisplayLayout(final FrameLayout displayLayout) {
+        mDisplayLayout = displayLayout;
         return ErrCode.XOK;
     }
 
@@ -71,6 +80,7 @@ public class VodPlayer implements IVodPlayer {
         mState.setValue(IVodPlayer.VODPLAYER_STATE_OPENING);
         mIjkPlayer = new IjkMediaPlayer();
         mMediaInfo.clear();
+
 
         try {
             mIjkPlayer.setDataSource(mediaUrl);
@@ -93,19 +103,30 @@ public class VodPlayer implements IVodPlayer {
 
             mIjkPlayer.setOnVideoSizeChangedListener(new IMediaPlayer.OnVideoSizeChangedListener() {
                 @Override
-                public void onVideoSizeChanged(IMediaPlayer iMediaPlayer, int i, int i1, int i2, int i3) {
+                public void onVideoSizeChanged(IMediaPlayer iMediaPlayer,  int width, int height, int sarNum, int sarDen) {
+                    ALog.getInstance().d(TAG, "<open.onVideoSizeChanged> width=" + width
+                        + ", height=" + height + ", sarNum=" + sarNum + ", sarDen=" + sarDen);
 
+                    // 设置显示控件
+                    renderViewSetDisplay();
                 }
             });
 
             mIjkPlayer.setOnPreparedListener(new IMediaPlayer.OnPreparedListener() {
                  @Override
                  public void onPrepared(IMediaPlayer iMediaPlayer) {
+                     ALog.getInstance().d(TAG, "<open.onPrepared> ");
                      mState.setValue(IVodPlayer.VODPLAYER_STATE_PLAYING);  // 准备就绪后自动播放
                      mMediaInfo.mMediaUrl = mediaUrl;
                      mMediaInfo.mDuration = mIjkPlayer.getDuration();
                      mMediaInfo.mVideoWidth = mIjkPlayer.getVideoWidth();
                      mMediaInfo.mVideoHeight = mIjkPlayer.getVideoHeight();
+
+                     // 创建显示控件
+                     renderViewCreate(mMediaInfo.mVideoWidth, mMediaInfo.mVideoHeight);
+
+                     // 设置显示控件
+                     renderViewSetDisplay();
 
                      ALog.getInstance().d(TAG, "<open.onPrepared> mMediaInfo=" + mMediaInfo);
                      if (mCallback != null) {    // 直接回调给上层
@@ -138,7 +159,9 @@ public class VodPlayer implements IVodPlayer {
             });
 
             // 设置显示控件
-            mIjkPlayer.setDisplay(mDisplayView.getHolder());
+            //mIjkPlayer.setDisplay(mDisplayView.getHolder());
+
+
 
         } catch (IOException ioExp) {
             ioExp.printStackTrace();
@@ -185,6 +208,10 @@ public class VodPlayer implements IVodPlayer {
             mIjkPlayer = null;
             mState.setValue(IVodPlayer.VODPLAYER_STATE_CLOSED);
             ALog.getInstance().d(TAG, "<close> done");
+        }
+
+        if (mDisplayLayout != null) {
+            mDisplayLayout.removeAllViews();
         }
     }
 
@@ -292,5 +319,110 @@ public class VodPlayer implements IVodPlayer {
         ALog.getInstance().d(TAG, "<seek> done, seekPos=" + seekPos);
         return ErrCode.XOK;
     }
+
+
+    ///////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////// Internal Methods //////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * @brief 根据视频帧的大小，来创新显示控件，并且添加到相应的布局中
+     * @param frameWidth: 视频帧宽度
+     * @param frameHeight: 视频帧高度
+     * @return 错误码
+     */
+    int renderViewCreate(int frameWidth, int frameHeight) {
+        if (mDisplayLayout == null) {
+            return ErrCode.XERR_BAD_STATE;
+        }
+
+
+        // 计算显示控件大小
+        int layoutWidth = mDisplayLayout.getWidth();
+        int layoutHeight = mDisplayLayout.getHeight();
+        ZoomSize zoomSize = calculateFitInSize(layoutWidth, layoutHeight, frameWidth, frameHeight);
+
+        mDisplayView = new SurfaceView(mDisplayLayout.getContext());
+        FrameLayout.LayoutParams widgetParam = new FrameLayout.LayoutParams(
+                zoomSize.width, zoomSize.height, Gravity.CENTER);
+        mDisplayView.setLayoutParams(widgetParam);
+
+        // 显示控件添加到布局文件中
+        mDisplayLayout.removeAllViews();
+        mDisplayLayout.addView(mDisplayView);
+
+        ALog.getInstance().d(TAG, "<renderViewCreate> done, layoutWidth=" + layoutWidth
+                + ", layoutHeight=" + layoutHeight
+                + ", viewWidth=" + zoomSize.width + ", viewHeight=" + zoomSize.height);
+        return ErrCode.XOK;
+    }
+
+    /**
+     * @brief 销毁显示控件，从布局中删除
+     */
+    void renderViewDestroy() {
+        if (mDisplayLayout != null) {
+            mDisplayLayout.removeAllViews();
+            ALog.getInstance().d(TAG, "<renderViewDestroy> done");
+        }
+        mDisplayView = null;
+    }
+
+
+    /**
+     * @brief 设置显示控件
+     */
+    void renderViewSetDisplay() {
+        if ((mIjkPlayer != null) && (mDisplayView != null)) {
+            SurfaceHolder holder = mDisplayView.getHolder();
+            if (holder != null) {
+                mIjkPlayer.setDisplay(holder);
+                ALog.getInstance().d(TAG, "<renderViewSetDisplay> done, holder=" + holder);
+            }
+        }
+    }
+
+
+    private static class ZoomSize {
+        public double   fZoomLevel;
+        public int      width;
+        public int      height;
+    }
+
+    /**
+     * @brief 根据显示区域大小 和 实际图像大小，计算fitIn 区域大小
+     */
+    static public ZoomSize calculateFitInSize(int dispWidth, int dispHeight, int imgWidth, int imgHeight)
+    {
+        int orgWidth = imgWidth;
+        int orgHeight= imgHeight;
+        ZoomSize  fitSize = new ZoomSize();
+
+        if (orgWidth <= dispWidth && orgHeight <= dispHeight)
+        {
+            fitSize.fZoomLevel = 1.0f;
+            fitSize.width = orgWidth;
+            fitSize.height = orgHeight;
+            return fitSize;
+        }
+
+        double fRadioW = (double)dispWidth*1.0 / orgWidth;
+        double fRadiuH = (double)dispHeight*1.0 / orgHeight;
+
+        fitSize.fZoomLevel = (fRadioW < fRadiuH) ? fRadioW : fRadiuH;
+        fitSize.width  = (int)(orgWidth * fitSize.fZoomLevel + 0.5);
+        fitSize.height = (int)(orgHeight * fitSize.fZoomLevel + 0.5);
+
+        if (fitSize.width <= 0)  {
+            fitSize.width = 1;
+        }
+
+        if (fitSize.height <= 0)    {
+            fitSize.height = 1;
+        }
+
+        return fitSize;
+    }
+
 
 }
