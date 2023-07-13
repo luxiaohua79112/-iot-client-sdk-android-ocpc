@@ -742,12 +742,12 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
                 }
 
                 if (errCode != ErrCode.XOK) {  // 连接设备会话失败
+                    // 从长联接中删除连接
+                    PresistentLinkComp.getInstance().devReqDisconnect(findResult.mDevInfo.mConnectId);
+
                     // 更新设备状态信息
                     findResult.mDevInfo.clear();
                     mDevListAdapter.setItem(findResult.mPosition, findResult.mDevInfo);
-
-                    // 从长联接中删除连接
-                    PresistentLinkComp.getInstance().devReqDisconnect(findResult.mDevInfo.mConnectId);
 
                     // 弹出错误提示
                     popupMessage("Fail to SDK connect device, errCode=" + errCode);
