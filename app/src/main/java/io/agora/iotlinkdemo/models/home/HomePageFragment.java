@@ -803,6 +803,11 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
                 findResult.mDevInfo.clear();
                 mDevListAdapter.setItem(findResult.mPosition, findResult.mDevInfo);
 
+                // 如果有设备控制界面Activity,则直接停止
+                if (DevCtrlActivity.mActivity != null) {
+                    DevCtrlActivity.mActivity.finish();
+                }
+
                 popupMessage("Peer device: " + findResult.mDevInfo.mNodeId + " disconnected!");
 
                 if (mAnswerRjectDlg != null) {

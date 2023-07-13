@@ -56,7 +56,7 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
 
     private static final String TAG = "IOTLINK/DevCtrlAct";
 
-    private DevCtrlActivity mActivity;
+    public static DevCtrlActivity mActivity;
     private UUID mSessionId = null;
     private FileListAdapter mFileListAdapter;
 
@@ -190,6 +190,7 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
         super.onDestroy();
         Log.d(TAG, "<onDestroy> ");
         mSessionId = null;
+        mActivity = null;
     }
 
 
