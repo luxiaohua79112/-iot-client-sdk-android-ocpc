@@ -391,6 +391,10 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
                             public void run() {
                                 if (errCode != ErrCode.XOK) {  // 连接设备请求失败
                                     hideLoadingView();
+                                    PresistentLinkComp.getInstance().devReqDisconnect(connectId); // 删除连接请求
+                                    // 更新 设备信息
+                                    deviceInfo.clear();
+                                    mDevListAdapter.setItem(position, deviceInfo);
                                     popupMessage("Fail to requect connect device, errCode=" + errCode);
                                     return;
                                 }
@@ -409,8 +413,12 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
 
                                 IDeviceSessionMgr.ConnectResult sdkConnectRslt = sessionMgr.connect(connectParam, mFragment);
                                 if (sdkConnectRslt.mErrCode != ErrCode.XOK) {
-                                    popupMessage("Fail to SDK connect device, errCode=" + errCode);
                                     PresistentLinkComp.getInstance().devReqDisconnect(connectId); // 删除连接请求
+                                    // 更新 设备信息
+                                    deviceInfo.clear();
+                                    mDevListAdapter.setItem(position, deviceInfo);
+
+                                    popupMessage("Fail to SDK connect device, errCode=" + errCode);
                                     return;
                                 }
 

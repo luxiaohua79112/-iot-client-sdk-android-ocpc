@@ -199,7 +199,15 @@ public class DeviceSessionMgr extends BaseThreadComp
         mSessionMgr.addSession(newSession);
 
         // 加入频道处理
-        talkingPrepare(newSession, false, false, false);
+        int errCode = talkingPrepare(newSession, false, false, false);
+        if (errCode != ErrCode.XOK) {
+            ALog.getInstance().e(TAG, "<connect> failure to join channel, errCode=" + errCode
+                    + ", deviceId=" + connectParam.mPeerDevId);
+            mSessionMgr.removeSession(newSession.mSessionId);   // 移除加入的会话
+            result.mErrCode = errCode;
+            return result;
+
+        }
 
         // RTM组件中连接设备处理
         mRtmComp.connectToDevice(connectParam.mPeerDevId, connectParam.mRtmToken);
