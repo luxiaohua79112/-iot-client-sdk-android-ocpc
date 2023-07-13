@@ -259,7 +259,26 @@ public class DevMediaMgr implements IDevMediaMgr {
                 }
 
                 // 进入RTC频道拉流
-                RtcChnlEnter(playRspCmd.mRtcUid, playRspCmd.mChnlName, playRspCmd.mRtcToken, playRspCmd.mDevRtcUid);
+                int ret = RtcChnlEnter(playRspCmd.mRtcUid, playRspCmd.mChnlName, playRspCmd.mRtcToken, playRspCmd.mDevRtcUid);
+                if (ret != ErrCode.XOK) {
+                    // 加入频道失败时，返回媒体文件打开失败，同时发送停止播放命令给设备端
+                    ALog.getInstance().e(TAG, "<play.onRtmCmdResponsed> fail to enter channel, ret=" + ret);
+
+                    RtmBaseCmd stopReqCmd = new RtmBaseCmd();
+                    stopReqCmd.mSequenceId = RtmCmdSeqId.getSeuenceId();
+                    stopReqCmd.mCmdId = IRtmCmd.CMDID_MEDIA_STOP;
+                    stopReqCmd.mDeviceId = mDeviceId;
+                    stopReqCmd.mSendTimestamp = System.currentTimeMillis();
+                    stopReqCmd.mRespListener = null;    // 不需要管设备端是否收到
+                    mSessionMgr.getRtmMgrComp().sendCommandToDev(stopReqCmd);
+
+                    mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_STOPPED);   // 状态机: 停止播放
+
+                    if (playingCallback != null) {
+                        playingCallback.onDevMediaOpenDone(null, ret);
+                    }
+                    return;
+                }
 
                 if (playingCallback != null) {
                     playingCallback.onDevMediaOpenDone(null, ErrCode.XOK);
@@ -315,7 +334,17 @@ public class DevMediaMgr implements IDevMediaMgr {
                 if (ret != ErrCode.XOK) {
                     // 加入频道失败时，返回媒体文件打开失败，同时发送停止播放命令给设备端
                     ALog.getInstance().e(TAG, "<play.onRtmCmdResponsed> fail to enter channel, ret=" + ret);
+
+                    RtmBaseCmd stopReqCmd = new RtmBaseCmd();
+                    stopReqCmd.mSequenceId = RtmCmdSeqId.getSeuenceId();
+                    stopReqCmd.mCmdId = IRtmCmd.CMDID_MEDIA_STOP;
+                    stopReqCmd.mDeviceId = mDeviceId;
+                    stopReqCmd.mSendTimestamp = System.currentTimeMillis();
+                    stopReqCmd.mRespListener = null;    // 不需要管设备端是否收到
+                    mSessionMgr.getRtmMgrComp().sendCommandToDev(stopReqCmd);
+
                     mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_STOPPED);   // 状态机: 停止播放
+
                     if (playingCallback != null) {
                         playingCallback.onDevMediaOpenDone(null, ret);
                     }
