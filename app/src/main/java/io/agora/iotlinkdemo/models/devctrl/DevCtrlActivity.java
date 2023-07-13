@@ -667,7 +667,15 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
     @Override
     public void onDevMediaOpenDone(final String fileId, int errCode) {
         Log.d(TAG, "<onDevMediaOpenDone> fileId=" + fileId + ", errCode=" + errCode);
-
+        if (errCode != ErrCode.XOK) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    popupMessage("Media playing fileId=" + fileId + " open failed, errCode=" + errCode);
+                    getBinding().btnPlayStop.setText("播放");
+                }
+            });
+        }
     }
 
     @Override

@@ -311,7 +311,16 @@ public class DevMediaMgr implements IDevMediaMgr {
                 }
 
                 // 进入RTC频道拉流
-                RtcChnlEnter(playRspCmd.mRtcUid, playRspCmd.mChnlName, playRspCmd.mRtcToken, playRspCmd.mDevRtcUid);
+                int ret = RtcChnlEnter(playRspCmd.mRtcUid, playRspCmd.mChnlName, playRspCmd.mRtcToken, playRspCmd.mDevRtcUid);
+                if (ret != ErrCode.XOK) {
+                    // 加入频道失败时，返回媒体文件打开失败，同时发送停止播放命令给设备端
+                    ALog.getInstance().e(TAG, "<play.onRtmCmdResponsed> fail to enter channel, ret=" + ret);
+                    mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_STOPPED);   // 状态机: 停止播放
+                    if (playingCallback != null) {
+                        playingCallback.onDevMediaOpenDone(null, ret);
+                    }
+                    return;
+                }
 
                 if (playingCallback != null) {
                     playingCallback.onDevMediaOpenDone(null, ErrCode.XOK);
@@ -423,7 +432,9 @@ public class DevMediaMgr implements IDevMediaMgr {
         mPlayChnlInfo.setInfo(mDeviceId, rtcUid, chnlName, rtcToken, devUid, mDisplayView, this);
 
         DeviceSessionMgr.DevPlayerChnlRslt result = mSessionMgr.devPlayerChnlEnter(mPlayChnlInfo);
-        mPlaySessionId.setValue(result.mSessionId);
+        if (result.mErrCode == ErrCode.XOK) {
+            mPlaySessionId.setValue(result.mSessionId);
+        }
 
         return result.mErrCode;
     }

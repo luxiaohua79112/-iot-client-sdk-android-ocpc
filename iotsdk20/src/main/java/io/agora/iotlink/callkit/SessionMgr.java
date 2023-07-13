@@ -115,6 +115,9 @@ public class SessionMgr {
      * @return 返回删除的会话，如果未找到则返回null
      */
     public SessionCtx removeSession(final UUID sessionId) {
+        if (sessionId == null) {
+            return null;
+        }
         synchronized (mSessionMap) {
             SessionCtx sessionCtx = mSessionMap.remove(sessionId);
             return sessionCtx;
