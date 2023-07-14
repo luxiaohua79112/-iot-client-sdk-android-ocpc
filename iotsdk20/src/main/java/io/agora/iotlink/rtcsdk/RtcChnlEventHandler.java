@@ -15,7 +15,11 @@ package io.agora.iotlink.rtcsdk;
 
 
 
+import java.util.Locale;
 import java.util.UUID;
+
+import io.agora.iotlink.logger.ALog;
+import io.agora.rtc2.ClientRoleOptions;
 import io.agora.rtc2.Constants;
 import io.agora.rtc2.IRtcEngineEventHandler;
 
@@ -125,6 +129,18 @@ public class RtcChnlEventHandler extends IRtcEngineEventHandler {
 //                    stats.toString(), stats.width, stats.height);
 //            ALog.getInstance().d(TAG, strLog);
         mTalkingEng.onRemoteVideoStats(mSessionId, stats);
+    }
+
+    @Override
+    public void onClientRoleChanged(int oldRole, int newRole, ClientRoleOptions newRoleOptions) {
+        ALog.getInstance().d(TAG, "<onClientRoleChanged> oldRole=" + oldRole
+            + ", newRole=" + newRole + ", newRoleOptions=" + newRoleOptions);
+    }
+
+    @Override
+    public void onClientRoleChangeFailed(int reason, int currentRole) {
+        ALog.getInstance().d(TAG, "<onClientRoleChangeFailed> reason=" + reason
+                + ", currentRole=" + currentRole);
     }
 
 };

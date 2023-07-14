@@ -234,7 +234,7 @@ public class TalkingEngine implements AGEventHandler,
                 VideoEncoderConfiguration.ORIENTATION_MODE.ORIENTATION_MODE_ADAPTIVE));
 
         // 设置广播模式
-        mRtcEngine.setClientRole(mRtcEngCfg.mClientRole);
+        mRtcEngine.setClientRole(Constants.CLIENT_ROLE_BROADCASTER);
 
         // 设置私参： 默认G711U格式。 音频G722编码--9;  音频G711U--0;  音频G711A--8
         String codecParam = "{\"che.audio.custom_payload_type\":0}";
@@ -361,7 +361,7 @@ public class TalkingEngine implements AGEventHandler,
         // 加入频道
         ChannelMediaOptions options = new ChannelMediaOptions();
         options.channelProfile = Constants.CHANNEL_PROFILE_LIVE_BROADCASTING;
-        options.clientRoleType = mRtcEngCfg.mClientRole;
+        options.clientRoleType = Constants.CLIENT_ROLE_BROADCASTER;
         options.autoSubscribeAudio = subPeerAudio;
         options.autoSubscribeVideo = subPeerVideo;
         options.publishCameraTrack = false;
@@ -477,7 +477,7 @@ public class TalkingEngine implements AGEventHandler,
 
         ChannelMediaOptions options = new ChannelMediaOptions();
         options.channelProfile = Constants.CHANNEL_PROFILE_LIVE_BROADCASTING;
-        options.clientRoleType = mRtcEngCfg.mClientRole;
+        options.clientRoleType = Constants.CLIENT_ROLE_BROADCASTER;
         options.autoSubscribeAudio = true;      // 订阅音频流
         options.autoSubscribeVideo = true;      // 订阅视频流
         options.publishCameraTrack = false;     // 不推视频
@@ -511,7 +511,7 @@ public class TalkingEngine implements AGEventHandler,
 
         ChannelMediaOptions options = new ChannelMediaOptions();
         options.channelProfile = Constants.CHANNEL_PROFILE_LIVE_BROADCASTING;
-        options.clientRoleType = mRtcEngCfg.mClientRole;
+        options.clientRoleType = Constants.CLIENT_ROLE_BROADCASTER;
         options.autoSubscribeAudio = false;      // 不订阅音频流
         options.autoSubscribeVideo = false;      // 不订阅视频流
         options.publishCameraTrack = false;     // 不推视频
@@ -603,7 +603,7 @@ public class TalkingEngine implements AGEventHandler,
 
         ChannelMediaOptions options = new ChannelMediaOptions();
         options.channelProfile = Constants.CHANNEL_PROFILE_LIVE_BROADCASTING;
-        options.clientRoleType = mRtcEngCfg.mClientRole;
+        options.clientRoleType = Constants.CLIENT_ROLE_BROADCASTER;
         options.autoSubscribeAudio = true;
         options.autoSubscribeVideo = true;
         options.publishCameraTrack = false;
