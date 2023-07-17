@@ -809,7 +809,7 @@ public class DeviceSessionMgr extends BaseThreadComp
         return (ret ? ErrCode.XOK : ErrCode.XERR_UNSUPPORTED);
     }
 
-    public int previewStart(final UUID sessionId, final IDevPreviewMgr.OnPreviewListener previewListener) {
+    public int previewStart(final UUID sessionId, boolean bSubAudio, final IDevPreviewMgr.OnPreviewListener previewListener) {
         SessionCtx sessionCtx = mSessionMgr.getSession(sessionId);
         if (sessionCtx == null) {
             ALog.getInstance().e(TAG, "<previewStart> not found session, sessionId=" + sessionId);
@@ -820,7 +820,7 @@ public class DeviceSessionMgr extends BaseThreadComp
         if (sessionCtx != null) {  // 当前有相应的会话，直接更新设备显示控件
             synchronized (mTalkEngLock) {
                 if (mTalkEngine.isReady()) {
-                    ret = mTalkEngine.subscribeStart(sessionCtx);
+                    ret = mTalkEngine.subscribeStart(bSubAudio, sessionCtx);
                 }
             }
 

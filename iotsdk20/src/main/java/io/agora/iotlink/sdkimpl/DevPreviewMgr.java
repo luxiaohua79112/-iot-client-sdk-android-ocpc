@@ -66,8 +66,8 @@ public class DevPreviewMgr  implements IDevPreviewMgr {
     }
 
     @Override
-    public int previewStart(final OnPreviewListener previewListener) {
-        int ret = mSessionMgr.previewStart(mSessionId, previewListener);
+    public int previewStart(boolean bSubAudio, final OnPreviewListener previewListener) {
+        int ret = mSessionMgr.previewStart(mSessionId, bSubAudio, previewListener);
         if (ret == ErrCode.XOK) {
             mIsPreviewing.setValue(true);
         }

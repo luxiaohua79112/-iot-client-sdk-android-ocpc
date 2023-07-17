@@ -767,7 +767,7 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
                         previewMgr.setDisplayView(findResult.mDevInfo.mVideoView);
 
                         // 开始预览操作
-                        previewMgr.previewStart(new IDevPreviewMgr.OnPreviewListener() {
+                        previewMgr.previewStart(true, new IDevPreviewMgr.OnPreviewListener() {
                             @Override
                             public void onDeviceFirstVideo(UUID sessionId, int videoWidth, int videoHeight) {
                                 Log.d(TAG, "<onDeviceFirstVideo> sessionId=" + sessionId

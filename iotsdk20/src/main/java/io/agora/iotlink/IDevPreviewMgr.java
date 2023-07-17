@@ -87,10 +87,11 @@ public interface IDevPreviewMgr {
 
     /**
      * @brief 开始预览设备音视频流
+     * @param bSubAudio : 预览开始后是否订阅设备端音频流
      * @param previewListener : 预览监听事件
      * @return 返回错误码
      */
-    int previewStart(final OnPreviewListener previewListener);
+    int previewStart(boolean bSubAudio, final OnPreviewListener previewListener);
 
     /**
      * @brief 停止设备音视频流预览

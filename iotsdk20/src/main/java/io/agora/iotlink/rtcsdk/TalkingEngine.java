@@ -468,7 +468,7 @@ public class TalkingEngine implements AGEventHandler,
     /**
      * @brief 开始订阅音视频
      */
-    public boolean subscribeStart(final SessionCtx sessionCtx) {
+    public boolean subscribeStart(boolean bSubAudio, final SessionCtx sessionCtx) {
         if (mRtcEngine == null) {
             ALog.getInstance().e(TAG, "<subscribeStart> bad state");
             return false;
@@ -478,7 +478,7 @@ public class TalkingEngine implements AGEventHandler,
         ChannelMediaOptions options = new ChannelMediaOptions();
         options.channelProfile = Constants.CHANNEL_PROFILE_LIVE_BROADCASTING;
         options.clientRoleType = Constants.CLIENT_ROLE_BROADCASTER;
-        options.autoSubscribeAudio = true;      // 订阅音频流
+        options.autoSubscribeAudio = bSubAudio;      // 订阅音频流
         options.autoSubscribeVideo = true;      // 订阅视频流
         options.publishCameraTrack = false;     // 不推视频
         options.publishMicrophoneTrack = false; // 不推音频
@@ -488,7 +488,7 @@ public class TalkingEngine implements AGEventHandler,
         rtcConnection.localUid = sessionCtx.mLocalRtcUid;
 
         int ret = mRtcEngine.updateChannelMediaOptionsEx(options, rtcConnection);
-        int retAud = mRtcEngine.muteRemoteAudioStreamEx(sessionCtx.mDeviceRtcUid, false, rtcConnection);
+        int retAud = mRtcEngine.muteRemoteAudioStreamEx(sessionCtx.mDeviceRtcUid, (!bSubAudio), rtcConnection);
         int retVid = mRtcEngine.muteRemoteVideoStreamEx(sessionCtx.mDeviceRtcUid, false, rtcConnection);
 
         long t2 = System.currentTimeMillis();
