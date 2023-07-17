@@ -24,9 +24,7 @@ public interface IDevMediaMgr  {
     ////////////////////////////////////////////////////////////////////////
     ////////////////// Methods for Device Media Management /////////////////
     ////////////////////////////////////////////////////////////////////////
-
-
-
+    public static final String FILE_ID_TIMELINE = "GlobalTimeline";     ///< 特定的fileId，表示全局时间轴
 
     /**
      * @brief 分页查询文件参数，可以进行查询组合
@@ -165,10 +163,13 @@ public interface IDevMediaMgr  {
     //
     // 设备媒体文件播放状态机
     //
-    public static final int DEVPLAYER_STATE_STOPPED = 0x0000;     ///< 当前播放器关闭
-    public static final int DEVPLAYER_STATE_PLAYING = 0x0001;    ///< 当前正在播放
-    public static final int DEVPLAYER_STATE_PAUSED = 0x0002;     ///< 当前暂停播放
-    public static final int DEVPLAYER_STATE_SEEKING = 0x0003;    ///< 当前正在SEEK操作
+    public static final int DEVPLAYER_STATE_STOPPED = 0x0000;   ///< 当前播放器关闭
+    public static final int DEVPLAYER_STATE_OPENING = 0x0001;   ///< 正在打开媒体文件
+    public static final int DEVPLAYER_STATE_PLAYING = 0x0002;   ///< 当前正在播放
+    public static final int DEVPLAYER_STATE_PAUSING = 0x0003;   ///< 正在暂停当前播放
+    public static final int DEVPLAYER_STATE_PAUSED = 0x0004;    ///< 当前播放已经暂停
+    public static final int DEVPLAYER_STATE_RESUMING = 0x0005;  ///< 正在恢复当前播放
+    public static final int DEVPLAYER_STATE_SEEKING = 0x0009;   ///< 当前正在SEEK操作
 
     /**
      * @brief 设备端单个文件媒体信息
@@ -193,19 +194,37 @@ public interface IDevMediaMgr  {
      * @brief 设备媒体文件 播放回调接口
      */
     public static interface IPlayingCallback {
-        /**
-         * @brief 当前播放状态变化事件
-         * @param fileId : 媒体文件Id
-         * @param newState : 切换后的新状态
-         */
-        default void onDevPlayingStateChanged(final String fileId, int newState) {}
 
         /**
          * @brief 设备媒体文件打开完成事件
          * @param fileId : 媒体文件Id
-         * @param errCode : 错误码，0表示打开成功
+         * @param errCode : 错误码，0表示打开成功直接播放，切换为 DEVPLAYER_STATE_PLAYING 状态
+         *                        其他值表示打开失败，状态还是原先的 DEVPLAYER_STATE_STOPPED 状态
          */
         default void onDevMediaOpenDone(final String fileId, int errCode) { }
+
+        /**
+         * @brief 媒体文件播放完成事件，此时状态机切换为 DEVPLAYER_STATE_STOPPED 状态
+         * @param fileId : 媒体文件Id
+         */
+        default void onDevMediaPlayingDone(final String fileId) {}
+
+        /**
+         * @brief 暂停操作完成事件
+         * @param fileId : 媒体文件Id
+         * @param errCode : 错误码，0表示暂停成功，状态切换为 DEVPLAYER_STATE_PAUSED；
+         *                        其他值表示暂停失败，状态还是原先的 DEVPLAYER_STATE_PLAYING 状态
+         */
+        default void onDevMediaPauseDone(final String fileId, int errCode) {}
+
+        /**
+         * @brief 恢复操作完成事件
+         * @param fileId : 媒体文件Id
+         * @param errCode : 错误码，0表示恢复成功，状态切换为 DEVPLAYER_STATE_PLAYING；
+         *                        其他值表示暂停失败，状态还是原先的 DEVPLAYER_STATE_PAUSED 状态
+         */
+        default void onDevMediaResumeDone(final String fileId, int errCode) {}
+
 
         /**
          * @brief 设备媒体文件Seek完成事件
@@ -218,13 +237,7 @@ public interface IDevMediaMgr  {
                                         long targetPos, long seekedPos) { }
 
         /**
-         * @brief 当前媒体文件播放完成事件，通常此时可以调用 stop()回到开始重新play()，或者close()关闭播放器
-         * @param fileId : 媒体文件Id
-         */
-        default void onDevMediaPlayingDone(final String fileId) {}
-
-        /**
-         * @brief 播放过程中遇到错误，并且不能恢复，此时上层只能调用 close()关闭播放器
+         * @brief 播放过程中遇到错误，并且不能恢复，此时上层只能调用 stop()关闭播放器
          * @param fileId : 媒体文件Id
          * @param errCode : 错误码
          */
@@ -240,7 +253,8 @@ public interface IDevMediaMgr  {
     int setDisplayView(final View displayView);
 
     /**
-     * @brief 开始播放，成功后切换到 DEVPLAYER_STATE_PLAYING 状态
+     * @brief 开始播放，先切换到 DEVPLAYER_STATE_OPENING 状态
+     *        操作完成后触发 onDevMediaOpenDone() 回调，并且更新状态
      * @param globalStartTime: 全局开始时间
      * @param playSpeed: 播放倍速
      * @param playingCallback : 播放回调接口
@@ -249,7 +263,8 @@ public interface IDevMediaMgr  {
     int play(long globalStartTime, int playSpeed, final IPlayingCallback playingCallback);
 
     /**
-     * @brief 开始播放，成功后切换到 DEVPLAYER_STATE_PLAYING 状态
+     * @brief 开始播放，先切换到 DEVPLAYER_STATE_OPENING 状态
+     *        操作完成后触发 onDevMediaOpenDone() 回调，并且更新状态
      * @param fileId: 要播放的媒体文件Id
      * @param startPos: 开始播放的开始时间点
      * @param playSpeed: 播放倍速
@@ -260,25 +275,29 @@ public interface IDevMediaMgr  {
 
     /**
      * @brief 停止当前播放，成功后切换到 DEVPLAYER_STATE_STOPPED 状态
+     *        注意：这个调用不会触发 onDevMediaPlayingDone()回调； 只有回看文件正常播放完成后才会触发
      * @return 错误码
      */
     int stop();
 
 
     /**
-     * @brief 暂停播放，切换到 DEVPLAYER_STATE_PAUSED 状态
+     * @brief 暂停当前播放，先切换到 DEVPLAYER_STATE_PAUSING 状态
+     *        操作完成后触发 onDevMediaPauseDone() 回调，并且更新状态
      * @return 错误码
      */
     int pause();
 
     /**
-     * @brief 恢复暂停的播放，切换到 DEVPLAYER_STATE_PLAYING 状态
+     * @brief 恢复当前暂停的播放，先切换到 DEVPLAYER_STATE_RESUMING 状态
+     *        操作完成后触发 onDevMediaResumeDone() 回调，并且更新状态
      * @return 错误码
      */
     int resume();
 
     /**
-     * @brief 直接跳转播放进度，先切换成 DEVPLAYER_STATE_SEEKING状态，之后切换回原先 播放/暂停状态
+     * @brief 直接跳转播放进度，先切换成 DEVPLAYER_STATE_SEEKING状态，
+     *          seek完成后触发 onDevMediaSeekDone() 回调，并切换回原先 播放/暂停状态
      * @param seekPos: 需要跳转到的目标时间戳，单位ms
      * @return 返回错误码
      */

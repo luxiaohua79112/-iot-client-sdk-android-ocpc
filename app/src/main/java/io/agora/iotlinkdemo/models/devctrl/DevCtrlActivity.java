@@ -627,6 +627,24 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
           popupMessage("Not found device media mgr with sessionId=" + mSessionId);
           return;
       }
+
+      int playingState = mediaMgr.getPlayingState();
+      int ret;
+      if (playingState == IDevMediaMgr.DEVPLAYER_STATE_PLAYING) {
+          // 进行暂停操作
+          ret = mediaMgr.pause();
+          if (ret != ErrCode.XOK) {
+              popupMessage("Paused failed, ret=" + ret);
+          }
+
+
+      } else if (playingState == IDevMediaMgr.DEVPLAYER_STATE_PAUSED) {
+          // 进行恢复操作
+          ret = mediaMgr.resume();
+          if (ret != ErrCode.XOK) {
+              popupMessage("Resume failed, ret=" + ret);
+          }
+      }
     }
 
     /**
@@ -658,12 +676,6 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////// Override Methods of IPlayingCallback ///////////////////
     //////////////////////////////////////////////////////////////////////////////////
-
-    @Override
-    public void onDevPlayingStateChanged(final String fileId, int newState) {
-        Log.d(TAG, "<onDevPlayingStateChanged> fileId=" + fileId + ", newState=" + newState);
-    }
-
     @Override
     public void onDevMediaOpenDone(final String fileId, int errCode) {
         Log.d(TAG, "<onDevMediaOpenDone> fileId=" + fileId + ", errCode=" + errCode);
@@ -679,14 +691,55 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
     }
 
     @Override
-    public void onDevMediaSeekDone(final String fileId, int errCode,
-                                   long targetPos, long seekedPos) {
+    public void onDevMediaPlayingDone(final String fileId) {
+        Log.d(TAG, "<onDevMediaOpenDone> fileId=" + fileId);
+
+        popupMessage("Media playing fileId=" + fileId + " finished!");
+        getBinding().btnPlayStop.setText("播放");
+    }
+
+    @Override
+    public void onDevMediaPauseDone(final String fileId, int errCode) {
+        Log.d(TAG, "<onDevMediaPauseDone> fileId=" + fileId + ", errCode=" + errCode);
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (errCode == ErrCode.XOK) {
+                    popupMessage("Paused successful!");
+                    getBinding().btnPauseResume.setText("恢复");
+
+                } else {
+                    popupMessage("Paused failure, errCode=" + errCode);
+                    getBinding().btnPauseResume.setText("暂停");
+                }
+            }
+        });
 
     }
 
     @Override
-    public void onDevMediaPlayingDone(final String fileId) {
-        Log.d(TAG, "<onDevMediaOpenDone> fileId=" + fileId);
+    public void onDevMediaResumeDone(final String fileId, int errCode) {
+        Log.d(TAG, "<onDevMediaResumeDone> fileId=" + fileId + ", errCode=" + errCode);
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (errCode == ErrCode.XOK) {
+                    popupMessage("Resume successful!");
+                    getBinding().btnPauseResume.setText("暂停");
+
+                } else {
+                    popupMessage("Resume failure, errCode=" + errCode);
+                    getBinding().btnPauseResume.setText("恢复");
+                }
+            }
+        });
+    }
+
+    @Override
+    public void onDevMediaSeekDone(final String fileId, int errCode,
+                                   long targetPos, long seekedPos) {
+        Log.d(TAG, "<onDevMediaSeekDone> fileId=" + fileId);
     }
 
     @Override

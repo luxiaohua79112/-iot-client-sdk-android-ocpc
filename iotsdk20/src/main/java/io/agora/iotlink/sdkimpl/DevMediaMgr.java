@@ -248,8 +248,14 @@ public class DevMediaMgr implements IDevMediaMgr {
         playReqCmd.mRespListener = new IRtmCmd.OnRtmCmdRespListener() {
             @Override
             public void onRtmCmdResponsed(int commandId, int errCode, IRtmCmd reqCmd, IRtmCmd rspCmd) {
-                ALog.getInstance().d(TAG, "<play.onRtmCmdResponsed> errCode=" + errCode);
                 RtmPlayRspCmd playRspCmd = (RtmPlayRspCmd)rspCmd;
+                int currState = mPlayingState.getValue();
+                ALog.getInstance().d(TAG, "<play.onRtmCmdResponsed> errCode=" + errCode
+                        + ", currState=" + currState);
+
+                if (currState != IDevMediaMgr.DEVPLAYER_STATE_OPENING) {    // 不是正在打开状态
+                    return;
+                }
                 if (errCode != ErrCode.XOK) {
                     mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_STOPPED);   // 状态机: 停止播放
                     if (playingCallback != null) {
@@ -273,20 +279,20 @@ public class DevMediaMgr implements IDevMediaMgr {
                     mSessionMgr.getRtmMgrComp().sendCommandToDev(stopReqCmd);
 
                     mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_STOPPED);   // 状态机: 停止播放
-
                     if (playingCallback != null) {
-                        playingCallback.onDevMediaOpenDone(null, ret);
+                        playingCallback.onDevMediaOpenDone(FILE_ID_TIMELINE, ret);
                     }
                     return;
                 }
 
+                mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_PLAYING); // 状态机: 正在播放
                 if (playingCallback != null) {
-                    playingCallback.onDevMediaOpenDone(null, ErrCode.XOK);
+                    playingCallback.onDevMediaOpenDone(FILE_ID_TIMELINE, ErrCode.XOK);
                 }
             }
         };
 
-        mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_PLAYING); // 状态机: 正在播放
+        mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_OPENING); // 状态机: 正在打开
         int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(playReqCmd);
 
         ALog.getInstance().d(TAG, "<play> done, ret=" + ret
@@ -319,12 +325,18 @@ public class DevMediaMgr implements IDevMediaMgr {
         playReqCmd.mRespListener = new IRtmCmd.OnRtmCmdRespListener() {
             @Override
             public void onRtmCmdResponsed(int commandId, int errCode, IRtmCmd reqCmd, IRtmCmd rspCmd) {
-                ALog.getInstance().d(TAG, "<play.onRtmCmdResponsed> errCode=" + errCode);
                 RtmPlayRspCmd playRspCmd = (RtmPlayRspCmd)rspCmd;
+                int currState = mPlayingState.getValue();
+                ALog.getInstance().d(TAG, "<play.onRtmCmdResponsed> errCode=" + errCode
+                                    + ", currState=" + currState);
+
+                if (currState != IDevMediaMgr.DEVPLAYER_STATE_OPENING) {    // 不是正在打开状态
+                    return;
+                }
                 if (errCode != ErrCode.XOK) {
                     mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_STOPPED);   // 状态机: 停止播放
                     if (playingCallback != null) {
-                        playingCallback.onDevMediaOpenDone(null, errCode);
+                        playingCallback.onDevMediaOpenDone(fileId, errCode);
                     }
                     return;
                 }
@@ -344,20 +356,20 @@ public class DevMediaMgr implements IDevMediaMgr {
                     mSessionMgr.getRtmMgrComp().sendCommandToDev(stopReqCmd);
 
                     mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_STOPPED);   // 状态机: 停止播放
-
                     if (playingCallback != null) {
-                        playingCallback.onDevMediaOpenDone(null, ret);
+                        playingCallback.onDevMediaOpenDone(fileId, ret);
                     }
                     return;
                 }
 
+                mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_PLAYING); // 状态机: 正在播放
                 if (playingCallback != null) {
-                    playingCallback.onDevMediaOpenDone(null, ErrCode.XOK);
+                    playingCallback.onDevMediaOpenDone(fileId, ErrCode.XOK);
                 }
             }
         };
 
-        mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_PLAYING); // 状态机: 正在播放
+        mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_OPENING); // 状态机: 正在打开
         int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(playReqCmd);
 
         ALog.getInstance().d(TAG, "<play> done, ret=" + ret
@@ -393,17 +405,107 @@ public class DevMediaMgr implements IDevMediaMgr {
 
     @Override
     public int resume() {
-        return ErrCode.XERR_UNSUPPORTED;
+        int playingState = mPlayingState.getValue();
+        if (playingState != DEVPLAYER_STATE_PAUSED) {
+            ALog.getInstance().d(TAG, "<resume> bad playing state, state=" + playingState);
+            return ErrCode.XERR_BAD_STATE;
+        }
+
+        RtmBaseCmd resumeReqCmd = new RtmBaseCmd();
+        resumeReqCmd.mSequenceId = RtmCmdSeqId.getSeuenceId();
+        resumeReqCmd.mCmdId = IRtmCmd.CMDID_MEDIA_RESUME;
+        resumeReqCmd.mDeviceId = mDeviceId;
+        resumeReqCmd.mSendTimestamp = System.currentTimeMillis();
+
+        resumeReqCmd.mRespListener = new IRtmCmd.OnRtmCmdRespListener() {
+            @Override
+            public void onRtmCmdResponsed(int commandId, int errCode, IRtmCmd reqCmd, IRtmCmd rspCmd) {
+                int currState = mPlayingState.getValue();
+                IPlayingCallback playingCallback = mPlayChnlInfo.getPlayingCallback();
+                String fileId = mPlayChnlInfo.getPlayingFileId();
+                ALog.getInstance().d(TAG, "<resume.onRtmCmdResponsed> errCode=" + errCode
+                        + ", currState=" + currState);
+
+                if (currState != IDevMediaMgr.DEVPLAYER_STATE_RESUMING) {    // 不是正在暂停状态
+                    return;
+                }
+                if (errCode != ErrCode.XOK) {
+                    ALog.getInstance().e(TAG, "<resume.onRtmCmdResponsed> fail to resume!");
+                    mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_PAUSED);   // 状态机: 还原原先的暂停状态
+                    if (playingCallback != null) {
+                        playingCallback.onDevMediaResumeDone(fileId, errCode);
+                    }
+                    return;
+                }
+
+                mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_PLAYING);   // 状态机: 正在播放
+                if (playingCallback != null) {
+                    playingCallback.onDevMediaResumeDone(fileId, errCode);
+                }
+            }
+        };
+
+        mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_RESUMING); // 状态机: 正在恢复
+        int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(resumeReqCmd);
+
+        ALog.getInstance().d(TAG, "<resume> done, ret=" + ret
+                + ", resumeReqCmd=" + resumeReqCmd);
+        return ret;
     }
 
     @Override
     public int pause() {
-        return ErrCode.XERR_UNSUPPORTED;
+        int playingState = mPlayingState.getValue();
+        if (playingState != DEVPLAYER_STATE_PLAYING) {
+            ALog.getInstance().d(TAG, "<pause> bad playing state, state=" + playingState);
+            return ErrCode.XERR_BAD_STATE;
+        }
+
+        RtmBaseCmd pauseReqCmd = new RtmBaseCmd();
+        pauseReqCmd.mSequenceId = RtmCmdSeqId.getSeuenceId();
+        pauseReqCmd.mCmdId = IRtmCmd.CMDID_MEDIA_PAUSE;
+        pauseReqCmd.mDeviceId = mDeviceId;
+        pauseReqCmd.mSendTimestamp = System.currentTimeMillis();
+
+        pauseReqCmd.mRespListener = new IRtmCmd.OnRtmCmdRespListener() {
+            @Override
+            public void onRtmCmdResponsed(int commandId, int errCode, IRtmCmd reqCmd, IRtmCmd rspCmd) {
+                int currState = mPlayingState.getValue();
+                IPlayingCallback playingCallback = mPlayChnlInfo.getPlayingCallback();
+                String fileId = mPlayChnlInfo.getPlayingFileId();
+                ALog.getInstance().d(TAG, "<pause.onRtmCmdResponsed> errCode=" + errCode
+                        + ", currState=" + currState);
+
+                if (currState != IDevMediaMgr.DEVPLAYER_STATE_PAUSING) {    // 不是正在恢复状态
+                    return;
+                }
+                if (errCode != ErrCode.XOK) {
+                    ALog.getInstance().e(TAG, "<pause.onRtmCmdResponsed> fail to pause!");
+                    mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_PLAYING);   // 状态机: 还原原先的播放状态
+                    if (playingCallback != null) {
+                        playingCallback.onDevMediaPauseDone(fileId, errCode);
+                    }
+                    return;
+                }
+
+                mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_PAUSED);   // 状态机: 暂停播放
+                if (playingCallback != null) {
+                    playingCallback.onDevMediaPauseDone(fileId, ErrCode.XOK);
+                }
+            }
+        };
+
+        mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_PAUSING); // 状态机: 正在暂停
+        int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(pauseReqCmd);
+
+        ALog.getInstance().d(TAG, "<pause> done, ret=" + ret
+                + ", pauseReqCmd=" + pauseReqCmd);
+        return ret;
     }
 
     @Override
     public int seek(long seekPos) {
-        return ErrCode.XOK;
+        return ErrCode.XERR_UNSUPPORTED;
     }
 
     @Override
@@ -440,7 +542,7 @@ public class DevMediaMgr implements IDevMediaMgr {
 
     @Override
     public long getPlayingProgress()  {
-        return ErrCode.XOK;
+        return 0;
     }
 
     @Override
@@ -530,6 +632,7 @@ public class DevMediaMgr implements IDevMediaMgr {
         // 设备端退出设备播放频道
         IPlayingCallback playingCallback = mPlayChnlInfo.getPlayingCallback();
         String fileId = mPlayChnlInfo.getPlayingFileId();
+        mPlayingState.setValue(DEVPLAYER_STATE_STOPPED);
         if (playingCallback != null) {
             playingCallback.onDevMediaPlayingDone(fileId);
         }
