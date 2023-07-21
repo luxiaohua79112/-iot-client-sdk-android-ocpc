@@ -790,6 +790,11 @@ public class RtmMgrComp extends BaseThreadComp {
 
                 // 发送失败后要进行处理
                 IRtmCmd rtmCmd = mReqCmdMgr.removeCommand(rtmPacket.mSequenceId);   // 从命令管理器中删除改请求命令
+                if (rtmCmd == null) {
+                    ALog.getInstance().i(TAG, "<rtmEngSendData.onFailure> not found command"
+                            + ", mSequenceId=" + rtmPacket.mSequenceId);
+                    return;
+                }
 
                 //
                 // 回调上层，请求--响应超时
