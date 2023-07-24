@@ -98,7 +98,11 @@ public class TalkingEngine implements AGEventHandler,
         default void onPeerFirstVideoDecoded(final UUID sessionId, int uid,
                                              int videoWidth, int videoHeight) { }
 
-
+        /**
+         * @brief 截图完成回调
+         */
+        default void onSnapshotTaken(final UUID sessionId, int uid,
+                                     final String filePath, int width, int height, int errCode) { }
         /**
          * @brief 录像时产生错误
          */
@@ -984,6 +988,18 @@ public class TalkingEngine implements AGEventHandler,
 //        ALog.getInstance().d(TAG, "<onRemoteVideoStats> sessionId=" + sessionId + ", stats=" + stats);
     }
 
+     void onSnapshotTaken(final UUID sessionId, int uid, String filePath, int width, int height, int errCode) {
+         ALog.getInstance().d(TAG, "<onSnapshotTaken> sessionId=" + sessionId
+                 + ", uid=" + uid + ", filePath=" + filePath
+                 + ", width=" + width + ", height=" + height + ", errCode=" + errCode);
+         if (mRtcEngine == null) {
+             return;
+         }
+
+         if (mInitParam.mCallback != null) {
+             mInitParam.mCallback.onSnapshotTaken(sessionId, uid, filePath, width, height, errCode);
+         }
+     }
 
 
 

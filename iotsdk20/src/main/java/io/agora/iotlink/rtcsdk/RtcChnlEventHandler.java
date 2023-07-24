@@ -143,4 +143,10 @@ public class RtcChnlEventHandler extends IRtcEngineEventHandler {
                 + ", currentRole=" + currentRole);
     }
 
+    @Override
+    public void onSnapshotTaken(int uid, String filePath, int width, int height, int errCode) {
+        mTalkingEng.onSnapshotTaken(mSessionId, uid, filePath, width, height, errCode);
+    }
+
+
 };

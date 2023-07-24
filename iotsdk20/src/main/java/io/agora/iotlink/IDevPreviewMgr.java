@@ -71,8 +71,26 @@ public interface IDevPreviewMgr {
          * @param videoHeight : 首帧视频高度
          */
         default void onDeviceFirstVideo(final UUID sessionId, int videoWidth, int videoHeight) {}
+
     }
 
+
+    /**
+     * @brief 截图监听器
+     */
+    public static interface OnCaptureFrameListener {
+
+        /**
+         * @brief 设备端截图完成事件
+         * @param sessionId : 会话唯一标识
+         * @param errCode : 错误码：0表示截图成功
+         * @param filePath : 截图保存的路径
+         * @param width : 截图宽度
+         * @param height : 截图高度
+         */
+        default void onSnapshotDone(final UUID sessionId, int errCode,
+                                    final String filePath, int width, int height) {}
+    }
 
 
     ////////////////////////////////////////////////////////////////////////
@@ -129,7 +147,7 @@ public interface IDevPreviewMgr {
      * @param saveFilePath : 保存的文件（应用层确保文件有可写权限）
      * @return 错误码
      */
-    int captureVideoFrame(final String saveFilePath);
+    int captureVideoFrame(final String saveFilePath, final OnCaptureFrameListener captureListener);
 
 
     /**

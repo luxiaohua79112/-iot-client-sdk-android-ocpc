@@ -645,13 +645,26 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
         }
 
         String strSavePath = FileUtils.getFileSavePath(deviceInfo.mNodeId, true);
-        int errCode = previewMgr.captureVideoFrame(strSavePath);
+        int errCode = previewMgr.captureVideoFrame(strSavePath, new IDevPreviewMgr.OnCaptureFrameListener() {
+            @Override
+            public void onSnapshotDone(UUID sessionId, int errCode, String filePath, int width, int height) {
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (errCode == ErrCode.XOK) {
+                            popupMessage("Device: " + deviceInfo.mNodeId + " capture successful, save to file=" + strSavePath);
+                        } else {
+                            popupMessage("Device: " + deviceInfo.mNodeId + " capture failure, errCode=" + errCode);
+                        }
+                    }
+                });
+            }
+        });
         if (errCode != ErrCode.XOK) {
             popupMessage("Device: " + deviceInfo.mNodeId + " shot capture failure, errCode=" + errCode);
             return;
         }
 
-        popupMessage("Device: " + deviceInfo.mNodeId + " capture successful, save to file=" + strSavePath);
     }
 
     /**

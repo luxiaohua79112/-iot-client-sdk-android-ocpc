@@ -61,7 +61,8 @@ public class DeviceSessionMgr extends BaseThreadComp
     private static final int MSGID_SDK_CONNECT_DONE = 0x1002;    ///< 连接设备完成消息
     private static final int MSGID_SDK_DEV_OFFLINE= 0x1003;      ///< 设备掉线消息
     private static final int MSGID_SDK_DEV_FIRSTFRAME = 0x1004;  ///< 设备首帧出图消息
-    private static final int MSGID_SDK_TIMER = 0x1005;           ///< 定时器
+    private static final int MSGID_SDK_DEV_SHOTTAKEN = 0x1005;   ///< 截图完成回调
+    private static final int MSGID_SDK_TIMER = 0x1006;           ///< 定时器
 
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Variable Definition ///////////////////////////
@@ -333,6 +334,9 @@ public class DeviceSessionMgr extends BaseThreadComp
             case MSGID_SDK_DEV_FIRSTFRAME:
                 onMessageDeviceFirstFrame(msg);
                 break;
+            case MSGID_SDK_DEV_SHOTTAKEN:
+                onMessageSnapshotTaken(msg);
+                break;
 
             case MSGID_SDK_TIMER:
                 DoTimer(msg);
@@ -346,6 +350,7 @@ public class DeviceSessionMgr extends BaseThreadComp
             mWorkHandler.removeMessages(MSGID_SDK_CONNECT_DONE);
             mWorkHandler.removeMessages(MSGID_SDK_DEV_OFFLINE);
             mWorkHandler.removeMessages(MSGID_SDK_DEV_FIRSTFRAME);
+            mWorkHandler.removeMessages(MSGID_SDK_DEV_SHOTTAKEN);
             mWorkHandler.removeMessages(MSGID_SDK_TIMER);
         }
     }
@@ -469,6 +474,42 @@ public class DeviceSessionMgr extends BaseThreadComp
         }
     }
 
+    /**
+     * @brief 工作线程中运行，截图完成
+     */
+    void onMessageSnapshotTaken(Message msg) {
+        Object[] params = (Object[])msg.obj;
+        UUID sessionId = (UUID)(params[0]);
+        String filePath = (String) (params[1]);
+        Integer width = (Integer) (params[2]);
+        Integer height = (Integer) (params[3]);
+        Integer errCode = (Integer) (params[4]);
+
+        SessionCtx sessionCtx = mSessionMgr.getSession(sessionId);
+        if (sessionCtx == null) {
+            ALog.getInstance().w(TAG, "<onMessageSnapshotTaken> session removed, sessionId=" + sessionId);
+            return;
+        }
+        ALog.getInstance().d(TAG, "<onMessageSnapshotTaken> sessionCtx=" + sessionCtx
+                + ", width=" + width + ", height=" + height
+                + ", filePath=" + filePath + ", errCode=" + errCode);
+
+        if (sessionCtx.mState == SESSION_STATE_CONNECTED || sessionCtx.mState == SESSION_STATE_CONNECTING) {
+            // 回调截图完成
+            int respCode = ErrCode.XOK;
+            if (errCode == -1) { // 文件写入失败
+                respCode = ErrCode.XERR_FILE_WRITE;
+            } else if (errCode == -2) { // 没有收到指定的适配帧
+                respCode = ErrCode.XERR_FILE_WRITE;
+            } else if (errCode == -3) { // 调用太频繁
+                respCode = ErrCode.XERR_INVOKE_TOO_OFTEN;
+
+            } else if (errCode != 0) {
+                respCode = ErrCode.XERR_UNKNOWN;
+            }
+            CallbackShotTakeDone(sessionCtx, respCode, filePath, width, height);
+        }
+    }
 
     /////////////////////////////////////////////////////////////////////////////
     //////////////////// TalkingEngine.ICallback 回调处理 ////////////////////////
@@ -584,6 +625,28 @@ public class DeviceSessionMgr extends BaseThreadComp
         // 发送对端RTC首帧出图事件
         sendSingleMessage(MSGID_SDK_DEV_FIRSTFRAME, videoWidth, videoHeight, sessionId, 0);
     }
+
+    @Override
+    public void onSnapshotTaken(final UUID sessionId, int uid,
+                                final String filePath, int width, int height, int errCode) {
+        // 再处理设备通话的会话
+        SessionCtx sessionCtx = mSessionMgr.getSession(sessionId);
+        if (sessionCtx == null) {
+            ALog.getInstance().d(TAG, "<onSnapshotTaken> session removed"
+                    + ", uid=" + uid + ", filePath=" + filePath
+                    + ", width=" + width + ", height=" + height + ", errCode=" + errCode );
+            return;
+        }
+        ALog.getInstance().d(TAG, "<onSnapshotTaken> sessionCtx=" + sessionCtx
+                    + ", uid=" + uid + ", filePath=" + filePath
+                    + ", width=" + width + ", height=" + height + ", errCode=" + errCode );
+
+        // 发送截图完成回调事件
+        Object[] params = { sessionId, filePath, width, height, errCode};
+        sendSingleMessage(MSGID_SDK_DEV_SHOTTAKEN, 0, 0, params, 0);
+
+    }
+
 
     @Override
     public void onRecordingError(final UUID sessionId, int errCode) {
@@ -909,12 +972,17 @@ public class DeviceSessionMgr extends BaseThreadComp
     }
 
 
-    public int captureVideoFrame(final UUID sessionId, final String saveFilePath) {
+    public int captureVideoFrame(final UUID sessionId, final String saveFilePath,
+                                 final IDevPreviewMgr.OnCaptureFrameListener captureListener) {
         SessionCtx sessionCtx = mSessionMgr.getSession(sessionId);
         if (sessionCtx == null) {
             ALog.getInstance().e(TAG, "<captureVideoFrame> not found session, sessionId=" + sessionId);
             return ErrCode.XERR_INVALID_PARAM;
         }
+
+        // 更新 session中截图回调
+        sessionCtx.mCaptureListener = captureListener;
+        mSessionMgr.updateSession(sessionCtx);
 
         boolean ret;
         synchronized (mTalkEngLock) {
@@ -1156,5 +1224,11 @@ public class DeviceSessionMgr extends BaseThreadComp
         }
     }
 
+    void CallbackShotTakeDone(final SessionCtx sessionCtx, int errCode, final String filePath,
+                              int width, int height) {
+        if (sessionCtx.mPreviewListener != null) {
+            sessionCtx.mCaptureListener.onSnapshotDone(sessionCtx.mSessionId, errCode, filePath, width, height);
+        }
+    }
 
 }

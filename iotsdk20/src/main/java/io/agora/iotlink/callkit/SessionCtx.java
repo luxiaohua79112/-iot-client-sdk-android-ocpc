@@ -46,7 +46,7 @@ public class SessionCtx  {
 
     public IDeviceSessionMgr.ISessionCallback mSeesionCallback;       ///< 会话相关的回调
     public IDevPreviewMgr.OnPreviewListener mPreviewListener;
-
+    public IDevPreviewMgr.OnCaptureFrameListener mCaptureListener;
 
 
 

@@ -107,8 +107,8 @@ public class DevPreviewMgr  implements IDevPreviewMgr {
     }
 
     @Override
-    public int captureVideoFrame(final String saveFilePath) {
-        int ret = mSessionMgr.captureVideoFrame(mSessionId, saveFilePath);
+    public int captureVideoFrame(final String saveFilePath, final OnCaptureFrameListener captureListener) {
+        int ret = mSessionMgr.captureVideoFrame(mSessionId, saveFilePath, captureListener);
         return ret;
     }
 
