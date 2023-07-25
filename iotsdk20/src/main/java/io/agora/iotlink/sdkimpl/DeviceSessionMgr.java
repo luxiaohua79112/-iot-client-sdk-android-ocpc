@@ -1245,7 +1245,7 @@ public class DeviceSessionMgr extends BaseThreadComp
 
     void CallbackShotTakeDone(final SessionCtx sessionCtx, int errCode, final String filePath,
                               int width, int height) {
-        if (sessionCtx.mPreviewListener != null) {
+        if (sessionCtx.mCaptureListener != null) {
             sessionCtx.mCaptureListener.onSnapshotDone(sessionCtx.mSessionId, errCode, filePath, width, height);
         }
     }
