@@ -785,7 +785,7 @@ public class DeviceSessionMgr extends BaseThreadComp
         playerSession.mDevMediaMgr = chnlInfo.getMediaMgr();
         playerSession.mPubLocalAudio = false;   // SD卡播放时 默认不推本地音频流
         playerSession.mSubDevVideo = true;      // SD卡播放时 默认订阅设备音频流
-        playerSession.mPubLocalAudio = true;    // SD卡播放时 默认订阅设备视频流
+        playerSession.mSubDevAudio = true;      // SD卡播放时 默认订阅设备视频流
         mDevPlayerMgr.addSession(playerSession);
 
         // 开始进入频道
