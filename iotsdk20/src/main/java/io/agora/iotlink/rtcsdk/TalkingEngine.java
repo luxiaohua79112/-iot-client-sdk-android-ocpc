@@ -354,8 +354,7 @@ public class TalkingEngine implements AGEventHandler,
     /**
      * @brief 根据会话信息，加入指定的频道
      */
-    public boolean joinChannel(final SessionCtx sessionCtx, boolean subPeerVideo, boolean subPeerAudio,
-                               boolean pubLocalAudio) {
+    public boolean joinChannel(final SessionCtx sessionCtx) {
         if (mRtcEngine == null) {
             ALog.getInstance().e(TAG, "<joinChannel> bad state");
             return false;
@@ -366,10 +365,10 @@ public class TalkingEngine implements AGEventHandler,
         ChannelMediaOptions options = new ChannelMediaOptions();
         options.channelProfile = Constants.CHANNEL_PROFILE_LIVE_BROADCASTING;
         options.clientRoleType = Constants.CLIENT_ROLE_BROADCASTER;
-        options.autoSubscribeAudio = subPeerAudio;
-        options.autoSubscribeVideo = subPeerVideo;
+        options.autoSubscribeAudio = false;
+        options.autoSubscribeVideo = false;
         options.publishCameraTrack = false;
-        options.publishMicrophoneTrack = pubLocalAudio;
+        options.publishMicrophoneTrack = sessionCtx.mPubLocalAudio;
 
         RtcConnection rtcConnection = new RtcConnection();
         rtcConnection.channelId = sessionCtx.mChnlName;
@@ -414,9 +413,27 @@ public class TalkingEngine implements AGEventHandler,
         }
 
         // APP端根据参数，决定是否推音频流
-        ret = mRtcEngine.muteLocalAudioStreamEx(!pubLocalAudio, rtcConnection);
+        boolean muteLocalAudio = (!sessionCtx.mPubLocalAudio);
+        ret = mRtcEngine.muteLocalAudioStreamEx(muteLocalAudio, rtcConnection);
         if (ret != Constants.ERR_OK) {
-            ALog.getInstance().e(TAG, "<joinChannel> muteLocalAudioStream() error, ret=" + ret);
+            ALog.getInstance().e(TAG, "<joinChannel> muteLocalAudioStream() error, ret=" + ret
+                    + ", muteLocalAudio=" + muteLocalAudio);
+        }
+
+        // APP端根据参数，决定是否订阅设备端视频流
+        boolean muteRemoteVideo = (!sessionCtx.mSubDevVideo);
+        ret = mRtcEngine.muteRemoteVideoStreamEx(sessionCtx.mDeviceRtcUid, muteRemoteVideo, rtcConnection);
+        if (ret != Constants.ERR_OK) {
+            ALog.getInstance().e(TAG, "<joinChannel> muteRemoteVideoStreamEx() error, ret=" + ret
+                    + ", muteRemoteVideo=" + muteRemoteVideo);
+        }
+
+        // APP端根据参数，决定是否订阅设备端音频流
+        boolean muteRemoteAudio = (!sessionCtx.mSubDevAudio);
+        ret = mRtcEngine.muteRemoteAudioStreamEx(sessionCtx.mDeviceRtcUid, muteRemoteAudio, rtcConnection);
+        if (ret != Constants.ERR_OK) {
+            ALog.getInstance().e(TAG, "<joinChannel> muteRemoteAudioStreamEx() error, ret=" + ret
+                    + ", muteRemoteAudio=" + muteRemoteAudio);
         }
 
         ALog.getInstance().d(TAG, "<joinChannel> Exit");
@@ -472,33 +489,43 @@ public class TalkingEngine implements AGEventHandler,
     /**
      * @brief 开始订阅音视频
      */
-    public boolean subscribeStart(boolean bSubAudio, final SessionCtx sessionCtx) {
+    public boolean subscribeStart(final SessionCtx sessionCtx) {
         if (mRtcEngine == null) {
             ALog.getInstance().e(TAG, "<subscribeStart> bad state");
             return false;
         }
         long t1 = System.currentTimeMillis();
+        int ret, retLocalAud, retDevVideo, retDevAudio;
 
         ChannelMediaOptions options = new ChannelMediaOptions();
         options.channelProfile = Constants.CHANNEL_PROFILE_LIVE_BROADCASTING;
         options.clientRoleType = Constants.CLIENT_ROLE_BROADCASTER;
-        options.autoSubscribeAudio = bSubAudio;      // 订阅音频流
-        options.autoSubscribeVideo = true;      // 订阅视频流
-        options.publishCameraTrack = false;     // 不推视频
-        options.publishMicrophoneTrack = false; // 不推音频
+        options.autoSubscribeAudio = false;      // 不订阅音频流
+        options.autoSubscribeVideo = false;      // 不订阅视频流
+        options.publishCameraTrack = false;     // 不推本地视频
+        options.publishMicrophoneTrack = false; // 不推本地音频流
 
         RtcConnection rtcConnection = new RtcConnection();
         rtcConnection.channelId = sessionCtx.mChnlName;
         rtcConnection.localUid = sessionCtx.mLocalRtcUid;
 
-        int ret = mRtcEngine.updateChannelMediaOptionsEx(options, rtcConnection);
-        int retAud = mRtcEngine.muteRemoteAudioStreamEx(sessionCtx.mDeviceRtcUid, (!bSubAudio), rtcConnection);
-        int retVid = mRtcEngine.muteRemoteVideoStreamEx(sessionCtx.mDeviceRtcUid, false, rtcConnection);
+        boolean muteLocalAudio = (!sessionCtx.mPubLocalAudio);
+        ret = mRtcEngine.updateChannelMediaOptionsEx(options, rtcConnection);
+        retLocalAud = mRtcEngine.muteLocalAudioStreamEx(muteLocalAudio, rtcConnection);
+
+        boolean mutePeerAudio = (!sessionCtx.mSubDevAudio);
+        retDevAudio = mRtcEngine.muteRemoteAudioStreamEx(sessionCtx.mDeviceRtcUid, mutePeerAudio, rtcConnection);
+        ALog.getInstance().d(TAG, "<subscribeStart> mutePeerAudio=" + mutePeerAudio
+                + ", retDevAudio=" + retDevAudio);
+
+        boolean mutePeerVideo = (!sessionCtx.mSubDevVideo);
+        retDevVideo = mRtcEngine.muteRemoteVideoStreamEx(sessionCtx.mDeviceRtcUid, mutePeerVideo, rtcConnection);
+        ALog.getInstance().d(TAG, "<subscribeStart> mutePeerVideo=" + mutePeerVideo
+                + ", retDevVideo=" + retDevVideo);
 
         long t2 = System.currentTimeMillis();
-
         ALog.getInstance().d(TAG, "<subscribeStart> ret=" + ret
-                + ", retAud=" + retAud + ", retVid=" + retVid + ", costTime=" + (t2-t1));
+                + ", retLocalAud=" + retLocalAud + ", costTime=" + (t2-t1));
         return (ret == Constants.ERR_OK);
     }
 
@@ -512,27 +539,37 @@ public class TalkingEngine implements AGEventHandler,
             return false;
         }
         long t1 = System.currentTimeMillis();
+        int ret, retLocalAud, retDevVideo, retDevAudio;
 
         ChannelMediaOptions options = new ChannelMediaOptions();
         options.channelProfile = Constants.CHANNEL_PROFILE_LIVE_BROADCASTING;
         options.clientRoleType = Constants.CLIENT_ROLE_BROADCASTER;
         options.autoSubscribeAudio = false;      // 不订阅音频流
         options.autoSubscribeVideo = false;      // 不订阅视频流
-        options.publishCameraTrack = false;     // 不推视频
-        options.publishMicrophoneTrack = false; // 不推音频
+        options.publishCameraTrack = false;     // 不推本地视频
+        options.publishMicrophoneTrack = false; // 不推本地音频流
 
         RtcConnection rtcConnection = new RtcConnection();
         rtcConnection.channelId = sessionCtx.mChnlName;
         rtcConnection.localUid = sessionCtx.mLocalRtcUid;
 
-        int ret = mRtcEngine.updateChannelMediaOptionsEx(options, rtcConnection);
-        int retAud = mRtcEngine.muteRemoteAudioStreamEx(sessionCtx.mDeviceRtcUid, true, rtcConnection);
-        int retVid = mRtcEngine.muteRemoteVideoStreamEx(sessionCtx.mDeviceRtcUid, true, rtcConnection);
+        boolean muteLocalAudio = (!sessionCtx.mPubLocalAudio);
+        ret = mRtcEngine.updateChannelMediaOptionsEx(options, rtcConnection);
+        retLocalAud = mRtcEngine.muteLocalAudioStreamEx(muteLocalAudio, rtcConnection);
+
+        boolean mutePeerAudio = (!sessionCtx.mSubDevAudio);
+        retDevAudio = mRtcEngine.muteRemoteAudioStreamEx(sessionCtx.mDeviceRtcUid, mutePeerAudio, rtcConnection);
+        ALog.getInstance().d(TAG, "<subscribeStop> mutePeerAudio=" + mutePeerAudio
+                + ", retDevAudio=" + retDevAudio);
+
+        boolean mutePeerVideo = (!sessionCtx.mSubDevVideo);
+        retDevVideo = mRtcEngine.muteRemoteVideoStreamEx(sessionCtx.mDeviceRtcUid, mutePeerVideo, rtcConnection);
+        ALog.getInstance().d(TAG, "<subscribeStop> mutePeerVideo=" + mutePeerVideo
+                + ", retDevVideo=" + retDevVideo);
 
         long t2 = System.currentTimeMillis();
-
         ALog.getInstance().d(TAG, "<subscribeStop> ret=" + ret
-                + ", retAud=" + retAud + ", retVid=" + retVid + ", costTime=" + (t2-t1));
+                + ", retLocalAud=" + retLocalAud + ", costTime=" + (t2-t1));
         return (ret == Constants.ERR_OK);
     }
 
@@ -540,7 +577,7 @@ public class TalkingEngine implements AGEventHandler,
     /**
      * @brief 设置指定频道的设备端，是否推送视频流
      */
-    public boolean mutePeerVideoStream(final SessionCtx sessionCtx, boolean mute) {
+    public boolean mutePeerVideoStream(final SessionCtx sessionCtx) {
         if (mRtcEngine == null) {
             ALog.getInstance().e(TAG, "<mutePeerVideoStream> bad state");
             return false;
@@ -550,16 +587,17 @@ public class TalkingEngine implements AGEventHandler,
         rtcConnection.channelId = sessionCtx.mChnlName;
         rtcConnection.localUid = sessionCtx.mLocalRtcUid;
 
-        int ret = mRtcEngine.muteRemoteVideoStreamEx(sessionCtx.mDeviceRtcUid, mute, rtcConnection);
+        boolean mutePeerVideo = (!sessionCtx.mSubDevVideo);
+        int ret = mRtcEngine.muteRemoteVideoStreamEx(sessionCtx.mDeviceRtcUid, mutePeerVideo, rtcConnection);
         ALog.getInstance().d(TAG, "<mutePeerVideoStream> sessionCtx=" + sessionCtx
-                    + ", mute=" + mute + ", ret=" + ret);
+                    + ", mutePeerVideo=" + mutePeerVideo + ", ret=" + ret);
         return (ret == Constants.ERR_OK);
     }
 
     /**
      * @brief 设置指定频道的设备端，是否推送音频流
      */
-    public boolean mutePeerAudioStream(final SessionCtx sessionCtx, boolean mute) {
+    public boolean mutePeerAudioStream(final SessionCtx sessionCtx) {
         if (mRtcEngine == null) {
             ALog.getInstance().e(TAG, "<mutePeerAudioStream> bad state");
             return false;
@@ -568,9 +606,10 @@ public class TalkingEngine implements AGEventHandler,
         rtcConnection.channelId = sessionCtx.mChnlName;
         rtcConnection.localUid = sessionCtx.mLocalRtcUid;
 
-        int ret = mRtcEngine.muteRemoteAudioStreamEx(sessionCtx.mDeviceRtcUid, mute, rtcConnection);
+        boolean mutePeerAudio = (!sessionCtx.mSubDevAudio);
+        int ret = mRtcEngine.muteRemoteAudioStreamEx(sessionCtx.mDeviceRtcUid, mutePeerAudio, rtcConnection);
         ALog.getInstance().d(TAG, "<mutePeerAudioStream> sessionCtx=" + sessionCtx
-                + ", mute=" + mute + ", ret=" + ret);
+                + ", mutePeerAudio=" + mutePeerAudio + ", ret=" + ret);
         return (ret == Constants.ERR_OK);
     }
 
@@ -598,31 +637,44 @@ public class TalkingEngine implements AGEventHandler,
     /**
      * @brief 设置本地端是否推送音频流
      */
-    public boolean muteLocalAudioStream(final SessionCtx sessionCtx, boolean mute) {
+    public boolean muteLocalAudioStream(final SessionCtx sessionCtx) {
         if (mRtcEngine == null) {
             ALog.getInstance().e(TAG, "<muteLocalAudioStream> bad state");
             return false;
         }
         long t1 = System.currentTimeMillis();
+        int ret, retLocalAud, retDevVideo, retDevAudio;
 
         ChannelMediaOptions options = new ChannelMediaOptions();
         options.channelProfile = Constants.CHANNEL_PROFILE_LIVE_BROADCASTING;
-        options.clientRoleType = Constants.CLIENT_ROLE_BROADCASTER;
-        options.autoSubscribeAudio = true;
-        options.autoSubscribeVideo = true;
+        options.clientRoleType = mRtcEngCfg.mClientRole;
+        options.autoSubscribeAudio = false;  // 不自动订阅音频
+        options.autoSubscribeVideo = false;  // 不自动订阅视频
         options.publishCameraTrack = false;
-        options.publishMicrophoneTrack = (!mute);
+        options.publishMicrophoneTrack = sessionCtx.mPubLocalAudio;
 
         RtcConnection rtcConnection = new RtcConnection();
         rtcConnection.channelId = sessionCtx.mChnlName;
         rtcConnection.localUid = sessionCtx.mLocalRtcUid;
 
-        int ret1 = mRtcEngine.updateChannelMediaOptionsEx(options, rtcConnection);
-        int ret = mRtcEngine.muteLocalAudioStreamEx(mute, rtcConnection);
-        long t2 = System.currentTimeMillis();
+        boolean muteLocalAudio = (!sessionCtx.mPubLocalAudio);
+        ret = mRtcEngine.updateChannelMediaOptionsEx(options, rtcConnection);
+        retLocalAud = mRtcEngine.muteLocalAudioStreamEx(muteLocalAudio, rtcConnection);
 
-        ALog.getInstance().d(TAG, "<muteLocalAudioStream> mute=" + mute
-                + ", ret1=" + ret1 + ", ret=" + ret + ", costTime=" + (t2-t1));
+        boolean mutePeerAudio = (!sessionCtx.mSubDevAudio);
+        retDevAudio = mRtcEngine.muteRemoteAudioStreamEx(sessionCtx.mDeviceRtcUid, mutePeerAudio, rtcConnection);
+        ALog.getInstance().d(TAG, "<muteLocalAudioStream> mutePeerAudio=" + mutePeerAudio
+                + ", retDevAudio=" + retDevAudio);
+
+        boolean mutePeerVideo = (!sessionCtx.mSubDevVideo);
+        retDevVideo = mRtcEngine.muteRemoteVideoStreamEx(sessionCtx.mDeviceRtcUid, mutePeerVideo, rtcConnection);
+        ALog.getInstance().d(TAG, "<muteLocalAudioStream> mutePeerVideo=" + mutePeerVideo
+                + ", retDevVideo=" + retDevVideo);
+
+
+        long t2 = System.currentTimeMillis();
+        ALog.getInstance().d(TAG, "<muteLocalAudioStream> muteLocalAudio=" + muteLocalAudio
+                + ", retLocalAud=" + retLocalAud + ", ret=" + ret + ", costTime=" + (t2-t1));
         return (ret == Constants.ERR_OK);
     }
 

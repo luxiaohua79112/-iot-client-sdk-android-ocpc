@@ -194,13 +194,16 @@ public class DeviceSessionMgr extends BaseThreadComp
         newSession.mUserCount = 1;      // 至少有一个用户
         newSession.mSeesionCallback = sessionCallback;
         newSession.mState = SESSION_STATE_CONNECTING;   // 正在连接中状态机
+        newSession.mPubLocalAudio = false;  // 连接时默认不推本地音频流
+        newSession.mSubDevVideo = false;    // 连接时默认不订阅设备音频流
+        newSession.mSubDevAudio = false;    // 连接时默认不订阅设备视频流
         newSession.mConnectTimestamp = System.currentTimeMillis();
 
         // 添加到会话管理器中
         mSessionMgr.addSession(newSession);
 
         // 加入频道处理
-        int errCode = talkingPrepare(newSession, false, false, false);
+        int errCode = talkingPrepare(newSession);
         if (errCode != ErrCode.XOK) {
             ALog.getInstance().e(TAG, "<connect> failure to join channel, errCode=" + errCode
                     + ", deviceId=" + connectParam.mPeerDevId);
@@ -678,8 +681,7 @@ public class DeviceSessionMgr extends BaseThreadComp
     /**
      * @brief 通话准备处理，创建RTC并且进入频道
      */
-    int talkingPrepare(final SessionCtx sessionCtx, boolean subPeerVideo, boolean subPeerAudio,
-                        boolean pubLocalAudio) {
+    int talkingPrepare(final SessionCtx sessionCtx) {
         boolean bRet = true;
 
         synchronized (mTalkEngLock) {
@@ -695,7 +697,7 @@ public class DeviceSessionMgr extends BaseThreadComp
             }
 
             // 加入频道
-            bRet = mTalkEngine.joinChannel(sessionCtx, subPeerVideo, subPeerAudio, pubLocalAudio);
+            bRet = mTalkEngine.joinChannel(sessionCtx);
 
             // 设置音频效果
             //mTalkEngine.setAudioEffect(mAudioEffect);
@@ -708,17 +710,6 @@ public class DeviceSessionMgr extends BaseThreadComp
         }
 
         return (bRet ? ErrCode.XOK : ErrCode.XERR_INVALID_PARAM);
-    }
-
-    /**
-     * @brief 应答对方或者对方应答后，开始通话，根据配置决定是否推送本地音频流
-     */
-    void talkingStart(final SessionCtx sessionCtx, boolean pubLocalAudio) {
-        boolean muteLocalAudio = (!pubLocalAudio);
-
-        synchronized (mTalkEngLock) {
-            mTalkEngine.muteLocalAudioStream(sessionCtx, muteLocalAudio);
-        }
     }
 
     /**
@@ -792,10 +783,13 @@ public class DeviceSessionMgr extends BaseThreadComp
         playerSession.mState = IDeviceSessionMgr.SESSION_STATE_CONNECTED;   // 直接连接到设备
         playerSession.mConnectTimestamp = System.currentTimeMillis();
         playerSession.mDevMediaMgr = chnlInfo.getMediaMgr();
+        playerSession.mPubLocalAudio = false;   // SD卡播放时 默认不推本地音频流
+        playerSession.mSubDevVideo = true;      // SD卡播放时 默认订阅设备音频流
+        playerSession.mPubLocalAudio = true;    // SD卡播放时 默认订阅设备视频流
         mDevPlayerMgr.addSession(playerSession);
 
         // 开始进入频道
-        int ret = talkingPrepare(playerSession, true, true, false);
+        int ret = talkingPrepare(playerSession);
         if (ret != ErrCode.XOK) {
             ALog.getInstance().e(TAG, "<devPlayerChnlEnter> fail to prepare, ret=" + ret);
             mDevPlayerMgr.removeSession(playerSession.mSessionId);
@@ -879,11 +873,18 @@ public class DeviceSessionMgr extends BaseThreadComp
             return ErrCode.XERR_INVALID_PARAM;
         }
 
+        // 更新 sessionCtx 内容
+        sessionCtx.mSubDevAudio = bSubAudio;    // 根据参数确定是否订阅设备音频流
+        sessionCtx.mSubDevVideo = true;         // 默认订阅设备视频流
+        sessionCtx.mPubLocalAudio = false;      // 默认不推本地音频流
+
+        mSessionMgr.updateSession(sessionCtx);
+
         boolean ret = true;
         if (sessionCtx != null) {  // 当前有相应的会话，直接更新设备显示控件
             synchronized (mTalkEngLock) {
                 if (mTalkEngine.isReady()) {
-                    ret = mTalkEngine.subscribeStart(bSubAudio, sessionCtx);
+                    ret = mTalkEngine.subscribeStart(sessionCtx);
                 }
             }
 
@@ -903,6 +904,12 @@ public class DeviceSessionMgr extends BaseThreadComp
             ALog.getInstance().e(TAG, "<previewStop> not found session, sessionId=" + sessionId);
             return ErrCode.XERR_INVALID_PARAM;
         }
+
+        // 更新 sessionCtx 内容
+        sessionCtx.mSubDevAudio = false;        // 停止订阅设备音频流
+        sessionCtx.mSubDevVideo = false;        // 停止订阅设备视频流
+        sessionCtx.mPubLocalAudio = false;      // 停止推送本地音频流
+        mSessionMgr.updateSession(sessionCtx);
 
         boolean ret = true;
         if (sessionCtx != null) {  // 当前有相应的会话，直接更新设备显示控件
@@ -929,9 +936,13 @@ public class DeviceSessionMgr extends BaseThreadComp
             return ErrCode.XERR_INVALID_PARAM;
         }
 
+        // 更新 sessionCtx 内容
+        sessionCtx.mPubLocalAudio = (!mute);
+        mSessionMgr.updateSession(sessionCtx);
+
         boolean ret;
         synchronized (mTalkEngLock) {
-            ret = mTalkEngine.muteLocalAudioStream(sessionCtx, mute);
+            ret = mTalkEngine.muteLocalAudioStream(sessionCtx);
         }
 
         ALog.getInstance().d(TAG, "<muteLocalAudio> done, sessionId=" + sessionId + ", ret=" + ret);
@@ -945,9 +956,13 @@ public class DeviceSessionMgr extends BaseThreadComp
             return ErrCode.XERR_INVALID_PARAM;
         }
 
+        // 更新 sessionCtx 内容
+        sessionCtx.mSubDevVideo = (!mute);
+        mSessionMgr.updateSession(sessionCtx);
+
         boolean ret;
         synchronized (mTalkEngLock) {
-            ret = mTalkEngine.mutePeerVideoStream(sessionCtx, mute);
+            ret = mTalkEngine.mutePeerVideoStream(sessionCtx);
         }
 
         ALog.getInstance().d(TAG, "<muteDeviceVideo> done, sessionId=" + sessionId + ", ret=" + ret);
@@ -962,9 +977,13 @@ public class DeviceSessionMgr extends BaseThreadComp
             return ErrCode.XERR_INVALID_PARAM;
         }
 
+        // 更新 sessionCtx 内容
+        sessionCtx.mSubDevAudio = (!mute);
+        mSessionMgr.updateSession(sessionCtx);
+
         boolean ret;
         synchronized (mTalkEngLock) {
-            ret = mTalkEngine.mutePeerAudioStream(sessionCtx, mute);
+            ret = mTalkEngine.mutePeerAudioStream(sessionCtx);
         }
 
         ALog.getInstance().d(TAG, "<muteDeviceAudio> done, sessionId=" + sessionId + ", ret=" + ret);

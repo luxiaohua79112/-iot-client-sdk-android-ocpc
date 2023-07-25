@@ -48,7 +48,9 @@ public class SessionCtx  {
     public IDevPreviewMgr.OnPreviewListener mPreviewListener;
     public IDevPreviewMgr.OnCaptureFrameListener mCaptureListener;
 
-
+    public boolean mPubLocalAudio;  ///< 是否推送本地音频流
+    public boolean mSubDevAudio;    ///< 当前是否订阅设备端音频流
+    public boolean mSubDevVideo;    ///< 当前是否订阅设备端视频流
 
 
     ///////////////////////////////////////////////////////////////////////
@@ -66,6 +68,9 @@ public class SessionCtx  {
                 + ", mAttachMsg=" + mAttachMsg
                 + ", mType=" + mType
                 + ", mUserCount=" + mUserCount
+                + ", mPubLocalAudio=" + mPubLocalAudio
+                + ", mSubDevVideo=" + mSubDevVideo
+                + ", mSubDevAudio=" + mSubDevAudio
                 + ",\n mRtcToken=" + mRtcToken
                 + ",\n mRtmToken=" + mRtmToken + " }";
         return infoText;
