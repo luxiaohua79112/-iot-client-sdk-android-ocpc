@@ -77,6 +77,8 @@ public class DevMediaMgr implements IDevMediaMgr {
     private AtomicUuid mPlaySessionId = new AtomicUuid();                 ///< 设备播放器的会话Id
     private AtomicInteger mPlayingState = new AtomicInteger();
 
+    private MediaPlayingClock mPlayingClock = new MediaPlayingClock();    ///< 播放器时钟
+
     ///////////////////////////////////////////////////////////////////////
     ////////////////////////// Public Methods  ////////////////////////////
     ///////////////////////////////////////////////////////////////////////
@@ -289,11 +291,17 @@ public class DevMediaMgr implements IDevMediaMgr {
                 if (playingCallback != null) {
                     playingCallback.onDevMediaOpenDone(FILE_ID_TIMELINE, ErrCode.XOK);
                 }
+
+                // 播放器时钟 从指定时刻点开始运行
+                mPlayingClock.startWithProgress(globalStartTime);
             }
         };
 
         mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_OPENING); // 状态机: 正在打开
         int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(playReqCmd);
+
+        // 播放器时钟不走，固定在启动时刻点
+        mPlayingClock.stopWithProgress(globalStartTime);
 
         ALog.getInstance().d(TAG, "<play> done, ret=" + ret
                 + ", playReqCmd=" + playReqCmd);
@@ -366,11 +374,17 @@ public class DevMediaMgr implements IDevMediaMgr {
                 if (playingCallback != null) {
                     playingCallback.onDevMediaOpenDone(fileId, ErrCode.XOK);
                 }
+
+                // 播放器时钟 从指定时刻点开始运行
+                mPlayingClock.startWithProgress(startPos);
             }
         };
 
         mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_OPENING); // 状态机: 正在打开
         int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(playReqCmd);
+
+        // 播放器时钟不走，固定在启动时刻点
+        mPlayingClock.stopWithProgress(startPos);
 
         ALog.getInstance().d(TAG, "<play> done, ret=" + ret
                 + ", playReqCmd=" + playReqCmd);
@@ -397,6 +411,9 @@ public class DevMediaMgr implements IDevMediaMgr {
         RtcChnlExit();
 
         mPlayingState.setValue(IDevMediaMgr.DEVPLAYER_STATE_STOPPED); // 状态机: 停止播放
+
+        // 播放器停止运行，并且设置进度为0
+        mPlayingClock.stopWithProgress(0);
 
         ALog.getInstance().d(TAG, "<stop> done, ret=" + ret
                 + ", stopReqCmd=" + stopReqCmd);
@@ -442,6 +459,9 @@ public class DevMediaMgr implements IDevMediaMgr {
                 if (playingCallback != null) {
                     playingCallback.onDevMediaResumeDone(fileId, errCode);
                 }
+
+                // 播放器时钟 从之前的进度位置恢复运行
+                mPlayingClock.start();
             }
         };
 
@@ -492,6 +512,9 @@ public class DevMediaMgr implements IDevMediaMgr {
                 if (playingCallback != null) {
                     playingCallback.onDevMediaPauseDone(fileId, ErrCode.XOK);
                 }
+
+                // 播放器时钟停止运行，保留已经运行的进度
+                mPlayingClock.stop();
             }
         };
 
@@ -539,10 +562,16 @@ public class DevMediaMgr implements IDevMediaMgr {
         return ret;
     }
 
+    @Override
+    public int setAudioMute(boolean mute) {
+        return ErrCode.XERR_UNSUPPORTED;
+    }
+
 
     @Override
     public long getPlayingProgress()  {
-        return 0;
+        long progress = mPlayingClock.getProgress();
+        return progress;
     }
 
     @Override

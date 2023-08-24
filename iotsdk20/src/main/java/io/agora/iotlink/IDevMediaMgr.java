@@ -310,6 +310,13 @@ public interface IDevMediaMgr  {
      */
     int setPlayingSpeed(int speed);
 
+    /**
+     * @brief 设置播放过程中是否有声音
+     * @param mute: true--播放静音；  false--正常播放
+     * @return 返回错误码
+     */
+    int setAudioMute(boolean mute);
+
 
     /**
      * @brief 获取当前播放的时间戳，单位ms
