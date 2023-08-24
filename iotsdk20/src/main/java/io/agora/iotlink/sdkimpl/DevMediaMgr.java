@@ -527,11 +527,6 @@ public class DevMediaMgr implements IDevMediaMgr {
     }
 
     @Override
-    public int seek(long seekPos) {
-        return ErrCode.XERR_UNSUPPORTED;
-    }
-
-    @Override
     public int setPlayingSpeed(int speed) {
         int playingState = mPlayingState.getValue();
         if (playingState == DEVPLAYER_STATE_STOPPED) {
