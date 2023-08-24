@@ -227,14 +227,12 @@ public interface IDevMediaMgr  {
 
 
         /**
-         * @brief 设备媒体文件Seek完成事件
+         * @brief 设备媒体文件倍速完成事件
          * @param fileId : 媒体文件Id
          * @param errCode : 错误码，0表示Seek成功
-         * @param targetPos : 要seek到的时间戳
-         * @param seekedPos : 实际跳转到的时间戳
+         * @param speed : 设置的倍速
          */
-        default void onDevMediaSeekDone(final String fileId, int errCode,
-                                        long targetPos, long seekedPos) { }
+        default void onDevMediaSetSpeedDone(final String fileId, int errCode, int speed) { }
 
         /**
          * @brief 播放过程中遇到错误，并且不能恢复，此时上层只能调用 stop()关闭播放器

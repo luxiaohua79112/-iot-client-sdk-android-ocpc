@@ -301,6 +301,7 @@ public class DevMediaMgr implements IDevMediaMgr {
         int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(playReqCmd);
 
         // 播放器时钟不走，固定在启动时刻点
+        mPlayingClock.setRunSpeed(playSpeed);
         mPlayingClock.stopWithProgress(globalStartTime);
 
         ALog.getInstance().d(TAG, "<play> done, ret=" + ret
@@ -384,6 +385,7 @@ public class DevMediaMgr implements IDevMediaMgr {
         int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(playReqCmd);
 
         // 播放器时钟不走，固定在启动时刻点
+        mPlayingClock.setRunSpeed(playSpeed);
         mPlayingClock.stopWithProgress(startPos);
 
         ALog.getInstance().d(TAG, "<play> done, ret=" + ret
@@ -545,8 +547,25 @@ public class DevMediaMgr implements IDevMediaMgr {
         speedReqCmd.mRespListener = new IRtmCmd.OnRtmCmdRespListener() {
             @Override
             public void onRtmCmdResponsed(int commandId, int errCode, IRtmCmd reqCmd, IRtmCmd rspCmd) {
+                int currState = mPlayingState.getValue();
+                IPlayingCallback playingCallback = mPlayChnlInfo.getPlayingCallback();
+                String fileId = mPlayChnlInfo.getPlayingFileId();
                 ALog.getInstance().d(TAG, "<setPlayingSpeed.onRtmCmdResponsed> errCode=" + errCode);
 
+                if (errCode != ErrCode.XOK) {
+                    ALog.getInstance().e(TAG, "<setPlayingSpeed.onRtmCmdResponsed> fail to set speed!");
+                     if (playingCallback != null) {
+                        playingCallback.onDevMediaSetSpeedDone(fileId, errCode, speed);
+                    }
+                    return;
+                }
+
+                if (playingCallback != null) {
+                    playingCallback.onDevMediaSetSpeedDone(fileId, ErrCode.XOK, speed);
+                }
+
+                // 播放器时钟设置倍速
+                mPlayingClock.setRunSpeed(speed);
             }
         };
 

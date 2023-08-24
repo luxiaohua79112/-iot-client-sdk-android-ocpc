@@ -737,9 +737,9 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
     }
 
     @Override
-    public void onDevMediaSeekDone(final String fileId, int errCode,
-                                   long targetPos, long seekedPos) {
-        Log.d(TAG, "<onDevMediaSeekDone> fileId=" + fileId);
+    public void onDevMediaSetSpeedDone(final String fileId, int errCode, int speed) {
+        Log.d(TAG, "<onDevPlayingError> fileId=" + fileId
+                + ", errCode=" + errCode + ", speed=" + speed);
     }
 
     @Override

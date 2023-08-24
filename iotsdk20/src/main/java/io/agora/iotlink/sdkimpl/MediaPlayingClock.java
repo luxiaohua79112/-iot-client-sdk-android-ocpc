@@ -26,10 +26,10 @@ public class MediaPlayingClock {
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Variable Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
-    boolean mIsRunning = false;         ///< 当前时钟是否在运行
-    long mBeginTicks = 0;               ///< 时钟开始运行的时刻点
-    long mDuration = 0;                 ///< 时钟前面总时长
-
+    private boolean mIsRunning = false;         ///< 当前时钟是否在运行
+    private long mBeginTicks = 0;               ///< 时钟开始运行的时刻点
+    private long mDuration = 0;                 ///< 时钟前面总时长
+    private int mRunSpeed = 1;                  ///< 时钟倍速，通常是 1,2,4
 
 
     ////////////////////////////////////////////////////////////////////////
@@ -58,7 +58,7 @@ public class MediaPlayingClock {
      */
     public synchronized void stop() {
         mIsRunning = false;
-        mDuration += (System.currentTimeMillis() - mBeginTicks);
+        mDuration += (System.currentTimeMillis() - mBeginTicks) * mRunSpeed;
         mBeginTicks = System.currentTimeMillis();
     }
 
@@ -70,6 +70,20 @@ public class MediaPlayingClock {
         mIsRunning = false;
         mBeginTicks = System.currentTimeMillis();
         mDuration = setProgress;
+    }
+
+    /**
+     * @brief 设置运行进度的倍速，通常是 1倍速，2倍速
+     * @param setSpeed : 指定当前运行进度
+     */
+    public synchronized void setRunSpeed(int setSpeed) {
+        // 先更新一下已经运行的时长
+        if (mIsRunning) {
+            mDuration =  + (System.currentTimeMillis() - mBeginTicks) * mRunSpeed;
+        }
+        mBeginTicks = System.currentTimeMillis();
+
+        mRunSpeed = setSpeed;
     }
 
 
@@ -89,10 +103,12 @@ public class MediaPlayingClock {
     public synchronized long getProgress() {
         long time;
         if (mIsRunning) {
-            time = mDuration + (System.currentTimeMillis() - mBeginTicks);
+            time = mDuration + (System.currentTimeMillis() - mBeginTicks) * mRunSpeed;
         } else {
             time = mDuration;
         }
         return time;
     }
+
+
 }
