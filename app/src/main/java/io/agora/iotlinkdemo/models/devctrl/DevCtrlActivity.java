@@ -1,12 +1,15 @@
 package io.agora.iotlinkdemo.models.devctrl;
 
+import android.annotation.SuppressLint;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Looper;
+import android.os.Message;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -26,6 +29,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.agora.baselibrary.base.BaseDialog;
 import com.agora.baselibrary.listener.ISingleCallback;
+import com.agora.baselibrary.utils.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +43,7 @@ import io.agora.iotlink.ErrCode;
 import io.agora.iotlink.IDevController;
 import io.agora.iotlink.IDevMediaMgr;
 import io.agora.iotlink.IDeviceSessionMgr;
+import io.agora.iotlink.IVodPlayer;
 import io.agora.iotlinkdemo.R;
 import io.agora.iotlinkdemo.base.AgoraApplication;
 import io.agora.iotlinkdemo.base.BaseViewBindingActivity;
@@ -57,6 +62,16 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
     implements IDevMediaMgr.IPlayingCallback    {
 
     private static final String TAG = "IOTLINK/DevCtrlAct";
+    private static final long TIMER_INTERVAL = 500;       ///< 定时器500ms
+    private static final long MEDIA_DURATION = 120000;      ///< 固定时长 120s
+
+    //
+    // message Id
+    //
+    private static final int MSGID_PLAYING_TIMER = 0x3001;       ///< 播放定时器
+
+
+
 
     public static DevCtrlActivity mActivity;
     private UUID mSessionId = null;
@@ -64,6 +79,7 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
 
     private DialogImageDisplay mImgDisplayDlg;
 
+    private Handler mMsgHandler = null;                 ///< 主线程中的消息处理
 
     ///////////////////////////////////////////////////////////////////////////
     //////////////////// Methods of Override BaseActivity /////////////////////
@@ -104,9 +120,24 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
         }
         mediaMgr.setDisplayView(getBinding().svDeviceView);
 
-        // 最长120秒
-        getBinding().sbProgress.setMin(0);
-        getBinding().sbProgress.setMax(120);
+
+        // 创建主线程消息处理
+        mMsgHandler = new Handler(getMainLooper())
+        {
+            @SuppressLint("HandlerLeak")
+            @RequiresApi(api = Build.VERSION_CODES.M)
+            public void handleMessage(Message msg)
+            {
+                switch (msg.what)
+                {
+                    case MSGID_PLAYING_TIMER:
+                        onMessagePlayingTimer();
+                        break;
+                }
+            }
+        };
+
+        getBinding().sbProgress.setProgress(0);
 
         Log.d(TAG, "<initView> ");
     }
@@ -197,6 +228,7 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
         Log.d(TAG, "<onDestroy> ");
         mSessionId = null;
         mActivity = null;
+        mMsgHandler.removeMessages(MSGID_PLAYING_TIMER);
     }
 
 
@@ -608,13 +640,13 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
 
           // 播放媒体文件，从5000ms以 1倍速 开始播放
           String fileId = "record01";
-          ret = mediaMgr.play(fileId, 5000, 1, this);
+          long startTime = 10000;
+          ret = mediaMgr.play(fileId, startTime, 1, this);
           if (ret != ErrCode.XOK) {
               popupMessage("Fail to start Media playing, errCode=" + ret);
               return;
           }
           getBinding().btnPlayStop.setText("停止");
-          getBinding().sbProgress.setProgress(5);
           progressTimerStart();
 
       } else {
@@ -622,7 +654,9 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
         ret = mediaMgr.stop();
         popupMessage("Media playing stopped!");
         getBinding().btnPlayStop.setText("播放");
+        progressTimerStop();
         getBinding().sbProgress.setProgress(0);
+        getBinding().tvTime.setText("00:00:00 / 00:00:00");
       }
     }
 
@@ -687,6 +721,8 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
      */
     boolean progressTimerStart() {
 
+        mMsgHandler.removeMessages(MSGID_PLAYING_TIMER);
+        mMsgHandler.sendEmptyMessage(MSGID_PLAYING_TIMER);
         return true;
     }
 
@@ -694,10 +730,39 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
      * @brief 结束进度条显示定时器
      */
     void progressTimerStop() {
-
+        mMsgHandler.removeMessages(MSGID_PLAYING_TIMER);
     }
 
 
+    /**
+     * @brief 播放定时器处理
+     */
+
+    void onMessagePlayingTimer() {
+        IDeviceSessionMgr sessionMgr = AIotAppSdkFactory.getDevSessionMgr();
+        IDevMediaMgr mediaMgr = sessionMgr.getDevMediaMgr(mSessionId);
+        if (mediaMgr == null) {
+            Log.d(TAG, "<onMessagePlayingTimer> Not found device media mgr with sessionId=" + mSessionId);
+            return;
+        }
+
+        int playState = mediaMgr.getPlayingState();
+        if (playState == IDevMediaMgr.DEVPLAYER_STATE_STOPPED) {  // 播放器关闭了
+            return;
+        }
+
+
+        long progress = mediaMgr.getPlayingProgress();
+        int seekPos = (int)(progress * getBinding().sbProgress.getMax() / MEDIA_DURATION);
+        getBinding().sbProgress.setProgress(seekPos);
+
+        String textPosition = StringUtils.INSTANCE.getDurationTimeSS(progress / 1000);
+        String textDuration = StringUtils.INSTANCE.getDurationTimeSS(MEDIA_DURATION / 1000);
+        String textTime = textPosition + " / " + textDuration;
+        getBinding().tvTime.setText(textTime);
+
+        mMsgHandler.sendEmptyMessageDelayed(MSGID_PLAYING_TIMER, TIMER_INTERVAL);
+    }
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////// Override Methods of IPlayingCallback ///////////////////

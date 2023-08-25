@@ -28,15 +28,30 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/tvTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="100dp"
+        android:layout_marginTop="180dp"
+        android:textColor="@color/red_e0"
+        android:textSize="16sp"
+        android:text="00:00:00 / 00:00:00"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <SeekBar
         android:id="@+id/sbProgress"
         android:layout_width="match_parent"
         android:layout_height="40dp"
         android:layout_marginStart="0dp"
         android:layout_marginTop="220dp"
+        android:max="1000"
         android:background="@color/grey_d8"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_plz_ctrl"
