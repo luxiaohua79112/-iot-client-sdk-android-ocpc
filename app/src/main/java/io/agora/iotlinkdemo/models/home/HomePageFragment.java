@@ -178,7 +178,7 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
         // 当从全屏播放界面返回来时，要重新设置各个设备的视频播放控件
         UUID sessionId = PushApplication.getInstance().getFullscrnSessionId();
         if (sessionId != null) {
-            resetDeviceDisplayView(sessionId);
+            resubscribeDevice(sessionId);
             PushApplication.getInstance().setFullscrnSessionId(null);
         }
     }
@@ -615,10 +615,14 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
             return;
         }
 
+        // 取消设备端音视频流的订阅
+        previewMgr.muteDeviceAudio(true);
+        previewMgr.muteDeviceVideo(true);
+        Log.d(TAG, "<onDevItemFullscrnClick> unsubscribe device, sessionId=" + deviceInfo.mSessionId
+                + ", mNodeId=" + deviceInfo.mNodeId);
 
         PushApplication.getInstance().setFullscrnSessionId(deviceInfo.mSessionId);
         gotoDevPreviewActivity();
-
     }
 
 
@@ -712,7 +716,7 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
     /**
      * @brief 重新设置所有设备的视频显示控件
      */
-    void resetDeviceDisplayView(final UUID sessionId) {
+    void resubscribeDevice(final UUID sessionId) {
 
         List<DeviceInfo> deviceList = mDevListAdapter.getDatas();
         if (deviceList == null) {
@@ -725,8 +729,20 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
                 continue;
             }
             if (sessionId.compareTo(deviceInfo.mSessionId) == 0) {
-                Log.d(TAG, "<resetDeviceDisplayView> sessionId=" + sessionId
+                Log.d(TAG, "<resubscribeDevice> sessionId=" + sessionId
                         + ", mNodeId=" + deviceInfo.mNodeId);
+
+                IDeviceSessionMgr deviceSessionMgr = AIotAppSdkFactory.getDevSessionMgr();
+                IDevPreviewMgr previewMgr = deviceSessionMgr.getDevPreviewMgr(sessionId);
+                if (previewMgr != null) {  // 重新订阅音视频
+                    previewMgr.muteDeviceVideo(false);
+                    previewMgr.muteDeviceAudio(false);
+                    Log.d(TAG, "<resubscribeDevice> re-subscribe device");
+
+                } else {
+                    Log.e(TAG, "<resubscribeDevice> NOT found preview manager!");
+                }
+
                 return;
             }
         }
