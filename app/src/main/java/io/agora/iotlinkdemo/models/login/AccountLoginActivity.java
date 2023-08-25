@@ -17,6 +17,7 @@ import java.io.File;
 import io.agora.iotlink.AIotAppSdkFactory;
 import io.agora.iotlink.ErrCode;
 import io.agora.iotlink.IDeviceSessionMgr;
+import io.agora.iotlink.sdkimpl.MediaPlayingClock;
 import io.agora.iotlinkdemo.base.BaseViewBindingActivity;
 import io.agora.iotlinkdemo.base.PushApplication;
 import io.agora.iotlinkdemo.common.Constant;
@@ -129,6 +130,8 @@ public class AccountLoginActivity extends BaseViewBindingActivity<ActivityLoginB
                             popupMessage("Fail to prepare presistent link, errCode=" + errCode);
                             return;
                         }
+
+                        // MediaPlayingClock.UnitTest();
 
                         //
                         // 初始化 SDK引擎

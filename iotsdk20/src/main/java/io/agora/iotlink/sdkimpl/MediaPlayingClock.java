@@ -39,6 +39,9 @@ public class MediaPlayingClock {
      * @brief 播放器时钟从 当前进度 开始运行
      */
     public synchronized void start() {
+        if (mIsRunning) {
+            return;
+        }
         mIsRunning = true;
         mBeginTicks = System.currentTimeMillis();
     }
@@ -79,7 +82,7 @@ public class MediaPlayingClock {
     public synchronized void setRunSpeed(int setSpeed) {
         // 先更新一下已经运行的时长
         if (mIsRunning) {
-            mDuration =  + (System.currentTimeMillis() - mBeginTicks) * mRunSpeed;
+            mDuration += (System.currentTimeMillis() - mBeginTicks) * mRunSpeed;
         }
         mBeginTicks = System.currentTimeMillis();
 
@@ -110,5 +113,73 @@ public class MediaPlayingClock {
         return time;
     }
 
+
+    /**
+     * @brief 单元测试用例
+     */
+    public static void UnitTest() {
+        MediaPlayingClock clock = new MediaPlayingClock();
+
+        Log.d(TAG, "<UnitTest> ================ BEGIN ================");
+
+
+        // 从第 5000ms 开始播放4秒
+        clock.startWithProgress(5000);
+        ThreadSleep(4000);
+        Log.d(TAG, "<UnitTest> stage 1, progress=" + clock.getProgress());  // 这里应该是9000
+
+        // 暂停 3000ms
+        clock.stop();
+        ThreadSleep(3000);
+        Log.d(TAG, "<UnitTest> stage 2, progress=" + clock.getProgress());  // 这里应该是9000
+
+        // 继续播放 6000ms
+        clock.start();
+        ThreadSleep(6000);
+        Log.d(TAG, "<UnitTest> stage 3, progress=" + clock.getProgress());  // 这里应该是15000
+
+        // 直接停止到 3000ms
+        clock.stopWithProgress(3000);
+        Log.d(TAG, "<UnitTest> stage 4, progress=" + clock.getProgress());  // 这里应该是3000
+
+        // 设置3倍的播放倍速
+        clock.setRunSpeed(3);
+
+        // 播放 4000ms
+        clock.start();
+        ThreadSleep(4000);
+        Log.d(TAG, "<UnitTest> stage 5, progress=" + clock.getProgress());  // 这里应该是15000
+
+        // 直接设置时长到 4000ms
+        clock.setProgress(4000);
+        Log.d(TAG, "<UnitTest> stage 6, progress=" + clock.getProgress());  // 这里应该是4000
+
+        // 设置2倍的播放倍速
+        clock.setRunSpeed(2);
+
+        // 已经在播放状态下，再次调用播放3000ms
+        clock.start();
+        ThreadSleep(3000);
+        Log.d(TAG, "<UnitTest> stage 7, progress=" + clock.getProgress());  // 这里应该是10000
+
+        // 设置1倍速播放倍速
+        clock.setRunSpeed(1);
+
+        // 已经在播放状态下，从0开始 再次调用播放 4000ms
+        clock.startWithProgress(0);
+        ThreadSleep(4000);
+        Log.d(TAG, "<UnitTest> stage 8, progress=" + clock.getProgress());  // 这里应该是4000
+
+
+        Log.d(TAG, "<UnitTest> ================ END ================");
+    }
+
+    public static void ThreadSleep(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException interruptExp) {
+            interruptExp.printStackTrace();
+        }
+    }
 
 }
