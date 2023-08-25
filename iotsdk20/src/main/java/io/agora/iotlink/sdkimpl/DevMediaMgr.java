@@ -24,6 +24,7 @@ import io.agora.iotlink.IDevMediaMgr;
 import io.agora.iotlink.IDeviceSessionMgr;
 import io.agora.iotlink.IVodPlayer;
 import io.agora.iotlink.base.AtomicInteger;
+import io.agora.iotlink.base.AtomicLong;
 import io.agora.iotlink.base.AtomicUuid;
 import io.agora.iotlink.base.BaseThreadComp;
 import io.agora.iotlink.callkit.SessionCtx;
@@ -73,11 +74,11 @@ public class DevMediaMgr implements IDevMediaMgr {
     private String mDeviceId;
 
     private View mDisplayView;
-    private DevPlayerChnlInfo mPlayChnlInfo = new DevPlayerChnlInfo();    ///< 设备播放器频道信息
-    private AtomicUuid mPlaySessionId = new AtomicUuid();                 ///< 设备播放器的会话Id
-    private AtomicInteger mPlayingState = new AtomicInteger();
-
-    private MediaPlayingClock mPlayingClock = new MediaPlayingClock();    ///< 播放器时钟
+    private DevPlayerChnlInfo mPlayChnlInfo = new DevPlayerChnlInfo();  ///< 设备播放器频道信息
+    private AtomicUuid mPlaySessionId = new AtomicUuid();               ///< 设备播放器的会话Id
+    private AtomicInteger mPlayingState = new AtomicInteger();          ///< 播放状态机
+    private AtomicLong mPlayStartTime = new AtomicLong();               ///< 播放开始时间
+    private MediaPlayingClock mPlayingClock = new MediaPlayingClock();  ///< 播放器时钟
 
     ///////////////////////////////////////////////////////////////////////
     ////////////////////////// Public Methods  ////////////////////////////
@@ -291,9 +292,6 @@ public class DevMediaMgr implements IDevMediaMgr {
                 if (playingCallback != null) {
                     playingCallback.onDevMediaOpenDone(FILE_ID_TIMELINE, ErrCode.XOK);
                 }
-
-                // 播放器时钟 从指定时刻点开始运行
-                mPlayingClock.startWithProgress(globalStartTime);
             }
         };
 
@@ -301,6 +299,7 @@ public class DevMediaMgr implements IDevMediaMgr {
         int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(playReqCmd);
 
         // 播放器时钟不走，固定在启动时刻点
+        mPlayStartTime.setValue(globalStartTime);
         mPlayingClock.setRunSpeed(playSpeed);
         mPlayingClock.stopWithProgress(globalStartTime);
 
@@ -375,9 +374,6 @@ public class DevMediaMgr implements IDevMediaMgr {
                 if (playingCallback != null) {
                     playingCallback.onDevMediaOpenDone(fileId, ErrCode.XOK);
                 }
-
-                // 播放器时钟 从指定时刻点开始运行
-                mPlayingClock.startWithProgress(startPos);
             }
         };
 
@@ -385,6 +381,7 @@ public class DevMediaMgr implements IDevMediaMgr {
         int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(playReqCmd);
 
         // 播放器时钟不走，固定在启动时刻点
+        mPlayStartTime.setValue(startPos);
         mPlayingClock.setRunSpeed(playSpeed);
         mPlayingClock.stopWithProgress(startPos);
 
@@ -689,6 +686,14 @@ public class DevMediaMgr implements IDevMediaMgr {
             ALog.getInstance().e(TAG, "<onPeerFirstVideoDecoded> NOT playing sessionId=" + sessionId
                     + ", playSessionId=" + playSessionId);
             return;
+        }
+
+        // 播放器时钟 从指定时刻点开始运行
+        int playingState = mPlayingState.getValue();
+        if (playingState != DEVPLAYER_STATE_STOPPED) {
+            long startTime = mPlayStartTime.getValue();
+            mPlayingClock.startWithProgress(startTime);
+            ALog.getInstance().d(TAG, "<onPeerFirstVideoDecoded> clock start from: " + startTime);
         }
     }
 

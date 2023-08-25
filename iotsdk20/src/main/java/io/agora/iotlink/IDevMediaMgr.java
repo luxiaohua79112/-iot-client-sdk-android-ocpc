@@ -169,7 +169,7 @@ public interface IDevMediaMgr  {
     public static final int DEVPLAYER_STATE_PAUSING = 0x0003;   ///< 正在暂停当前播放
     public static final int DEVPLAYER_STATE_PAUSED = 0x0004;    ///< 当前播放已经暂停
     public static final int DEVPLAYER_STATE_RESUMING = 0x0005;  ///< 正在恢复当前播放
-    public static final int DEVPLAYER_STATE_SEEKING = 0x0009;   ///< 当前正在SEEK操作
+
 
     /**
      * @brief 设备端单个文件媒体信息
