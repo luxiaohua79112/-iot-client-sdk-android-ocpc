@@ -2,6 +2,7 @@ package io.agora.iotlinkdemo.models.home;
 
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -70,6 +71,16 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
     public void initView() {
         mMainActivity = (MainActivity)getActivity();
         mFragment = this;
+
+        DisplayMetrics displaymetrics = new DisplayMetrics();
+        getActivity().getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
+        int height = displaymetrics.heightPixels;
+        int width = displaymetrics.widthPixels;
+
+        ViewGroup.LayoutParams rvLayoutParam = getBinding().srlDevList.getLayoutParams();
+        rvLayoutParam.height = height - (int)((50+100)*displaymetrics.density);
+        getBinding().srlDevList.setLayoutParams(rvLayoutParam);
+
 
         //
         // 初始化设备列表
