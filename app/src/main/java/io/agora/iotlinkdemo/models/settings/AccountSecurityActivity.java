@@ -19,6 +19,7 @@ import io.agora.iotlinkdemo.databinding.ActivityAccountSecurityBinding;
 import io.agora.iotlinkdemo.dialog.CommonDialog;
 import io.agora.iotlinkdemo.models.login.AccountLoginActivity;
 import io.agora.iotlinkdemo.models.login.AccountRegisterActivity;
+import io.agora.iotlinkdemo.presistentconnect.PresistentLinkComp;
 import io.agora.iotlinkdemo.utils.AppStorageUtil;
 
 
@@ -39,8 +40,8 @@ public class AccountSecurityActivity extends BaseViewBindingActivity<ActivityAcc
     public void initView(@Nullable Bundle savedInstanceState) {
         mActivity = this;
 
-//        String localNodeId = AIotAppSdkFactory.getInstance().getLocalNodeId();
-//        getBinding().tvNodeId.setText(localNodeId);
+        String localNodeId = PresistentLinkComp.getInstance().getLocalNodeId();
+        getBinding().tvNodeId.setText(localNodeId);
     }
 
     @Override
@@ -93,6 +94,7 @@ public class AccountSecurityActivity extends BaseViewBindingActivity<ActivityAcc
 //                        popupMessage("User account logout failure, errCode=" + errCode);
 //                    }
 
+                    popupMessage("当前不支持登出操作!");
                 }
             });
         }

@@ -29,6 +29,8 @@ import com.agora.baselibrary.listener.ISingleCallback;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 
 import io.agora.iotlink.AIotAppSdkFactory;
@@ -101,6 +103,10 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
             return;
         }
         mediaMgr.setDisplayView(getBinding().svDeviceView);
+
+        // 最长120秒
+        getBinding().sbProgress.setMin(0);
+        getBinding().sbProgress.setMax(120);
 
         Log.d(TAG, "<initView> ");
     }
@@ -599,7 +605,8 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
       int playingState = mediaMgr.getPlayingState();
       int ret;
       if (playingState == IDevMediaMgr.DEVPLAYER_STATE_STOPPED) {
-          // 播放媒体文件
+
+          // 播放媒体文件，从5000ms以 1倍速 开始播放
           String fileId = "record01";
           ret = mediaMgr.play(fileId, 5000, 1, this);
           if (ret != ErrCode.XOK) {
@@ -607,12 +614,15 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
               return;
           }
           getBinding().btnPlayStop.setText("停止");
+          getBinding().sbProgress.setProgress(5);
+          progressTimerStart();
 
       } else {
         // 停止播放
         ret = mediaMgr.stop();
         popupMessage("Media playing stopped!");
         getBinding().btnPlayStop.setText("播放");
+        getBinding().sbProgress.setProgress(0);
       }
     }
 
@@ -671,6 +681,22 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
             popupMessage("Successful to set playing speed, mPlayingSpeed=" + mPlayingSpeed);
         }
     }
+
+    /**
+     * @brief 启动进度条显示定时器
+     */
+    boolean progressTimerStart() {
+
+        return true;
+    }
+
+    /**
+     * @brief 结束进度条显示定时器
+     */
+    void progressTimerStop() {
+
+    }
+
 
 
     //////////////////////////////////////////////////////////////////////////////////
