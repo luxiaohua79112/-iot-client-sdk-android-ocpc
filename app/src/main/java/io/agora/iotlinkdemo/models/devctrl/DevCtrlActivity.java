@@ -63,7 +63,7 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
 
     private static final String TAG = "IOTLINK/DevCtrlAct";
     private static final long TIMER_INTERVAL = 500;       ///< 定时器500ms
-    private static final long MEDIA_DURATION = 120000;      ///< 固定时长 120s
+    private static final long MEDIA_DURATION = 60000;      ///< 固定时长 60s
 
     //
     // message Id
@@ -785,8 +785,13 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
     public void onDevMediaPlayingDone(final String fileId) {
         Log.d(TAG, "<onDevMediaOpenDone> fileId=" + fileId);
 
-        popupMessage("Media playing fileId=" + fileId + " finished!");
-        getBinding().btnPlayStop.setText("播放");
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                popupMessage("Media playing fileId=" + fileId + " finished!");
+                getBinding().btnPlayStop.setText("播放");
+            }
+        });
     }
 
     @Override
