@@ -669,11 +669,15 @@ public class DevMediaMgr implements IDevMediaMgr {
             return;
         }
 
+
         // 设备端退出设备播放频道
         IPlayingCallback playingCallback = mPlayChnlInfo.getPlayingCallback();
         String fileId = mPlayChnlInfo.getPlayingFileId();
-        mPlayingState.setValue(DEVPLAYER_STATE_STOPPED);
-        if (playingCallback != null) {
+        mPlayingState.setValue(DEVPLAYER_STATE_STOPPED);   // 状态机: 停止播放
+        mPlayingClock.stopWithProgress(0);  // 播放器停止运行，并且设置进度为 0
+        RtcChnlExit();      // 退出频道
+
+        if (playingCallback != null) {  // 回调给应用层
             playingCallback.onDevMediaPlayingDone(fileId);
         }
     }
