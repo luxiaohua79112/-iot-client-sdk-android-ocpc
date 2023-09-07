@@ -196,6 +196,10 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
         getBinding().btnSpeed.setOnClickListener(view -> {
             onBtnPlaySpeed(view);
         });
+
+        getBinding().btnFileDownload.setOnClickListener(view -> {
+            onBtnDownloadFile(view);
+        });
     }
 
     @Override
@@ -737,7 +741,6 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
     /**
      * @brief 播放定时器处理
      */
-
     void onMessagePlayingTimer() {
         IDeviceSessionMgr sessionMgr = AIotAppSdkFactory.getDevSessionMgr();
         IDevMediaMgr mediaMgr = sessionMgr.getDevMediaMgr(mSessionId);
@@ -763,6 +766,68 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
 
         mMsgHandler.sendEmptyMessageDelayed(MSGID_PLAYING_TIMER, TIMER_INTERVAL);
     }
+
+
+    /**
+     * @brief 文件下载处理
+     */
+    void onBtnDownloadFile(View view) {
+        IDeviceSessionMgr sessionMgr = AIotAppSdkFactory.getDevSessionMgr();
+        IDevMediaMgr mediaMgr = sessionMgr.getDevMediaMgr(mSessionId);
+        if (mediaMgr == null) {
+            popupMessage("Not found device media mgr with sessionId=" + mSessionId);
+            return;
+        }
+
+        List<FileInfo> selectedList = mFileListAdapter.getSelectedItems();
+        int selectedCount = selectedList.size();
+        if (selectedCount <= 0) {
+            popupMessage("Please select one file at least!");
+            return;
+        }
+
+        ArrayList<String> dnloadingIdList = new ArrayList<>();
+        for (int i = 0; i < selectedCount; i++) {
+            FileInfo fileInfo = selectedList.get(i);
+            dnloadingIdList.add(fileInfo.mFileId);
+        }
+
+        showLoadingView();
+        int ret = mediaMgr.downloadFileList(dnloadingIdList, new IDevMediaMgr.OnDownloadListener() {
+            @Override
+            public void onDevFileDownloadDone(int errCode,
+                                              final List<IDevMediaMgr.DevFileDownloadResult> unDnloadList) {
+                Log.d(TAG, "<onBtnMediaDelete.onDevFileDownloadDone> errCode=" + errCode
+                        + ", unDnloadList=" + unDnloadList);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        hideLoadingView();
+                        if (errCode == ErrCode.XOK) {
+                            popupMessage("Media files download successful!");
+
+                        } else if (errCode == ErrCode.XERR_MEDIAMGR_DOWNLOAD_PARTIAL) {
+                            popupMessage("Media files download only partial  unDownloadCount=" + unDnloadList.size());
+
+                        } else  if (errCode == ErrCode.XERR_MEDIAMGR_DOWNLOAD_EXCEPT) {
+                            popupMessage("Media files download failure: sdcard exception!");
+
+                        } else  if (errCode == ErrCode.XERR_MEDIAMGR_DOWNLOAD_SDCARD) {
+                            popupMessage("Media files download failure: no sdcard!");
+
+                        } else {
+                            popupMessage("Media files download failure: errCode=" + errCode);
+                        }
+                    }
+                });
+            }
+        });
+        if (ret != ErrCode.XOK) {
+            hideLoadingView();
+            popupMessage("Fail to download media file list, errCode=" + ret);
+        }
+    }
+
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////// Override Methods of IPlayingCallback ///////////////////
