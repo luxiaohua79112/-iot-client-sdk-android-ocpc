@@ -38,6 +38,7 @@ import io.agora.iotlink.rtmsdk.RtmCoverReqCmd;
 import io.agora.iotlink.rtmsdk.RtmCoverRspCmd;
 import io.agora.iotlink.rtmsdk.RtmDeleteReqCmd;
 import io.agora.iotlink.rtmsdk.RtmDeleteRspCmd;
+import io.agora.iotlink.rtmsdk.RtmDownloadReqCmd;
 import io.agora.iotlink.rtmsdk.RtmPlayReqCmd;
 import io.agora.iotlink.rtmsdk.RtmPlayRspCmd;
 import io.agora.iotlink.rtmsdk.RtmQueryReqCmd;
@@ -219,6 +220,50 @@ public class DevMediaMgr implements IDevMediaMgr {
         return ret;
     }
 
+    @Override
+    public int downloadFileList(final List<String> downloadList, final OnDownloadListener downloadListener) {
+        RtmDownloadReqCmd downloadReqCmd = new RtmDownloadReqCmd();
+        int downloadingCount = downloadList.size();
+        for (int i = 0; i < downloadingCount; i++) {
+            String fileId = downloadList.get(i);
+            downloadReqCmd.mFileIdList.add(fileId);
+        }
+
+        downloadReqCmd.mSequenceId = RtmCmdSeqId.getSeuenceId();
+        downloadReqCmd.mCmdId = IRtmCmd.CMDID_FILE_DOWNLOAD;
+        downloadReqCmd.mDeviceId = mDeviceId;
+        downloadReqCmd.mSendTimestamp = System.currentTimeMillis();
+
+        downloadReqCmd.mRespListener = new IRtmCmd.OnRtmCmdRespListener() {
+            @Override
+            public void onRtmCmdResponsed(int commandId, int errCode, IRtmCmd reqCmd, IRtmCmd rspCmd) {
+                ALog.getInstance().d(TAG, "<downloadFileList.onRtmCmdResponsed> errCode=" + errCode);
+
+                RtmDeleteRspCmd deleteRspCmd = (RtmDeleteRspCmd)rspCmd;
+
+                ArrayList<DevFileDownloadResult> dnloadRsltList = new ArrayList<>();
+                if (deleteRspCmd != null) {
+                    int count = deleteRspCmd.mErrorList.size();
+                    for (int i = 0; i < count; i++) {
+                        DevFileDelErrInfo delErrInfo = deleteRspCmd.mErrorList.get(i);
+
+                        DevFileDownloadResult dnloadResult = new DevFileDownloadResult();
+                        dnloadResult.mFileId = delErrInfo.mFileId;
+                        dnloadResult.mErrCode = delErrInfo.mDelErrCode;
+                        dnloadRsltList.add(dnloadResult);
+                    }
+                }
+
+                downloadListener.onDevFileDownloadDone(errCode, dnloadRsltList);
+            }
+        };
+
+        int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(downloadReqCmd);
+
+        ALog.getInstance().d(TAG, "<downloadFileList> done, ret=" + ret
+                + ", downloadReqCmd=" + downloadReqCmd);
+        return ret;
+    }
 
 
 

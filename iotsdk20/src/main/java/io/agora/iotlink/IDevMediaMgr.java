@@ -121,8 +121,8 @@ public interface IDevMediaMgr  {
     }
 
     /**
-     * @brief 根据媒体文件的Url来删除设备端多个媒体文件，该方法是异步调用，通过回调返回删除结果
-     * @param deletingList: 要删除的 媒体文件Url的列表
+     * @brief 根据 fileId 来删除设备端多个媒体文件，该方法是异步调用，通过回调返回删除结果
+     * @param deletingList: 要删除的 fileId的列表
      * @param deleteListener : 删除结果回调监听器
      * @return 返回错误码
      */
@@ -153,6 +153,40 @@ public interface IDevMediaMgr  {
 
 
 
+    /**
+     * @brief 每一个文件项下载命令的结果
+     */
+    public static class DevFileDownloadResult {
+        public String mFileId;            ///< 媒体文件Id，是文件唯一标识
+        public int mErrCode;
+
+        @Override
+        public String toString() {
+            String infoText = "{ mFileId=" + mFileId + ", mErrCode=" + mErrCode + " }";
+            return infoText;
+        }
+    }
+
+    /**
+     * @brief 设备媒体文件下载命令回调监听器
+     */
+    public static interface OnDownloadListener {
+        /**
+         * @brief 媒体项下载命令完成事件
+         * @param errCode : 查询结果错误码，0标识查询成功
+         * @param unDownloadList : 不能进行下载的媒体项列表
+         */
+        default void onDevFileDownloadDone(int errCode, final List<DevFileDownloadResult> unDownloadList) {}
+    }
+
+    /**
+     * @brief 根据 fileId 来下载设备端多个媒体文件，该方法是异步调用，通过回调返回下载命令结果
+     *         这里的回调仅表示设备端已经初步处理下载命令，但并不表示实际文件下载完成
+     * @param downloadList: 要下载的 fileId的列表
+     * @param downloadListener : 下载命令结果回调监听器
+     * @return 返回错误码
+     */
+    int downloadFileList(final List<String> downloadList, final OnDownloadListener downloadListener);
 
 
     ////////////////////////////////////////////////////////////////////////

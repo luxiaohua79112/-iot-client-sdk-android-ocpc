@@ -524,6 +524,51 @@ public class RtmMgrComp extends BaseThreadComp {
                 responseCmd = deleteRspCmd;
             } break;
 
+            case IRtmCmd.CMDID_FILE_DOWNLOAD: {      // 下载响应命令
+                RtmDownloadRspCmd dnloadRspCmd = new RtmDownloadRspCmd();
+                dnloadRspCmd.mSequenceId = sequenceId;
+                dnloadRspCmd.mCmdId = commandId;
+                dnloadRspCmd.mIsRespCmd = true;
+                if (codeValue == 0) {
+                    dnloadRspCmd.mErrCode = ErrCode.XOK;
+                } else if (codeValue == 1) {
+                    dnloadRspCmd.mErrCode = ErrCode.XERR_MEDIAMGR_DOWNLOAD_EXCEPT;
+                } else if (codeValue == 2) {
+                    dnloadRspCmd.mErrCode = ErrCode.XERR_MEDIAMGR_DOWNLOAD_SDCARD;
+                } else if (codeValue == 3) {
+                    dnloadRspCmd.mErrCode = ErrCode.XERR_MEDIAMGR_DOWNLOAD_PARTIAL;
+                } else {
+                    dnloadRspCmd.mErrCode = ErrCode.XERR_MEDIAMGR_DOWNLOAD_UNKNOWN;
+                }
+                dnloadRspCmd.mDeviceId = deviceId;
+
+                JSONObject respDataObj = JsonUtils.parseJsonObject(recvJsonObj, "data", null);
+                if (respDataObj != null) {
+                    JSONArray undelArrayObj = JsonUtils.parseJsonArray(respDataObj, "downloadFailList");
+                    if (undelArrayObj != null) {
+                        for (int i = 0; i < undelArrayObj.length(); i++) {
+                            JSONObject undelItemObj =  JsonUtils.getJsonObjFromArray(undelArrayObj, i);
+                            if (undelItemObj == null) {
+                                continue;
+                            }
+
+                            DevFileDelErrInfo errInfo = new DevFileDelErrInfo();
+                            int errorValue = JsonUtils.parseJsonIntValue(undelItemObj, "error", 0);
+                            if (errorValue == 0) {
+                                errInfo.mDelErrCode = ErrCode.XOK;
+                            } else if (errorValue == 1) {
+                                errInfo.mDelErrCode = ErrCode.XERR_MEDIAMGR_DOWNLOAD_NOT_EXIST;
+                            } else {
+                                errInfo.mDelErrCode = ErrCode.XERR_MEDIAMGR_DOWNLOAD_UNKNOWN;
+                            }
+                            errInfo.mFileId = JsonUtils.parseJsonStringValue(undelItemObj, "id", null);
+                            dnloadRspCmd.mErrorList.add(errInfo);
+                        }
+                    }
+                }
+                responseCmd = dnloadRspCmd;
+            } break;
+
             case IRtmCmd.CMDID_MEDIA_PLAY_ID:
             case IRtmCmd.CMDID_MEDIA_PLAY_TIMELINE: {      // 播放响应命令
                 RtmPlayRspCmd playRspCmd = new RtmPlayRspCmd();
