@@ -155,6 +155,25 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
             }
         });
 
+        getBinding().sbVolume.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                if (mVodMediaInfo == null) {
+                    return;
+                }
+                float volumeLevel = (seekBar.getProgress() * 1.0f) / 100.0f;
+                mVodPlayer.setVolume(volumeLevel);
+            }
+        });
+
         Log.d(TAG, "<initListener> done");
     }
 
