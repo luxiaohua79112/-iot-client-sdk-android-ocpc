@@ -169,4 +169,11 @@ public interface IVodPlayer  {
      */
     int setVolume(float volumeLevel);
 
+    /**
+     * @brief 设置播放倍速
+     * @param playSpeed: 播放倍速
+     * @return 返回错误码
+     */
+    int setSpeed(float playSpeed);
+
 }

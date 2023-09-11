@@ -54,8 +54,8 @@
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnOpenClose"
-        android:layout_width="100dp"
-        android:layout_height="60dp"
+        android:layout_width="80dp"
+        android:layout_height="50dp"
         android:layout_marginStart="20dp"
         android:layout_marginTop="20dp"
         android:background="#80D6D6D6"
@@ -65,9 +65,9 @@
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnPlayPause"
-        android:layout_width="100dp"
-        android:layout_height="60dp"
-        android:layout_marginStart="140dp"
+        android:layout_width="80dp"
+        android:layout_height="50dp"
+        android:layout_marginStart="110dp"
         android:layout_marginTop="20dp"
         android:background="#80D6D6D6"
         android:text="播放"
@@ -96,5 +96,49 @@
         android:progress="100"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/btnOpenClose" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn1x"
+        android:layout_width="80dp"
+        android:layout_height="50dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="20dp"
+        android:background="#80D6D6D6"
+        android:text="1X"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvVolume" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn2x"
+        android:layout_width="80dp"
+        android:layout_height="50dp"
+        android:layout_marginStart="110dp"
+        android:layout_marginTop="20dp"
+        android:background="#80D6D6D6"
+        android:text="2X"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvVolume" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn3x"
+        android:layout_width="80dp"
+        android:layout_height="50dp"
+        android:layout_marginStart="200dp"
+        android:layout_marginTop="20dp"
+        android:background="#80D6D6D6"
+        android:text="3X"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvVolume" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn4x"
+        android:layout_width="80dp"
+        android:layout_height="50dp"
+        android:layout_marginStart="290dp"
+        android:layout_marginTop="20dp"
+        android:background="#80D6D6D6"
+        android:text="4X"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvVolume" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

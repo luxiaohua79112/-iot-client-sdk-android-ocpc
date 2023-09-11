@@ -347,6 +347,18 @@ public class VodPlayer implements IVodPlayer {
         return ErrCode.XOK;
     }
 
+    @Override
+    public int setSpeed(float playSpeed) {
+        if (mIjkPlayer == null) {
+            ALog.getInstance().d(TAG, "<setSpeed> bad state, playSpeed=" + playSpeed);
+            return ErrCode.XERR_BAD_STATE;
+        }
+
+        mIjkPlayer.setSpeed(playSpeed);
+        ALog.getInstance().d(TAG, "<setSpeed> done, playSpeed=" + playSpeed);
+        return ErrCode.XOK;
+    }
+
     ///////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////// Internal Methods //////////////////////////
     ///////////////////////////////////////////////////////////////////////////////
