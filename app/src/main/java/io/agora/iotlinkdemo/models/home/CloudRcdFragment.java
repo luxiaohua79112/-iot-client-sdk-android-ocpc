@@ -320,7 +320,7 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
     ///////////////////////////////////////////////////////////////////////////
     @Override
     public void onVodPlayingStateChanged(final String mediaUrl, int newState) {
-        Log.d(TAG, "<onVodPlayingStateChanged> mediaUrl=" + mediaUrl);
+        Log.d(TAG, "<onVodPlayingStateChanged> mediaUrl=" + mediaUrl + ", newState=" + newState);
     }
 
     @Override
@@ -359,5 +359,8 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
         Log.d(TAG, "<onVodPlayingError> mediaUrl=" + mediaUrl + ", errCode=" + errCode);
     }
 
-
+    @Override
+    public void onVodSeekingDone(final String mediaUrl, long seekPos) {
+        Log.d(TAG, "<onVodSeekingDone> mediaUrl=" + mediaUrl + ", seekPos=" + seekPos);
+    }
 }
