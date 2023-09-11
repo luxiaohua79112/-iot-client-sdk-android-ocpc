@@ -78,9 +78,6 @@ public class VodPlayer implements IVodPlayer {
         callbackPlayingState(IVodPlayer.VODPLAYER_STATE_OPENING);  // 回调正在打开状态
 
         try {
-            // 设置显示控件
-            renderViewSetDisplay();
-
             mIjkPlayer.setDataSource(mediaUrl);
             mIjkPlayer.prepareAsync();
 
@@ -105,7 +102,7 @@ public class VodPlayer implements IVodPlayer {
                         + ", height=" + height + ", sarNum=" + sarNum + ", sarDen=" + sarDen);
 
                     // 设置显示控件
-                    //renderViewSetDisplay();
+                    renderViewSetDisplay();
                 }
             });
 
@@ -121,7 +118,7 @@ public class VodPlayer implements IVodPlayer {
                      renderViewCreate(mMediaInfo.mVideoWidth, mMediaInfo.mVideoHeight);
 
                      // 设置显示控件
-                     //renderViewSetDisplay();
+                     renderViewSetDisplay();
 
                      ALog.getInstance().d(TAG, "<open.onPrepared> mMediaInfo=" + mMediaInfo);
                      if (mCallback != null) {    // 直接回调给上层
