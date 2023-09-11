@@ -171,7 +171,7 @@ public interface IVodPlayer  {
 
     /**
      * @brief 设置播放倍速
-     * @param playSpeed: 播放倍速
+     * @param playSpeed: 播放倍速，通常可以设置: 1.0;  2.0;  3.0;等
      * @return 返回错误码
      */
     int setSpeed(float playSpeed);
