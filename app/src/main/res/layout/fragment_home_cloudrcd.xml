@@ -28,7 +28,6 @@
 
     <androidx.appcompat.widget.AppCompatSeekBar
         android:id="@+id/sbPlaying"
-        style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="300dp"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="11dp"
@@ -38,9 +37,6 @@
         android:maxHeight="2dp"
         android:minHeight="2dp"
         android:progress="0"
-        android:progressDrawable="@drawable/play_shape_progressbar"
-        android:background="@color/grey_5B"
-        android:thumb="@drawable/bg_white_round"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/flDisplay" />
 
@@ -78,6 +74,27 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvTime" />
 
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/tvVolume"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="10dp"
+        android:textColor="@color/def_text_color"
+        android:textSize="16sp"
+        android:text="音量: "
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btnOpenClose" />
 
+    <androidx.appcompat.widget.AppCompatSeekBar
+        android:id="@+id/sbVolume"
+        android:layout_width="180dp"
+        android:layout_height="20dp"
+        android:layout_marginStart="80dp"
+        android:layout_marginTop="15dp"
+        android:max="100"
+        android:progress="100"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btnOpenClose" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
