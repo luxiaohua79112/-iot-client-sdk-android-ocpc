@@ -26,9 +26,9 @@ public interface IVodPlayer  {
     //
     public static final int VODPLAYER_STATE_CLOSED = 0x0000;     ///< 没有媒体文件打开
     public static final int VODPLAYER_STATE_OPENING = 0x0001;    ///< 媒体文件正在打开
-    public static final int VODPLAYER_STATE_PAUSED = 0x0002;     ///< 当前暂停播放
+    public static final int VODPLAYER_STATE_PAUSED = 0x0002;     ///< 当前暂停播放，可以调用play()继续播放
     public static final int VODPLAYER_STATE_PLAYING = 0x0003;    ///< 当前正在播放
-
+    public static final int VODPLAYER_STATE_STOPPED = 0x0004;    ///< 当前停止播放，可以调用play()重新播放
 
     /**
      * @brief Vod媒体文件信息
@@ -88,6 +88,13 @@ public interface IVodPlayer  {
          * @param errCode : 错误码
          */
         default void onVodPlayingError(final String mediaUrl, int errCode) { }
+
+        /**
+         * @brief 当前媒体文件Seek完成事件，由 seek()调用触发
+         * @param mediaUrl : 媒体文件Url
+         * @param seekPos : 指定
+         */
+        default void onVodSeekingDone(final String mediaUrl, long seekPos) { }
     }
 
 
@@ -149,10 +156,17 @@ public interface IVodPlayer  {
     int stop();
 
     /**
-     * @brief 直接跳转播放进度
+     * @brief 直接跳转播放进度，触发 onVodSeekingDone() 回调
      * @param seekPos: 需要跳转到的目标时间戳，单位ms
      * @return 返回错误码
      */
     int seek(long seekPos);
+
+    /**
+     * @brief 设置播放音量
+     * @param volumeLevel: 播放音量值，范围[0.0, 1.0], 0.0表示音量最小；1.0表示音量最大
+     * @return 返回错误码
+     */
+    int setVolume(float volumeLevel);
 
 }

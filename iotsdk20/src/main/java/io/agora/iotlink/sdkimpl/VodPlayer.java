@@ -12,14 +12,9 @@ package io.agora.iotlink.sdkimpl;
 
 
 
-import android.graphics.Canvas;
-import android.graphics.Rect;
-import android.graphics.SurfaceTexture;
 import android.view.Gravity;
-import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.view.View;
 import android.widget.FrameLayout;
 
 import java.io.IOException;
@@ -31,8 +26,6 @@ import io.agora.iotlink.logger.ALog;
 import tv.danmaku.ijk.media.player.IMediaPlayer;
 import tv.danmaku.ijk.media.player.IjkMediaPlayer;
 
-//import com.shuyu.gsyvideoplayer.listener.GSYMediaPlayerListener;
-//import com.shuyu.gsyvideoplayer.video.StandardGSYVideoPlayer;
 
 /*
  * @brief 云录视频播放器
@@ -80,12 +73,13 @@ public class VodPlayer implements IVodPlayer {
         mState.setValue(IVodPlayer.VODPLAYER_STATE_OPENING);
         mIjkPlayer = new IjkMediaPlayer();
         mMediaInfo.clear();
-
+        mCallback = callback;
+        mMediaInfo.mMediaUrl = mediaUrl;
+        callbackPlayingState(IVodPlayer.VODPLAYER_STATE_OPENING);  // 回调正在打开状态
 
         try {
             mIjkPlayer.setDataSource(mediaUrl);
             mIjkPlayer.prepareAsync();
-            mCallback = callback;
 
             // 开启硬解码
             mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec", 1);
@@ -116,11 +110,11 @@ public class VodPlayer implements IVodPlayer {
                  @Override
                  public void onPrepared(IMediaPlayer iMediaPlayer) {
                      ALog.getInstance().d(TAG, "<open.onPrepared> ");
-                     mState.setValue(IVodPlayer.VODPLAYER_STATE_PLAYING);  // 准备就绪后自动播放
-                     mMediaInfo.mMediaUrl = mediaUrl;
                      mMediaInfo.mDuration = mIjkPlayer.getDuration();
                      mMediaInfo.mVideoWidth = mIjkPlayer.getVideoWidth();
                      mMediaInfo.mVideoHeight = mIjkPlayer.getVideoHeight();
+                     mState.setValue(IVodPlayer.VODPLAYER_STATE_PLAYING);  // 准备就绪后自动播放
+                     callbackPlayingState(IVodPlayer.VODPLAYER_STATE_OPENING);  // 回调正在播放状态
 
                      // 创建显示控件
                      renderViewCreate(mMediaInfo.mVideoWidth, mMediaInfo.mVideoHeight);
@@ -139,7 +133,8 @@ public class VodPlayer implements IVodPlayer {
                 @Override
                 public void onCompletion(IMediaPlayer iMediaPlayer) {
                     ALog.getInstance().d(TAG, "<open.onCompletion> ");
-                    mState.setValue(IVodPlayer.VODPLAYER_STATE_PAUSED);
+                    mState.setValue(IVodPlayer.VODPLAYER_STATE_STOPPED);
+                    callbackPlayingState(IVodPlayer.VODPLAYER_STATE_STOPPED);  // 回调停止播放状态
                     if (mCallback != null) {    // 直接回调给上层
                         mCallback.onVodPlayingDone(mediaUrl, mMediaInfo.mDuration);
                     }
@@ -150,7 +145,8 @@ public class VodPlayer implements IVodPlayer {
                 @Override
                 public boolean onError(IMediaPlayer iMediaPlayer, int what, int extra) {
                     ALog.getInstance().e(TAG, "<open.onError> what=" + what + ", extra=" + extra);
-                    mState.setValue(IVodPlayer.VODPLAYER_STATE_PAUSED);
+                    mState.setValue(IVodPlayer.VODPLAYER_STATE_STOPPED);
+                    callbackPlayingState(IVodPlayer.VODPLAYER_STATE_STOPPED);  // 回调停止播放状态
                     if (mCallback != null) {    // 直接回调给上层
                         mCallback.onVodPlayingError(mediaUrl, what);
                     }
@@ -161,14 +157,13 @@ public class VodPlayer implements IVodPlayer {
             // 设置显示控件
             //mIjkPlayer.setDisplay(mDisplayView.getHolder());
 
-
-
         } catch (IOException ioExp) {
             ioExp.printStackTrace();
             ALog.getInstance().e(TAG, "<open> [IO_EXP] mediaUrl=" + mediaUrl + ", ioExp=" + ioExp);
             mIjkPlayer.release();
             mIjkPlayer = null;
             mState.setValue(IVodPlayer.VODPLAYER_STATE_CLOSED);
+            callbackPlayingState(IVodPlayer.VODPLAYER_STATE_CLOSED);  // 回调关闭播放状态
             return ErrCode.XERR_FILE_OPEN;
 
         } catch (IllegalArgumentException illegalExp) {
@@ -177,6 +172,7 @@ public class VodPlayer implements IVodPlayer {
             mIjkPlayer.release();
             mIjkPlayer = null;
             mState.setValue(IVodPlayer.VODPLAYER_STATE_CLOSED);
+            callbackPlayingState(IVodPlayer.VODPLAYER_STATE_CLOSED);  // 回调关闭播放状态
             return ErrCode.XERR_FILE_OPEN;
 
         } catch (SecurityException securityExp) {
@@ -185,6 +181,7 @@ public class VodPlayer implements IVodPlayer {
             mIjkPlayer.release();
             mIjkPlayer = null;
             mState.setValue(IVodPlayer.VODPLAYER_STATE_CLOSED);
+            callbackPlayingState(IVodPlayer.VODPLAYER_STATE_CLOSED);  // 回调关闭播放状态
             return ErrCode.XERR_FILE_OPEN;
 
         } catch (Exception exp) {
@@ -193,6 +190,7 @@ public class VodPlayer implements IVodPlayer {
             mIjkPlayer.release();
             mIjkPlayer = null;
             mState.setValue(IVodPlayer.VODPLAYER_STATE_CLOSED);
+            callbackPlayingState(IVodPlayer.VODPLAYER_STATE_CLOSED);  // 回调关闭播放状态
             return ErrCode.XERR_FILE_OPEN;
         }
 
@@ -207,6 +205,7 @@ public class VodPlayer implements IVodPlayer {
             mIjkPlayer.release();
             mIjkPlayer = null;
             mState.setValue(IVodPlayer.VODPLAYER_STATE_CLOSED);
+            callbackPlayingState(IVodPlayer.VODPLAYER_STATE_CLOSED);  // 回调关闭播放状态
             ALog.getInstance().d(TAG, "<close> done");
         }
 
@@ -247,6 +246,7 @@ public class VodPlayer implements IVodPlayer {
         try {
             mIjkPlayer.start();
             mState.setValue(IVodPlayer.VODPLAYER_STATE_PLAYING);
+            callbackPlayingState(IVodPlayer.VODPLAYER_STATE_PLAYING);  // 回调正在播放状态
 
         } catch (IllegalStateException illegalExp) {
             illegalExp.printStackTrace();
@@ -268,6 +268,7 @@ public class VodPlayer implements IVodPlayer {
         try {
             mIjkPlayer.pause();
             mState.setValue(IVodPlayer.VODPLAYER_STATE_PAUSED);
+            callbackPlayingState(IVodPlayer.VODPLAYER_STATE_PAUSED);  // 回调停止播放状态
 
         } catch (IllegalStateException illegalExp) {
             illegalExp.printStackTrace();
@@ -288,7 +289,8 @@ public class VodPlayer implements IVodPlayer {
 
         try {
             mIjkPlayer.stop();
-            mState.setValue(IVodPlayer.VODPLAYER_STATE_PAUSED);
+            mState.setValue(IVodPlayer.VODPLAYER_STATE_STOPPED);
+            callbackPlayingState(IVodPlayer.VODPLAYER_STATE_STOPPED);  // 回调停止播放状态
 
         } catch (IllegalStateException illegalExp) {
             illegalExp.printStackTrace();
@@ -308,6 +310,17 @@ public class VodPlayer implements IVodPlayer {
         }
 
         try {
+
+            mIjkPlayer.setOnSeekCompleteListener(new IMediaPlayer.OnSeekCompleteListener() {
+                @Override
+                public void onSeekComplete(IMediaPlayer iMediaPlayer) {
+                    ALog.getInstance().d(TAG, "<seek.onSeekComplete> seekPos=" + seekPos);
+                    if (mCallback != null) {    // 直接回调给上层
+                        mCallback.onVodSeekingDone(mMediaInfo.mMediaUrl, seekPos);
+                    }
+                }
+            });
+
             mIjkPlayer.seekTo(seekPos);
 
         } catch (IllegalStateException illegalExp) {
@@ -321,9 +334,26 @@ public class VodPlayer implements IVodPlayer {
     }
 
 
+    @Override
+    public int setVolume(float volumeLevel) {
+        if (mIjkPlayer == null) {
+            ALog.getInstance().d(TAG, "<setVolume> bad state, volumeLevel=" + volumeLevel);
+            return ErrCode.XERR_BAD_STATE;
+        }
+
+        mIjkPlayer.setVolume(volumeLevel, volumeLevel);
+        ALog.getInstance().d(TAG, "<setVolume> done, volumeLevel=" + volumeLevel);
+        return ErrCode.XOK;
+    }
+
     ///////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////// Internal Methods //////////////////////////
     ///////////////////////////////////////////////////////////////////////////////
+    void callbackPlayingState(int newState) {
+        if (mCallback != null) {
+            mCallback.onVodPlayingStateChanged(mMediaInfo.mMediaUrl, newState);
+        }
+    }
 
     /**
      * @brief 根据视频帧的大小，来创新显示控件，并且添加到相应的布局中
