@@ -129,6 +129,19 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
             onBtnPlayPause(view);
         });
 
+        getBinding().btn1x.setOnClickListener(view -> {
+            onBtnPlaySpeed(view,1.0f);
+        });
+        getBinding().btn2x.setOnClickListener(view -> {
+            onBtnPlaySpeed(view,2.0f);
+        });
+        getBinding().btn3x.setOnClickListener(view -> {
+            onBtnPlaySpeed(view,3.0f);
+        });
+        getBinding().btn4x.setOnClickListener(view -> {
+            onBtnPlaySpeed(view,4.0f);
+        });
+
         getBinding().sbPlaying.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
@@ -286,6 +299,13 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
             mVodPlayer.pause();
             getBinding().btnPlayPause.setText("播放");
         }
+    }
+
+    /**
+     * @brief 设置播放倍速
+     */
+    void onBtnPlaySpeed(View view, float speed) {
+        mVodPlayer.setSpeed(speed);
     }
 
     /**
