@@ -229,7 +229,6 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
     public void onStop() {
         super.onStop();
         Log.d(TAG, "<onStop> ");
-        mMsgHandler.removeMessages(MSGID_PLAYING_TIMER);
     }
 
     @Override
