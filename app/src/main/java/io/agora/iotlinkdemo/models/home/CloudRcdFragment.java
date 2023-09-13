@@ -5,9 +5,11 @@ import android.annotation.SuppressLint;
 import android.media.MediaDrm;
 import android.os.Build;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.SurfaceHolder;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.SeekBar;
@@ -187,6 +189,27 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
             }
         });
 
+        // 注册回调函数
+        SurfaceHolder surfaceHolder = getBinding().svDisplayView.getHolder();
+        surfaceHolder.addCallback(new SurfaceHolder.Callback() {
+            @Override
+            public void surfaceCreated(SurfaceHolder holder) {
+                Log.d(TAG, "<initListener.surfaceCreated> ");
+            }
+
+            @Override
+            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+                Log.d(TAG, "<initListener.surfaceChanged> format=" + format
+                    + ", width=" + width + ", height=" + height);
+                mVodPlayer.setDisplayView(getBinding().svDisplayView);
+            }
+
+            @Override
+            public void surfaceDestroyed(SurfaceHolder holder) {
+                Log.d(TAG, "<initListener.surfaceDestroyed>");
+            }
+        });
+
         Log.d(TAG, "<initListener> done");
     }
 
@@ -234,6 +257,16 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
     @Override
     public void onResume() {
         super.onResume();
+
+//        // 延迟调用查询当前MCU固件版本版本
+//        new android.os.Handler(Looper.getMainLooper()).postDelayed(
+//                new Runnable() {
+//                    public void run() {
+//                        mVodPlayer.setDisplayView(getBinding().svDisplayView);
+//                    }
+//                },
+//                100);
+
         Log.d(TAG, "<onResume> ");
     }
 
