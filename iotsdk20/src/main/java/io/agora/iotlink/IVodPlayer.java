@@ -99,11 +99,11 @@ public interface IVodPlayer  {
 
 
     /**
-     * @brief 设置播放器视频帧显示布局
-     * @param displayLayout: 视频帧显示控布局
+     * @brief 设置播放器视频帧显示控件
+     * @param displayView: 视频帧显示控件
      * @return 返回错误码
      */
-    int setDisplayLayout(final FrameLayout displayLayout);
+    int setDisplayView(final SurfaceView displayView);
 
     /**
      * @brief 打开媒体文件准备播放，打开成功后播放进度位于开始0处，状态切换到 VODPLAYER_STATE_PAUSED

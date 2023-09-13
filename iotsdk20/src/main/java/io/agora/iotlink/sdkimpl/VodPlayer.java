@@ -63,10 +63,15 @@ public class VodPlayer implements IVodPlayer {
     /////////////////// Methods of Override IVodPlayer  ///////////////////
     ///////////////////////////////////////////////////////////////////////
     @Override
-    public int setDisplayLayout(final FrameLayout displayLayout) {
-        mDisplayLayout = displayLayout;
+    public int setDisplayView(final SurfaceView displayView) {
+        mDisplayView = displayView;
+
+        // 设置显示控件
+        renderViewSetDisplay();
+
         return ErrCode.XOK;
     }
+
 
     @Override
     public int open(final String mediaUrl, final ICallback callback) {
@@ -81,12 +86,12 @@ public class VodPlayer implements IVodPlayer {
             mIjkPlayer.setDataSource(mediaUrl);
             mIjkPlayer.prepareAsync();
 
+
             // 开启硬解码
             mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec", 1);
 
             // 自动旋转
             mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec-auto-rotate", 1);
-
             mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec-handle-resolution-change", 1);
 
             // 精准seek
@@ -95,14 +100,14 @@ public class VodPlayer implements IVodPlayer {
             // 打开后立即播放
             mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "start-on-prepared", 1);
 
+            // 使用openGLES渲染
+            mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "opensles", 1);
+
             mIjkPlayer.setOnVideoSizeChangedListener(new IMediaPlayer.OnVideoSizeChangedListener() {
                 @Override
                 public void onVideoSizeChanged(IMediaPlayer iMediaPlayer,  int width, int height, int sarNum, int sarDen) {
                     ALog.getInstance().d(TAG, "<open.onVideoSizeChanged> width=" + width
                         + ", height=" + height + ", sarNum=" + sarNum + ", sarDen=" + sarDen);
-
-                    // 设置显示控件
-                    renderViewSetDisplay();
                 }
             });
 
@@ -113,12 +118,6 @@ public class VodPlayer implements IVodPlayer {
                      mMediaInfo.mDuration = mIjkPlayer.getDuration();
                      mMediaInfo.mVideoWidth = mIjkPlayer.getVideoWidth();
                      mMediaInfo.mVideoHeight = mIjkPlayer.getVideoHeight();
-
-                     // 创建显示控件
-                     renderViewCreate(mMediaInfo.mVideoWidth, mMediaInfo.mVideoHeight);
-
-                     // 设置显示控件
-                     renderViewSetDisplay();
 
                      ALog.getInstance().d(TAG, "<open.onPrepared> mMediaInfo=" + mMediaInfo);
                      if (mCallback != null) {    // 直接回调给上层
@@ -156,7 +155,7 @@ public class VodPlayer implements IVodPlayer {
             });
 
             // 设置显示控件
-            //mIjkPlayer.setDisplay(mDisplayView.getHolder());
+            renderViewSetDisplay();
 
         } catch (IOException ioExp) {
             ioExp.printStackTrace();
@@ -367,50 +366,6 @@ public class VodPlayer implements IVodPlayer {
             mCallback.onVodPlayingStateChanged(mMediaInfo.mMediaUrl, newState);
         }
     }
-
-    /**
-     * @brief 根据视频帧的大小，来创新显示控件，并且添加到相应的布局中
-     * @param frameWidth: 视频帧宽度
-     * @param frameHeight: 视频帧高度
-     * @return 错误码
-     */
-    int renderViewCreate(int frameWidth, int frameHeight) {
-        if (mDisplayLayout == null) {
-            return ErrCode.XERR_BAD_STATE;
-        }
-
-
-        // 计算显示控件大小
-        int layoutWidth = mDisplayLayout.getWidth();
-        int layoutHeight = mDisplayLayout.getHeight();
-        ZoomSize zoomSize = calculateFitInSize(layoutWidth, layoutHeight, frameWidth, frameHeight);
-
-        mDisplayView = new SurfaceView(mDisplayLayout.getContext());
-        FrameLayout.LayoutParams widgetParam = new FrameLayout.LayoutParams(
-                zoomSize.width, zoomSize.height, Gravity.CENTER);
-        mDisplayView.setLayoutParams(widgetParam);
-
-        // 显示控件添加到布局文件中
-        mDisplayLayout.removeAllViews();
-        mDisplayLayout.addView(mDisplayView);
-
-        ALog.getInstance().d(TAG, "<renderViewCreate> done, layoutWidth=" + layoutWidth
-                + ", layoutHeight=" + layoutHeight
-                + ", viewWidth=" + zoomSize.width + ", viewHeight=" + zoomSize.height);
-        return ErrCode.XOK;
-    }
-
-    /**
-     * @brief 销毁显示控件，从布局中删除
-     */
-    void renderViewDestroy() {
-        if (mDisplayLayout != null) {
-            mDisplayLayout.removeAllViews();
-            ALog.getInstance().d(TAG, "<renderViewDestroy> done");
-        }
-        mDisplayView = null;
-    }
-
 
     /**
      * @brief 设置显示控件

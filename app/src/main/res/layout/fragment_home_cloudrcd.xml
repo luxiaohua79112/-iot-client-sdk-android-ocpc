@@ -16,13 +16,11 @@
         app:ctv_rightText="云录管理"
         tools:ignore="MissingConstraints" />
 
-
-    <FrameLayout
-        android:id="@+id/flDisplay"
+    <SurfaceView
+        android:id="@+id/svDisplayView"
         android:layout_width="match_parent"
         android:layout_height="240dp"
         android:layout_marginStart="0dp"
-        android:layout_marginTop="10dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/title_view" />
 
@@ -38,7 +36,7 @@
         android:minHeight="2dp"
         android:progress="0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/flDisplay" />
+        app:layout_constraintTop_toBottomOf="@id/svDisplayView" />
 
     <androidx.appcompat.widget.AppCompatTextView
         android:id="@+id/tvTime"
