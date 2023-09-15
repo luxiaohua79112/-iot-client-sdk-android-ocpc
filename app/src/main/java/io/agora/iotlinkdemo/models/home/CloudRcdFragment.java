@@ -560,8 +560,10 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
             int progress = (int)(videoTimestamp * 1000L / mDnloadMediaInfo.mVideoDuration);
             getBinding().sbDownloading.setProgress(progress);
 
-            String textPosition = StringUtils.INSTANCE.getDurationTimeSS(videoTimestamp / 1000);
-            String textDuration = StringUtils.INSTANCE.getDurationTimeSS(mDnloadMediaInfo.mVideoDuration / 1000);
+            long videoSec = videoTimestamp / 1000000L;
+            long durationSec = mDnloadMediaInfo.mVideoDuration / 1000000L;
+            String textPosition = StringUtils.INSTANCE.getDurationTimeSS(videoSec);
+            String textDuration = StringUtils.INSTANCE.getDurationTimeSS(durationSec);
             String textTime = textPosition + " / " + textDuration;
             getBinding().tvTimeDownload.setText(textTime);
         }
