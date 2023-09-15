@@ -139,4 +139,56 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvVolume" />
 
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_download_openclose"
+        android:layout_width="80dp"
+        android:layout_height="50dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="20dp"
+        android:background="#80D6D6D6"
+        android:text="打开下载"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btn1x" />
+
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_download_startstop"
+        android:layout_width="80dp"
+        android:layout_height="50dp"
+        android:layout_marginStart="110dp"
+        android:layout_marginTop="20dp"
+        android:background="#80D6D6D6"
+        android:text="开始下载"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btn1x" />
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/tvTimeDownload"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="220dp"
+        android:layout_marginTop="30dp"
+        android:textColor="@color/def_text_color"
+        android:textSize="16sp"
+        android:enabled="false"
+        android:text="00:00:00 / 00:00:00"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btn1x" />
+
+    <androidx.appcompat.widget.AppCompatSeekBar
+        android:id="@+id/sbDownloading"
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="11dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="20dp"
+        android:max="1000"
+        android:maxHeight="2dp"
+        android:minHeight="2dp"
+        android:progress="0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btn_download_openclose" />
+
+
+
 </androidx.constraintlayout.widget.ConstraintLayout>

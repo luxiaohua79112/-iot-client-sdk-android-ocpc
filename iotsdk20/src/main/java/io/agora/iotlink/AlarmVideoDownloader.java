@@ -36,8 +36,20 @@ public class AlarmVideoDownloader implements IAvDownloaderCallback {
     private static final String DNLOAD_VIDEO_CODEC = MediaFormat.MIMETYPE_VIDEO_AVC;
     private static final String DNLOAD_AUDIO_CODEC = MediaFormat.MIMETYPE_AUDIO_AAC;
 
+
     /**
-     * @brief 告警云录视频下载回调
+     * @brief 定义下载状态
+     */
+    public static final int DOWNLOAD_STATE_INVALID = 0x0000;      ///< 当前下载还未初始化
+    public static final int DOWNLOAD_STATE_PREPARING = 0x0001;    ///< 初始化成功，正在请求云媒体文件信息
+    public static final int DOWNLOAD_STATE_ONGOING = 0x0002;      ///< 正常下载转换过程中
+    public static final int DOWNLOAD_STATE_PAUSED = 0x0003;       ///< 暂停
+    public static final int DOWNLOAD_STATE_DONE = 0x0004;         ///< 转换完成状态
+    public static final int DOWNLOAD_STATE_ERROR = 0x0005;        ///< 错误状态,不能再继续
+
+
+    /**
+     * @brief 云录视频下载回调
      */
     public static interface ICallback {
 
@@ -86,13 +98,13 @@ public class AlarmVideoDownloader implements IAvDownloaderCallback {
     //////////////////////////// Public Methods ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
     /**
-     * @brief 启动下载流程
+     * @brief 打开下载流程
      * @param cloudVideoUrl : 要下载的云视频文件路径
      * @param localFilePath : 下载到本地保存的文件路径
      * @param callback : 下载回调
      * @return 错误码
      */
-    public int start(final String cloudVideoUrl, final String localFilePath, ICallback callback) {
+    public int open(final String cloudVideoUrl, final String localFilePath, ICallback callback) {
         int ret;
 
         mCloudVideoUrl = cloudVideoUrl;
@@ -113,11 +125,11 @@ public class AlarmVideoDownloader implements IAvDownloaderCallback {
         mVideoDownloader = new AvMediaDownloader();
         ret = mVideoDownloader.initialize(mDownloaderParam);
         if (ret != ErrCode.XOK) {
-            Log.e(TAG, "<start> fail to initialize downloader");
+            Log.e(TAG, "<open> fail to initialize downloader");
             return ret;
         }
 
-        Log.d(TAG, "<start> done, ret=" + ret);
+        Log.d(TAG, "<open> done, ret=" + ret);
         return ret;
     }
 
@@ -125,13 +137,14 @@ public class AlarmVideoDownloader implements IAvDownloaderCallback {
      * @brief 停止当前下载流程
      * @return 错误码
      */
-    public int stop() {
+    public int close() {
+        int ret = ErrCode.XOK;
         if (mVideoDownloader != null) {
-            int ret = mVideoDownloader.release();
+            ret = mVideoDownloader.release();
             mVideoDownloader = null;
-            Log.d(TAG, "<stop> done, ret=" + ret);
+            Log.d(TAG, "<close> done, ret=" + ret);
         }
-        return ErrCode.XOK;
+        return ret;
     }
 
     /**
@@ -150,13 +163,13 @@ public class AlarmVideoDownloader implements IAvDownloaderCallback {
      * @brief 暂停当前下载流程
      * @return 错误码
      */
-    public int pause() {
+    public int stop() {
         if (mVideoDownloader == null) {
             return ErrCode.XERR_BAD_STATE;
         }
 
         int ret = mVideoDownloader.downloadPause();
-        Log.d(TAG, "<pause> done, ret=" + ret);
+        Log.d(TAG, "<stop> done, ret=" + ret);
         return ret;
     }
 
@@ -164,13 +177,13 @@ public class AlarmVideoDownloader implements IAvDownloaderCallback {
      * @brief 恢复当前下载流程，仅在暂停时可以调用
      * @return 错误码
      */
-    public int resume() {
+    public int start() {
         if (mVideoDownloader == null) {
             return ErrCode.XERR_BAD_STATE;
         }
 
         int ret = mVideoDownloader.downloadResume();
-        Log.d(TAG, "<resume> done, ret=" + ret);
+        Log.d(TAG, "<start> done, ret=" + ret);
         return ret;
     }
 
