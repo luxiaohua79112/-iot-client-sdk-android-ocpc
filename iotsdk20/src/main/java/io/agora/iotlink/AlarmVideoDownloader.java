@@ -163,13 +163,13 @@ public class AlarmVideoDownloader implements IAvDownloaderCallback {
      * @brief 暂停当前下载流程
      * @return 错误码
      */
-    public int stop() {
+    public int pause() {
         if (mVideoDownloader == null) {
             return ErrCode.XERR_BAD_STATE;
         }
 
         int ret = mVideoDownloader.downloadPause();
-        Log.d(TAG, "<stop> done, ret=" + ret);
+        Log.d(TAG, "<pause> done, ret=" + ret);
         return ret;
     }
 
@@ -177,13 +177,13 @@ public class AlarmVideoDownloader implements IAvDownloaderCallback {
      * @brief 恢复当前下载流程，仅在暂停时可以调用
      * @return 错误码
      */
-    public int start() {
+    public int resume() {
         if (mVideoDownloader == null) {
             return ErrCode.XERR_BAD_STATE;
         }
 
         int ret = mVideoDownloader.downloadResume();
-        Log.d(TAG, "<start> done, ret=" + ret);
+        Log.d(TAG, "<resume> done, ret=" + ret);
         return ret;
     }
 

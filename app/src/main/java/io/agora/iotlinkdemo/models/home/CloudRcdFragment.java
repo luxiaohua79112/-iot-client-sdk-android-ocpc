@@ -94,7 +94,7 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
 
         // 下载控件初始化
         getBinding().btnDownloadOpenclose.setText("打开下载");
-        getBinding().btnDownloadStartstop.setText("开始下载");
+        getBinding().btnDownloadStartstop.setText("暂停下载");
         getBinding().btnDownloadStartstop.setEnabled(false);
         getBinding().sbDownloading.setProgress(0);
 
@@ -510,7 +510,7 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
                 return;
             }
             getBinding().sbDownloading.setProgress(0);
-            getBinding().btnDownloadStartstop.setEnabled(true);
+            getBinding().btnDownloadStartstop.setEnabled(false);
 
         } else {
             // 关闭下载器
@@ -533,13 +533,13 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
         int dnloadState = mDownloader.getState();
         if (dnloadState == AlarmVideoDownloader.DOWNLOAD_STATE_PAUSED) {
             // resume
-            mDownloader.start();
-            getBinding().btnDownloadStartstop.setText("停止下载");
+            mDownloader.resume();
+            getBinding().btnDownloadStartstop.setText("暂停下载");
 
         } else if (dnloadState == AlarmVideoDownloader.DOWNLOAD_STATE_ONGOING) {
             // Pause
-            mDownloader.stop();
-            getBinding().btnDownloadStartstop.setText("开始下载");
+            mDownloader.pause();
+            getBinding().btnDownloadStartstop.setText("恢复下载");
         }
     }
 
@@ -571,7 +571,7 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
 
     void setDnloadUiStateToOpened() {
         getBinding().btnDownloadOpenclose.setText("关闭下载");
-        getBinding().btnDownloadStartstop.setText("开始下载");
+        getBinding().btnDownloadStartstop.setText("暂停下载");
         getBinding().tvTimeDownload.setText("00:00:00 / 00:00:00");
         getBinding().sbDownloading.setProgress(0);
         getBinding().sbDownloading.setEnabled(true);
@@ -581,7 +581,7 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
 
     void setDnloadUiStateToClosed() {
         getBinding().btnDownloadOpenclose.setText("打开下载");
-        getBinding().btnDownloadStartstop.setText("开始下载");
+        getBinding().btnDownloadStartstop.setText("暂停下载");
         getBinding().tvTimeDownload.setText("00:00:00 / 00:00:00");
         getBinding().sbDownloading.setProgress(0);
         getBinding().sbDownloading.setEnabled(false);
@@ -616,17 +616,30 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
             @Override
             public void run() {
                 mDownloader.close();
-
-                setUiStateToClosed();
+                mDownloader = null;
+                setDnloadUiStateToClosed();
                 mMsgHandler.removeMessages(MSGID_PLAYING_TIMER);
-                popupMessage("Media playing completed!");
+
+                popupMessage("Media donloading completed!");
             }
         });
     }
 
     @Override
     public void onDownloadError(final String videoUrl, int errCode) {
+        Log.d(TAG, "<onDownloadError> videoUrl=" + videoUrl + ", errCode=" + errCode);
 
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mDownloader.close();
+                mDownloader = null;
+                setDnloadUiStateToClosed();
+                mMsgHandler.removeMessages(MSGID_PLAYING_TIMER);
+
+                popupMessage("Media downloading error, errCode=" + errCode);
+            }
+        });
     }
 
 
