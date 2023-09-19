@@ -19,6 +19,10 @@ public class SessionCtx  {
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Constant Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
+    public static final int STATE_CONNECTING = 0;            ///< 正在连接中
+    public static final int STATE_CONNECTED = 1;             ///< 连接成功
+    public static final int STATE_DISCONNECTED = 2;          ///< 连接失败
+
 
 
 
@@ -33,6 +37,8 @@ public class SessionCtx  {
     public String mChnlName;        ///< 频道名
     public String mRtcToken;        ///< 分配的RTC token
     public String mRtmToken;        ///< 要会话的 RTM Token
+    public int mRtcState;           ///< RTC的连接状态
+    public int mRtmState;           ///< RTM的连接状态
 
     public int mState;              ///< 会话状态机
     public long mConnectTimestamp;  ///< 开始连接的时间戳
