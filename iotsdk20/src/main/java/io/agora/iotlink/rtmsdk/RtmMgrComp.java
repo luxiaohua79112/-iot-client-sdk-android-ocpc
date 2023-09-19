@@ -189,6 +189,7 @@ public class RtmMgrComp extends BaseThreadComp {
 
             if (mDeviceCount <= 0) { // 当前没有设备连接，需要进行登出操作
                 rtmEngLogout();
+                mReqCmdMgr.clear();   // 清除所有命令
             }
             devCount = mDeviceCount;
         }
