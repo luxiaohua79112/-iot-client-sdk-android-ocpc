@@ -26,6 +26,8 @@ import androidx.viewbinding.ViewBinding;
 
 import com.agora.baselibrary.base.BaseBindingActivity;
 import com.agora.baselibrary.utils.ToastUtils;
+
+import io.agora.iotlink.AIotAppSdkFactory;
 import io.agora.iotlinkdemo.R;
 import io.agora.iotlinkdemo.dialog.CommonDialog;
 
@@ -254,6 +256,7 @@ public abstract class BaseViewBindingActivity<T extends ViewBinding> extends Bas
             new Handler(Looper.getMainLooper()).postDelayed(() -> isExit = false, 2000);
         } else {
             mHealthActivityManager.popAllActivity();
+            AIotAppSdkFactory.getDevSessionMgr().release();  // 释放SDK
             System.exit(0);
         }
     }

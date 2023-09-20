@@ -126,6 +126,7 @@ public class DeviceSessionMgr extends BaseThreadComp
 
     @Override
     public void release() {
+        long t1 = System.currentTimeMillis();
         // 停止组件线程
         runStop();
 
@@ -138,8 +139,8 @@ public class DeviceSessionMgr extends BaseThreadComp
             mRtmComp = null;
         }
 
-
-        ALog.getInstance().d(TAG, "<release> done");
+        long t2 = System.currentTimeMillis();
+        ALog.getInstance().d(TAG, "<release> done, costTime=" + (t2-t1));
         ALog.getInstance().release();
     }
 
@@ -413,7 +414,7 @@ public class DeviceSessionMgr extends BaseThreadComp
         for (SessionCtx sessionCtx : timeoutSessionList) {
             mSessionMgr.removeSession(sessionCtx.mSessionId);   // 从会话管理器中删除本次会话
             talkingStop(sessionCtx);    // 退出通话
-            mRtmComp.disconnectFromDevice(sessionCtx);  // RTM断开连接
+            mRtmComp.disconnectFromDevice(sessionCtx);  // RTM断开设备
 
             // 回调呼叫超时失败
             ALog.getInstance().d(TAG, "<DoTimer> callback connecting timeout, sessionCtx=" + sessionCtx);
@@ -463,7 +464,7 @@ public class DeviceSessionMgr extends BaseThreadComp
             sessionCtx.mState = SESSION_STATE_DISCONNECTED;
             mSessionMgr.removeSession(sessionCtx.mSessionId);
             talkingStop(sessionCtx);  // 退出通话
-            mRtmComp.disconnectFromDevice(sessionCtx); // RTM断开连接
+            mRtmComp.disconnectFromDevice(sessionCtx); // RTM断开设备
             errCode = ErrCode.XERR_NETWORK;
         }
 
@@ -498,7 +499,7 @@ public class DeviceSessionMgr extends BaseThreadComp
         // 结束通话
         talkingStop(sessionCtx);
 
-        // RTM断开连接
+        // RTM断开设备
         mRtmComp.disconnectFromDevice(sessionCtx);
 
         // 回调设备端断开连接
