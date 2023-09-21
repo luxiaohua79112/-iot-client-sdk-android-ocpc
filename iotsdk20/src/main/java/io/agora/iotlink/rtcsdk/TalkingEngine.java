@@ -246,8 +246,8 @@ public class TalkingEngine implements AGEventHandler,
         // 设置广播模式
         mRtcEngine.setClientRole(Constants.CLIENT_ROLE_BROADCASTER);
 
-        // 设置私参： 默认G711U格式。 音频G722编码--9;  音频G711U--0;  音频G711A--8
-        String codecParam = "{\"che.audio.custom_payload_type\":0}";
+        // 设置私参： 默认G711U格式。 音频G722编码--9;  音频G711U--0;  音频G711A--8； AAC--69
+        String codecParam = "{\"che.audio.custom_payload_type\":69}";
         int ret = mRtcEngine.setParameters(codecParam);
         if (ret != 0) {
             ALog.getInstance().e(TAG, "<initialize> fail to set audio codec, ret=" + ret);
@@ -256,7 +256,7 @@ public class TalkingEngine implements AGEventHandler,
         }
 
         // 设置私参：采样率，G711U是 8kHz
-        String smplRate = "{\"che.audio.input_sample_rate\":8000}";
+        String smplRate = "{\"che.audio.input_sample_rate\":16000}";
         ret = mRtcEngine.setParameters(smplRate);
         if (ret != 0) {
             ALog.getInstance().e(TAG, "<initialize> fail to set sample rate, ret=" + ret);
@@ -387,8 +387,8 @@ public class TalkingEngine implements AGEventHandler,
             return false;
         }
 
-        // 设置私参： 默认G711U格式。 音频G722编码--9;  音频G711U--0;  音频G711A--8
-        String codecParam = "{\"che.audio.custom_payload_type\":0}";
+        // 设置私参： 默认AAC格式。 音频G722编码--9;  音频G711U--0;  音频G711A--8；AAC--69
+        String codecParam = "{\"che.audio.custom_payload_type\":69}";
         ret = mRtcEngine.setParameters(codecParam);
         if (ret != 0) {
             ALog.getInstance().e(TAG, "<joinChannel> fail to set audio codec, ret=" + ret);
@@ -396,8 +396,8 @@ public class TalkingEngine implements AGEventHandler,
             ALog.getInstance().w(TAG, "<joinChannel> set audio codec successful, codecParam=" + codecParam);
         }
 
-        // 设置私参：采样率，G711U是 8kHz
-        String smplRate = "{\"che.audio.input_sample_rate\":8000}";
+        // 设置私参：采样率，AAC的 16kHz
+        String smplRate = "{\"che.audio.input_sample_rate\":16000}";
         ret = mRtcEngine.setParameters(smplRate);
         if (ret != 0) {
             ALog.getInstance().e(TAG, "<joinChannel> fail to set sample rate, ret=" + ret);
