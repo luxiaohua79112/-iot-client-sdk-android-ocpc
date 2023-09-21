@@ -41,10 +41,14 @@ import java.util.Locale;
 import java.util.UUID;
 
 import io.agora.base.VideoFrame;
+import io.agora.rtc2.AgoraMediaRecorder;
 import io.agora.rtc2.ChannelMediaOptions;
 import io.agora.rtc2.Constants;
 import io.agora.rtc2.IAudioFrameObserver;
+import io.agora.rtc2.IMediaRecorderCallback;
 import io.agora.rtc2.IRtcEngineEventHandler;
+import io.agora.rtc2.RecorderInfo;
+import io.agora.rtc2.RecorderStreamInfo;
 import io.agora.rtc2.RtcConnection;
 import io.agora.rtc2.RtcEngine;
 import io.agora.rtc2.RtcEngineEx;
@@ -163,6 +167,8 @@ public class TalkingEngine implements AGEventHandler,
     private int mInAudioChannels = SET_AUD_CHANNELS;      ///< 订阅的音频通道数
     private int mInAudioSampleRate = SET_AUD_SAMPLERATE;  ///< 订阅的音频采样率
     private AvFrameQueue mInAudioFrameQueue = new AvFrameQueue();
+
+    //private AgoraMediaRecorder mAgoraRecorder;
 
     private AvMediaRecorder mRecorder;          ///< 音视频录像器
     private AvRecorderParam  mRecorderParam;    ///< 录像参数
@@ -826,7 +832,38 @@ public class TalkingEngine implements AGEventHandler,
         ALog.getInstance().d(TAG, "<recordingStart> done, ret=" + ret
             + ", width=" + videoWidth + ", height=" + videoHeight + ", rotation=" + videoRotation
             + ", channels=" + channels + ", bytesPerSmpl=" + bytesPerSample + ", sampleRate=" + sampleRate);
-        return ErrCode.XOK;
+        return ret;
+
+/*
+        RecorderStreamInfo streamInfo = new RecorderStreamInfo();
+        streamInfo.channelId = sessionCtx.mChnlName;
+        streamInfo.uid = sessionCtx.mDeviceRtcUid;
+
+        mAgoraRecorder = mRtcEngine.createMediaRecorder(streamInfo);
+        mAgoraRecorder.setMediaRecorderObserver(new IMediaRecorderCallback() {
+            @Override
+            public void onRecorderStateChanged(String channelId, int uid, int state, int error) {
+                ALog.getInstance().d(TAG, "<onRecorderStateChanged> channelId=" + channelId
+                        + ", uid=" + uid + ", state=" + state + ", error=" + error);
+            }
+
+            @Override
+            public void onRecorderInfoUpdated(String channelId, int uid, RecorderInfo info) {
+                ALog.getInstance().d(TAG, "<onRecorderInfoUpdated> channelId=" + channelId
+                        + ", uid=" + uid + ", fileName=" + info.fileName
+                        + ", durationMs=" + info.durationMs + ", fileSize=" + info.fileSize);
+            }
+        });
+
+        AgoraMediaRecorder.MediaRecorderConfiguration recordCfg = new AgoraMediaRecorder.MediaRecorderConfiguration(
+                outputFile, AgoraMediaRecorder.CONTAINER_MP4, AgoraMediaRecorder.STREAM_TYPE_BOTH,
+                1200000, 2000);
+        int ret = mAgoraRecorder.startRecording(recordCfg);
+
+        ALog.getInstance().d(TAG, "<recordingStart> done, ret=" + ret + ", outputFile=" + outputFile);
+        return (ret == Constants.ERR_OK) ? ErrCode.XOK : ErrCode.XERR_UNSUPPORTED;
+
+ */
     }
 
     /**
@@ -846,6 +883,16 @@ public class TalkingEngine implements AGEventHandler,
 
         mInAudioFrameQueue.clear();
         return ErrCode.XOK;
+
+/*
+        if (mAgoraRecorder != null) {
+            mAgoraRecorder.stopRecording();
+            mAgoraRecorder.release();
+            mAgoraRecorder = null;
+            ALog.getInstance().d(TAG, "<recordingStop> done");
+        }
+        return ErrCode.XOK;
+ */
     }
 
     /**
@@ -854,6 +901,7 @@ public class TalkingEngine implements AGEventHandler,
      */
     public boolean isRecording(final SessionCtx sessionCtx) {
         return (mRecorder != null);
+        //return (mAgoraRecorder != null);
     }
 
     @Override

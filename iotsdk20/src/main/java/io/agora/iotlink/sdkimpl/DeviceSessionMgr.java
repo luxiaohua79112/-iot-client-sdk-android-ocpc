@@ -63,6 +63,8 @@ public class DeviceSessionMgr extends BaseThreadComp
     private static final int MSGID_SDK_DEV_FIRSTFRAME = 0x1004;  ///< 设备首帧出图消息
     private static final int MSGID_SDK_DEV_SHOTTAKEN = 0x1005;   ///< 截图完成回调
     private static final int MSGID_SDK_TIMER = 0x1006;           ///< 定时器
+    private static final int MSGID_SDK_CONNECT_DEV = 0x1007;     ///< 连接到设备端
+    private static final int MSGID_SDK_DISCONNECT_DEV = 0x1008;  ///< 从设备断开连接
 
 
     ////////////////////////////////////////////////////////////////////////
@@ -94,6 +96,7 @@ public class DeviceSessionMgr extends BaseThreadComp
 
     @Override
     public int initialize(InitParam initParam) {
+        long t1 = System.currentTimeMillis();
         mInitParam = initParam;
 
         // 初始化日志系统
@@ -120,7 +123,9 @@ public class DeviceSessionMgr extends BaseThreadComp
         runStart(TAG);
 
         sendSingleMessage(MSGID_SDK_TIMER, 0, 0, null,0);
-        ALog.getInstance().d(TAG, "<initialize> done");
+
+        long t2 = System.currentTimeMillis();
+        ALog.getInstance().d(TAG, "<initialize> done, costTime=" + (t2-t1));
         return ErrCode.XOK;
     }
 
@@ -210,42 +215,8 @@ public class DeviceSessionMgr extends BaseThreadComp
         // 添加到会话管理器中
         mSessionMgr.addSession(newSession);
 
-        // 加入频道处理
-        int errCode = talkingPrepare(newSession);
-        if (errCode != ErrCode.XOK) {
-            ALog.getInstance().e(TAG, "<connect> failure to join channel, errCode=" + errCode
-                    + ", deviceId=" + connectParam.mPeerDevId);
-            mSessionMgr.removeSession(newSession.mSessionId);   // 移除加入的会话
-            result.mErrCode = errCode;
-            return result;
-        }
-
-        // RTM组件中连接设备处理
-        mRtmComp.connectToDevice(newSession, new RtmMgrComp.OnRtmConnectDevListener() {
-            @Override
-            public void onRtmConnectDevDone(final SessionCtx rtmSessionCtx, int errCode) {
-                ALog.getInstance().d(TAG, "<connect.onRtmConnectDevDone> deviceId=" + rtmSessionCtx.mDeviceId
-                        + ", errCode=" + errCode);
-
-                SessionCtx findSessionCtx = mSessionMgr.getSession(rtmSessionCtx.mSessionId);
-                if (findSessionCtx == null) {
-                    ALog.getInstance().d(TAG, "<connect.onRtmConnectDevDone> NOT found sessionId=" + rtmSessionCtx.mSessionId);
-                    return;
-                }
-
-                // 更新 RTM连接状态
-                if (errCode == ErrCode.XOK) {
-                    findSessionCtx.mRtmState = SessionCtx.STATE_CONNECTED;
-                } else {
-                    findSessionCtx.mRtmState = SessionCtx.STATE_DISCONNECTED;
-                }
-                mSessionMgr.updateSession(findSessionCtx);
-
-                // 发送消息通知连接完成
-                ALog.getInstance().d(TAG, "<connect.onRtmConnectDevDone> send MSGID_SDK_CONNECT_DONE");
-                sendSingleMessage(MSGID_SDK_CONNECT_DONE, 2, 0, findSessionCtx.mSessionId, 0);
-            }
-        });
+        // 发送连接消息
+        sendSingleMessage(MSGID_SDK_CONNECT_DEV, 0, 0, newSession, 0);
 
         long t2 = System.currentTimeMillis();
         ALog.getInstance().d(TAG, "<connect> <==End done" + ", costTime=" + (t2-t1));
@@ -255,34 +226,25 @@ public class DeviceSessionMgr extends BaseThreadComp
     }
 
     @Override
-    public int disconnect(final UUID sessionId) {
+    public int disconnect(final UUID sessionId,
+                          final OnSessionDisconnectListener disconnectListener) {
         long t1 = System.currentTimeMillis();
         ALog.getInstance().d(TAG, "<disconnect> ==> BEGIN, sessionId=" + sessionId);
 
-        // 会话管理器中直接删除该会话
-        SessionCtx sessionCtx = mSessionMgr.removeSession(sessionId);
-        if (sessionCtx == null) {
-            ALog.getInstance().e(TAG, "<disconnect> <==END, already disconnected, not found");
+        // 找到该会话
+        SessionCtx removeSession = mSessionMgr.getSession(sessionId);
+        if (removeSession == null) {
+            ALog.getInstance().e(TAG, "<disconnect> <==END, not found");
             return ErrCode.XOK;
         }
-
-        // 停止预览或者录像
-        if (sessionCtx.mDevPreviewMgr != null) {
-            sessionCtx.mDevPreviewMgr.previewStop();
-            sessionCtx.mDevPreviewMgr.recordingStop();
+        if (removeSession.mState != SESSION_STATE_CONNECTED) {
+            ALog.getInstance().e(TAG, "<disconnect> <==END, bad state, mState=" + removeSession.mState);
+            return ErrCode.XERR_BAD_STATE;
         }
 
-        // 停止设备端播放
-        if (sessionCtx.mDevMediaMgr != null) {
-            sessionCtx.mDevMediaMgr.stop();
-        }
-
-        // RTM断开设备
-        mRtmComp.disconnectFromDevice(sessionCtx);
-
-        // 离开通话频道
-        talkingStop(sessionCtx);
-
+        // 发送断连消息
+        Object[] params = { removeSession, disconnectListener};
+        sendSingleMessage(MSGID_SDK_DISCONNECT_DEV, 0, 0, params, 0);
 
         long t2 = System.currentTimeMillis();
         ALog.getInstance().d(TAG, "<disconnect> <==END, costTime=" + (t2-t1));
@@ -362,9 +324,6 @@ public class DeviceSessionMgr extends BaseThreadComp
     @Override
     public void processWorkMessage(Message msg) {
         switch (msg.what) {
-            case MSGID_SDK_CONNECT_DONE:
-                onMessageConnectDone(msg);
-                break;
             case MSGID_SDK_DEV_OFFLINE:
                 onMessageDeviceOffline(msg);
                 break;
@@ -373,6 +332,17 @@ public class DeviceSessionMgr extends BaseThreadComp
                 break;
             case MSGID_SDK_DEV_SHOTTAKEN:
                 onMessageSnapshotTaken(msg);
+                break;
+
+
+            case MSGID_SDK_CONNECT_DEV:
+                onMessageConnectDev(msg);
+                break;
+            case MSGID_SDK_CONNECT_DONE:
+                onMessageConnectDone(msg);
+                break;
+            case MSGID_SDK_DISCONNECT_DEV:
+                onMessageDisconnectDev(msg);
                 break;
 
             case MSGID_SDK_TIMER:
@@ -389,6 +359,8 @@ public class DeviceSessionMgr extends BaseThreadComp
             mWorkHandler.removeMessages(MSGID_SDK_DEV_FIRSTFRAME);
             mWorkHandler.removeMessages(MSGID_SDK_DEV_SHOTTAKEN);
             mWorkHandler.removeMessages(MSGID_SDK_TIMER);
+            mWorkHandler.removeMessages(MSGID_SDK_CONNECT_DEV);
+            mWorkHandler.removeMessages(MSGID_SDK_DISCONNECT_DEV);
         }
     }
 
@@ -424,12 +396,60 @@ public class DeviceSessionMgr extends BaseThreadComp
         sendSingleMessage(MSGID_SDK_TIMER, 0, 0, null, TIMER_INTERVAL);
     }
 
+    /**
+     * @brief 工作线程中运行，连接设备操作
+     */
+    void onMessageConnectDev(Message msg) {
+        SessionCtx newSession = (SessionCtx)(msg.obj);
+
+        // 加入频道处理
+        int errCode = talkingPrepare(newSession);
+        if (errCode != ErrCode.XOK) {
+            ALog.getInstance().e(TAG, "<onMessageConnectDev> failure to talkingPrepare(), errCode=" + errCode
+                    + ", deviceId=" + newSession.mDeviceId);
+            // 更新 RTC连接状态
+            newSession.mRtcState = SessionCtx.STATE_DISCONNECTED;
+            mSessionMgr.updateSession(newSession);
+
+            // 发送消息，通知连接完成
+            sendSingleMessage(MSGID_SDK_CONNECT_DONE, errCode, 0, newSession.mSessionId, 0);
+        }
+
+        // RTM组件中连接设备处理
+        mRtmComp.connectToDevice(newSession, new RtmMgrComp.OnRtmConnectDevListener() {
+            @Override
+            public void onRtmConnectDevDone(final SessionCtx rtmSessionCtx, int errCode) {
+                ALog.getInstance().d(TAG, "<onMessageConnectDev.onRtmConnectDevDone> deviceId=" + rtmSessionCtx.mDeviceId
+                        + ", errCode=" + errCode);
+                SessionCtx findSessionCtx = mSessionMgr.getSession(rtmSessionCtx.mSessionId);
+                if (findSessionCtx == null) {
+                    ALog.getInstance().d(TAG, "<onMessageConnectDev.onRtmConnectDevDone> NOT found sessionId=" + rtmSessionCtx.mSessionId);
+                    return;
+                }
+
+                // 更新 RTM连接状态
+                if (errCode == ErrCode.XOK) {
+                    findSessionCtx.mRtmState = SessionCtx.STATE_CONNECTED;
+                } else {
+                    findSessionCtx.mRtmState = SessionCtx.STATE_DISCONNECTED;
+                }
+                mSessionMgr.updateSession(findSessionCtx);
+
+                // 发送消息通知连接完成
+                sendSingleMessage(MSGID_SDK_CONNECT_DONE, errCode, 0, findSessionCtx.mSessionId, 0);
+            }
+        });
+
+        ALog.getInstance().d(TAG, "<onMessageConnectDev> done, newSession=" + newSession);
+    }
+
 
     /**
      * @brief 工作线程中运行，连接完成
+     * @param msg : 消息对象；  msg.arg1是错误码；  msg.obj是 sessionId
      */
     void onMessageConnectDone(Message msg) {
-        int connectType = msg.arg1;     // 1: RTC;  2: RTM
+        int errCode = msg.arg1;
         UUID sessionId = (UUID)(msg.obj);
         SessionCtx sessionCtx = mSessionMgr.getSession(sessionId);
         if (sessionCtx == null) {
@@ -443,13 +463,11 @@ public class DeviceSessionMgr extends BaseThreadComp
 
         int rtcState = sessionCtx.mRtcState;
         int rtmState = sessionCtx.mRtmState;
-
         if ((rtcState == SessionCtx.STATE_CONNECTING) || (rtmState == SessionCtx.STATE_CONNECTING)) {
             ALog.getInstance().d(TAG, "<onMessageConnectDone> RTC or RTM connect is ongoing!");
             return;
         }
 
-        int errCode;
         if ((rtcState == SessionCtx.STATE_CONNECTED) && (rtmState == SessionCtx.STATE_CONNECTED)) {
             // RTC和 RTM都 连接成功，则更新状态机
             sessionCtx.mState = SESSION_STATE_CONNECTED;
@@ -469,9 +487,50 @@ public class DeviceSessionMgr extends BaseThreadComp
         }
 
         // 回调设备连接结果
-        ALog.getInstance().d(TAG, "<onMessageConnectDone> errCode=" + errCode);
+        ALog.getInstance().d(TAG, "<onMessageConnectDone> sessionId=" + sessionId
+                + ", errCode=" + errCode);
         CallbackSessionConnectDone(sessionCtx, errCode);
     }
+
+    /**
+     * @brief 工作线程中运行，断连设备操作
+     */
+    void onMessageDisconnectDev(Message msg) {
+        Object[] params = (Object[])msg.obj;
+        SessionCtx removeSession = (SessionCtx) (params[0]);
+        OnSessionDisconnectListener disconnectListener = (OnSessionDisconnectListener) (params[1]);
+        long t1 = System.currentTimeMillis();
+
+        // 停止预览或者录像
+        if (removeSession.mDevPreviewMgr != null) {
+            removeSession.mDevPreviewMgr.previewStop();
+            removeSession.mDevPreviewMgr.recordingStop();
+        }
+
+        // 停止设备端播放
+        if (removeSession.mDevMediaMgr != null) {
+            removeSession.mDevMediaMgr.stop();
+        }
+
+        // RTM断开设备
+        mRtmComp.disconnectFromDevice(removeSession);
+
+        // 离开通话频道
+        talkingStop(removeSession);
+
+        // 从会话管理器中删除
+        mSessionMgr.removeSession(removeSession.mSessionId);
+
+        // 回调设备断连结果
+        long t2 = System.currentTimeMillis();
+
+        ALog.getInstance().d(TAG, "<onMessageDisconnectDev> removeSession=" + removeSession
+                + ", costTime=" + (t2-t1));
+        if (disconnectListener != null) {
+            disconnectListener.onSessionDisconnectDone(removeSession.mSessionId, ErrCode.XOK);
+        }
+    }
+
 
     /**
      * @brief 工作线程中运行，设备掉线
@@ -608,7 +667,7 @@ public class DeviceSessionMgr extends BaseThreadComp
             mSessionMgr.updateSession(sessionCtx);
 
             // 发送连接完成事件
-            sendSingleMessage(MSGID_SDK_CONNECT_DONE, 1, 0, sessionId, 0);
+            sendSingleMessage(MSGID_SDK_CONNECT_DONE, ErrCode.XOK, 0, sessionId, 0);
             return;
         }
 

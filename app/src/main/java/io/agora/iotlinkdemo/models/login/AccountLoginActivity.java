@@ -133,22 +133,22 @@ public class AccountLoginActivity extends BaseViewBindingActivity<ActivityLoginB
 
                         // MediaPlayingClock.UnitTest();
 
-                        //
-                        // 初始化 SDK引擎
-                        //
-                        IDeviceSessionMgr.InitParam initParam = new IDeviceSessionMgr.InitParam();
-                        initParam.mContext = linkInitParam.mContext;
-                        initParam.mAppId = linkInitParam.mAppId;
-                        initParam.mProjectID = linkInitParam.mProjectID;
-                        initParam.mUserId = PresistentLinkComp.getInstance().getLocalNodeId();
-                        File file = initParam.mContext.getExternalFilesDir(null);
-                        String cachePath = file.getAbsolutePath();
-                        initParam.mLogFilePath = cachePath + "/callkit.log";
-                        int retSdk = AIotAppSdkFactory.getDevSessionMgr().initialize(initParam);
-                        if (retSdk != ErrCode.XOK) {
-                            popupMessage("Fail to init SDK, errCode=" + errCode);
-                            return;
-                        }
+//                        //
+//                        // 初始化 SDK引擎
+//                        //
+//                        IDeviceSessionMgr.InitParam initParam = new IDeviceSessionMgr.InitParam();
+//                        initParam.mContext = linkInitParam.mContext;
+//                        initParam.mAppId = linkInitParam.mAppId;
+//                        initParam.mProjectID = linkInitParam.mProjectID;
+//                        initParam.mUserId = PresistentLinkComp.getInstance().getLocalNodeId();
+//                        File file = initParam.mContext.getExternalFilesDir(null);
+//                        String cachePath = file.getAbsolutePath();
+//                        initParam.mLogFilePath = cachePath + "/callkit.log";
+//                        int retSdk = AIotAppSdkFactory.getDevSessionMgr().initialize(initParam);
+//                        if (retSdk != ErrCode.XOK) {
+//                            popupMessage("Fail to init SDK, errCode=" + errCode);
+//                            return;
+//                        }
 
                         popupMessageLongTime("Account Login successful!");
                         gotoMainActivity();

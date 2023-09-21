@@ -410,10 +410,30 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
                                     return;
                                 }
 
+                                IDeviceSessionMgr sessionMgr = AIotAppSdkFactory.getDevSessionMgr();
+
+                                //
+                                // 初始化 SDK引擎
+                                //
+                                PresistentLinkComp.InitParam linkInitParam = PresistentLinkComp.getInstance().getInitParam();
+                                IDeviceSessionMgr.InitParam initParam = new IDeviceSessionMgr.InitParam();
+                                initParam.mContext = linkInitParam.mContext;
+                                initParam.mAppId = linkInitParam.mAppId;
+                                initParam.mProjectID = linkInitParam.mProjectID;
+                                initParam.mUserId = PresistentLinkComp.getInstance().getLocalNodeId();
+                                File file = initParam.mContext.getExternalFilesDir(null);
+                                String cachePath = file.getAbsolutePath();
+                                initParam.mLogFilePath = cachePath + "/callkit.log";
+                                int retSdk = sessionMgr.initialize(initParam);
+                                if (retSdk != ErrCode.XOK) {
+                                    popupMessage("Fail to init SDK, errCode=" + errCode);
+                                    return;
+                                }
+
+
                                 //
                                 // SDK中 连接设备会话 操作
                                 //
-                                IDeviceSessionMgr sessionMgr = AIotAppSdkFactory.getDevSessionMgr();
                                 IDeviceSessionMgr.ConnectParam connectParam = new IDeviceSessionMgr.ConnectParam();
                                 connectParam.mUserId = PresistentLinkComp.getInstance().getLocalNodeId();
                                 connectParam.mPeerDevId = deviceId;
@@ -462,10 +482,23 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
             // callkitMgr.setPeerVideoView(deviceInfo.mSessionId, deviceInfo.mVideoView);
 
         } else {
+
             // SDK中断开连接
-            if (deviceInfo.mSessionId != null) { // 有可能此时SDK还未连接设备
+            if (deviceInfo.mSessionId != null) {
                 IDeviceSessionMgr sessionMgr = AIotAppSdkFactory.getDevSessionMgr();
-                int ret = sessionMgr.disconnect(deviceInfo.mSessionId);
+                int ret = sessionMgr.disconnect(deviceInfo.mSessionId, new IDeviceSessionMgr.OnSessionDisconnectListener() {
+                    @Override
+                    public void onSessionDisconnectDone(UUID sessionId, int errCode) {
+                        Log.d(TAG, "<onSessionDisconnectDone> sessionId=" + sessionId);
+                        getActivity().runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                AIotAppSdkFactory.getDevSessionMgr().release();
+                                popupMessage("Disconnect device: " + deviceInfo.mNodeId + " successful!");
+                            }
+                        });
+                    }
+                });
                 if (ret != ErrCode.XOK) {
                     popupMessage("SDK Disconnect device: " + deviceInfo.mNodeId + " failure, ret=" + ret);
                     return;
@@ -482,8 +515,6 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
             // 更新设备状态信息
             deviceInfo.clear();
             mDevListAdapter.setItem(position, deviceInfo);
-
-            popupMessage("Disconnect device: " + deviceInfo.mNodeId + " successful!");
         }
     }
 
