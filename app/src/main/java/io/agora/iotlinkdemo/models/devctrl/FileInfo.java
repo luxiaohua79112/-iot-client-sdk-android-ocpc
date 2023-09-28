@@ -10,17 +10,14 @@ import com.agora.baselibrary.base.BaseAdapter;
 
 import java.util.UUID;
 
+import io.agora.iotlink.IDevMediaMgr;
+
 /**
  * @brief 文件信息
  */
 public class FileInfo {
 
-    public String mFileId;
-    public long mBeginTime;
-    public long mEndTime;
-    public int mEvent;
-    public String mVideoUrl;
-    public String mImgUrl;
+    public IDevMediaMgr.DevMediaItem mMediaInfo;
 
     public BaseAdapter.CommonViewHolder mViewHolder;    ///< 设备显示的 ViewHolder
 
@@ -28,12 +25,10 @@ public class FileInfo {
 
     @Override
     public String toString() {
-        String infoText = "{ mFileId=" + mFileId
-                + ", mBeginTime=" + mBeginTime
-                + ", mEndTime=" + mEndTime
-                + ", mEvent=" + mEvent
-                + ", mVideoUrl=" + mVideoUrl
-                + ", mImgUrl=" + mImgUrl + " }";
+        String infoText = "";
+        if (mMediaInfo != null) {
+            infoText = mMediaInfo.toString();
+        }
         return infoText;
     }
 

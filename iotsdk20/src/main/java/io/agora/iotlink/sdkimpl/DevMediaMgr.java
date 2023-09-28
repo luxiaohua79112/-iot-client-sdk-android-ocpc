@@ -22,15 +22,11 @@ import java.util.UUID;
 import io.agora.iotlink.ErrCode;
 import io.agora.iotlink.IDevMediaMgr;
 import io.agora.iotlink.IDeviceSessionMgr;
-import io.agora.iotlink.IVodPlayer;
 import io.agora.iotlink.base.AtomicInteger;
 import io.agora.iotlink.base.AtomicLong;
 import io.agora.iotlink.base.AtomicUuid;
-import io.agora.iotlink.base.BaseThreadComp;
-import io.agora.iotlink.callkit.SessionCtx;
 import io.agora.iotlink.logger.ALog;
 import io.agora.iotlink.rtmsdk.DevFileDelErrInfo;
-import io.agora.iotlink.rtmsdk.DevFileInfo;
 import io.agora.iotlink.rtmsdk.IRtmCmd;
 import io.agora.iotlink.rtmsdk.RtmBaseCmd;
 import io.agora.iotlink.rtmsdk.RtmCmdSeqId;
@@ -39,6 +35,8 @@ import io.agora.iotlink.rtmsdk.RtmCoverRspCmd;
 import io.agora.iotlink.rtmsdk.RtmDeleteReqCmd;
 import io.agora.iotlink.rtmsdk.RtmDeleteRspCmd;
 import io.agora.iotlink.rtmsdk.RtmDownloadReqCmd;
+import io.agora.iotlink.rtmsdk.RtmDownloadRspCmd;
+import io.agora.iotlink.rtmsdk.RtmEventTimelineRspCmd;
 import io.agora.iotlink.rtmsdk.RtmPlayReqCmd;
 import io.agora.iotlink.rtmsdk.RtmPlayRspCmd;
 import io.agora.iotlink.rtmsdk.RtmQueryReqCmd;
@@ -104,8 +102,6 @@ public class DevMediaMgr implements IDevMediaMgr {
         queryReqCmd.mQueryParam.mFileId = queryParam.mFileId;
         queryReqCmd.mQueryParam.mBeginTime = queryParam.mBeginTimestamp;
         queryReqCmd.mQueryParam.mEndTime = queryParam.mEndTimestamp;
-        queryReqCmd.mQueryParam.mPageIndex = queryParam.mPageIndex;
-        queryReqCmd.mQueryParam.mPageSize = queryParam.mPageSize;
 
         queryReqCmd.mSequenceId = RtmCmdSeqId.getSeuenceId();
         queryReqCmd.mCmdId = IRtmCmd.CMDID_MEDIA_QUERY;
@@ -117,24 +113,10 @@ public class DevMediaMgr implements IDevMediaMgr {
             public void onRtmCmdResponsed(int commandId, int errCode, IRtmCmd reqCmd, IRtmCmd rspCmd) {
                 ALog.getInstance().d(TAG, "<queryMediaList.onRtmCmdResponsed> errCode=" + errCode);
                 RtmQueryRspCmd queryRspCmd = (RtmQueryRspCmd)rspCmd;
-                ArrayList<DevMediaItem> mediaList = new ArrayList<>();
+                ArrayList<IDevMediaMgr.DevMediaItem> mediaList = new ArrayList<>();
                 if (queryRspCmd != null) {
-                    int count = queryRspCmd.mFileList.size();
-                    for (int i = 0; i < count; i++) {
-                        DevFileInfo fileInfo = queryRspCmd.mFileList.get(i);
-
-                        DevMediaItem mediaItem = new DevMediaItem();
-                        mediaItem.mFileId = fileInfo.mFileId;
-                        mediaItem.mStartTimestamp = fileInfo.mStartTime;
-                        mediaItem.mStopTimestamp = fileInfo.mStopTime;
-                        mediaItem.mType = fileInfo.mFileType;
-                        mediaItem.mEvent = fileInfo.mEvent;
-                        mediaItem.mImgUrl = fileInfo.mImgUrl;
-                        mediaItem.mVideoUrl = fileInfo.mVideoUrl;
-                        mediaList.add(mediaItem);
-                    }
+                    mediaList = queryRspCmd.mMediaList;
                 }
-
                 queryListener.onDevMediaQueryDone(errCode, mediaList);
             }
         };
@@ -239,21 +221,11 @@ public class DevMediaMgr implements IDevMediaMgr {
             public void onRtmCmdResponsed(int commandId, int errCode, IRtmCmd reqCmd, IRtmCmd rspCmd) {
                 ALog.getInstance().d(TAG, "<downloadFileList.onRtmCmdResponsed> errCode=" + errCode);
 
-                RtmDeleteRspCmd deleteRspCmd = (RtmDeleteRspCmd)rspCmd;
-
+                RtmDownloadRspCmd downloadRspCmd = (RtmDownloadRspCmd)rspCmd;
                 ArrayList<DevFileDownloadResult> dnloadRsltList = new ArrayList<>();
-                if (deleteRspCmd != null) {
-                    int count = deleteRspCmd.mErrorList.size();
-                    for (int i = 0; i < count; i++) {
-                        DevFileDelErrInfo delErrInfo = deleteRspCmd.mErrorList.get(i);
-
-                        DevFileDownloadResult dnloadResult = new DevFileDownloadResult();
-                        dnloadResult.mFileId = delErrInfo.mFileId;
-                        dnloadResult.mErrCode = delErrInfo.mDelErrCode;
-                        dnloadRsltList.add(dnloadResult);
-                    }
+                if (downloadRspCmd != null) {
+                    dnloadRsltList = downloadRspCmd.mDownloadList;
                 }
-
                 downloadListener.onDevFileDownloadDone(errCode, dnloadRsltList);
             }
         };
@@ -266,6 +238,35 @@ public class DevMediaMgr implements IDevMediaMgr {
     }
 
 
+    @Override
+    public int queryEventTimeline(final OnQueryEventListener queryListener) {
+        RtmBaseCmd eventReqCmd = new RtmBaseCmd();
+
+        eventReqCmd.mSequenceId = RtmCmdSeqId.getSeuenceId();
+        eventReqCmd.mCmdId = IRtmCmd.CMDID_EVENTTIMELINE_QUERY;
+        eventReqCmd.mDeviceId = mDeviceId;
+        eventReqCmd.mSendTimestamp = System.currentTimeMillis();
+
+        eventReqCmd.mRespListener = new IRtmCmd.OnRtmCmdRespListener() {
+            @Override
+            public void onRtmCmdResponsed(int commandId, int errCode, IRtmCmd reqCmd, IRtmCmd rspCmd) {
+                ALog.getInstance().d(TAG, "<queryEventTimeline.onRtmCmdResponsed> errCode=" + errCode);
+
+                RtmEventTimelineRspCmd eventRspCmd = (RtmEventTimelineRspCmd)rspCmd;
+                ArrayList<Long> videoTimeList = new ArrayList<>();
+                if (eventRspCmd != null) {
+                    videoTimeList = eventRspCmd.mVideoTimeList;
+                }
+                queryListener.onDevQueryEventDone(errCode, videoTimeList);
+            }
+        };
+
+        int ret = mSessionMgr.getRtmMgrComp().sendCommandToDev(eventReqCmd);
+
+        ALog.getInstance().d(TAG, "<queryEventTimeline> done, ret=" + ret
+                + ", eventReqCmd=" + eventReqCmd);
+        return ret;
+    }
 
     @Override
     public int setDisplayView(final View displayView) {

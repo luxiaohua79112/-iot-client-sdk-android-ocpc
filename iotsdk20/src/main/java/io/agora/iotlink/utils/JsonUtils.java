@@ -127,5 +127,16 @@ public class JsonUtils {
 		}
 	}
 
+	public static long getLongFromArray(JSONArray jsonState, int index, long defVal) {
+		try {
+			long value = jsonState.getLong(index);
+			return value;
+
+		} catch (JSONException e) {
+			ALog.getInstance().e(TAG, "<getLongFromArray> exp=" + e.toString());
+			return defVal;
+		}
+	}
+
 }
 

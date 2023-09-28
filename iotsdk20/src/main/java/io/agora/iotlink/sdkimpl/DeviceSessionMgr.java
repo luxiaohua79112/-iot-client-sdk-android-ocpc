@@ -354,13 +354,15 @@ public class DeviceSessionMgr extends BaseThreadComp
     @Override
     protected void removeAllMessages() {
         synchronized (mMsgQueueLock) {
-            mWorkHandler.removeMessages(MSGID_SDK_CONNECT_DONE);
-            mWorkHandler.removeMessages(MSGID_SDK_DEV_OFFLINE);
-            mWorkHandler.removeMessages(MSGID_SDK_DEV_FIRSTFRAME);
-            mWorkHandler.removeMessages(MSGID_SDK_DEV_SHOTTAKEN);
-            mWorkHandler.removeMessages(MSGID_SDK_TIMER);
-            mWorkHandler.removeMessages(MSGID_SDK_CONNECT_DEV);
-            mWorkHandler.removeMessages(MSGID_SDK_DISCONNECT_DEV);
+            if (mWorkHandler != null) {
+                mWorkHandler.removeMessages(MSGID_SDK_CONNECT_DONE);
+                mWorkHandler.removeMessages(MSGID_SDK_DEV_OFFLINE);
+                mWorkHandler.removeMessages(MSGID_SDK_DEV_FIRSTFRAME);
+                mWorkHandler.removeMessages(MSGID_SDK_DEV_SHOTTAKEN);
+                mWorkHandler.removeMessages(MSGID_SDK_TIMER);
+                mWorkHandler.removeMessages(MSGID_SDK_CONNECT_DEV);
+                mWorkHandler.removeMessages(MSGID_SDK_DISCONNECT_DEV);
+            }
         }
     }
 

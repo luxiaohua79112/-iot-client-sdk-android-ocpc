@@ -200,6 +200,10 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
         getBinding().btnFileDownload.setOnClickListener(view -> {
             onBtnDownloadFile(view);
         });
+
+        getBinding().btnEventQuery.setOnClickListener(view -> {
+            onBtnEventQuery(view);
+        });
     }
 
     @Override
@@ -407,8 +411,6 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
         queryParam.mFileId = null;
         queryParam.mBeginTimestamp = currTimeSec - (24*3600);
         queryParam.mEndTimestamp = currTimeSec;
-        queryParam.mPageIndex = 1;
-        queryParam.mPageSize = 20;
 
         showLoadingView();
         int ret = mediaMgr.queryMediaList(queryParam, new IDevMediaMgr.OnQueryListener() {
@@ -431,12 +433,7 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
                           IDevMediaMgr.DevMediaItem mediaItem = mediaList.get(i);
 
                           FileInfo newFileInfo = new FileInfo();
-                          newFileInfo.mFileId = mediaItem.mFileId;
-                          newFileInfo.mBeginTime = mediaItem.mStartTimestamp;
-                          newFileInfo.mEndTime = mediaItem.mStopTimestamp;
-                          newFileInfo.mVideoUrl = mediaItem.mVideoUrl;
-                          newFileInfo.mImgUrl = mediaItem.mImgUrl;
-                          newFileInfo.mEvent = mediaItem.mEvent;
+                          newFileInfo.mMediaInfo = mediaItem;
                           fileList.add(newFileInfo);
                       }
                       mFileListAdapter.updateItemList(fileList);
@@ -472,7 +469,7 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
         ArrayList<String> deletingIdList = new ArrayList<>();
         for (int i = 0; i < selectedCount; i++) {
             FileInfo fileInfo = selectedList.get(i);
-            deletingIdList.add(fileInfo.mFileId);
+            deletingIdList.add(fileInfo.mMediaInfo.mFileId);
         }
 
 
@@ -779,26 +776,28 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
             return;
         }
 
-        List<FileInfo> selectedList = mFileListAdapter.getSelectedItems();
-        int selectedCount = selectedList.size();
-        if (selectedCount <= 0) {
-            popupMessage("Please select one file at least!");
-            return;
-        }
+//        List<FileInfo> selectedList = mFileListAdapter.getSelectedItems();
+//        int selectedCount = selectedList.size();
+//        if (selectedCount <= 0) {
+//            popupMessage("Please select one file at least!");
+//            return;
+//        }
 
         ArrayList<String> dnloadingIdList = new ArrayList<>();
-        for (int i = 0; i < selectedCount; i++) {
-            FileInfo fileInfo = selectedList.get(i);
-            dnloadingIdList.add(fileInfo.mFileId);
-        }
+//        for (int i = 0; i < selectedCount; i++) {
+//            FileInfo fileInfo = selectedList.get(i);
+//            dnloadingIdList.add(fileInfo.mMediaInfo.mFileId);
+//        }
+        dnloadingIdList.add("av_xxx_01");
+
 
         showLoadingView();
         int ret = mediaMgr.downloadFileList(dnloadingIdList, new IDevMediaMgr.OnDownloadListener() {
             @Override
             public void onDevFileDownloadDone(int errCode,
-                                              final List<IDevMediaMgr.DevFileDownloadResult> unDnloadList) {
+                                              final List<IDevMediaMgr.DevFileDownloadResult> downloadList) {
                 Log.d(TAG, "<onBtnMediaDelete.onDevFileDownloadDone> errCode=" + errCode
-                        + ", unDnloadList=" + unDnloadList);
+                        + ", downloadList=" + downloadList);
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -807,7 +806,7 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
                             popupMessage("Media files download successful!");
 
                         } else if (errCode == ErrCode.XERR_MEDIAMGR_DOWNLOAD_PARTIAL) {
-                            popupMessage("Media files download only partial  unDownloadCount=" + unDnloadList.size());
+                            popupMessage("Media files download only partial downloadCount=" + downloadList.size());
 
                         } else  if (errCode == ErrCode.XERR_MEDIAMGR_DOWNLOAD_EXCEPT) {
                             popupMessage("Media files download failure: sdcard exception!");
@@ -825,6 +824,41 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
         if (ret != ErrCode.XOK) {
             hideLoadingView();
             popupMessage("Fail to download media file list, errCode=" + ret);
+        }
+    }
+
+
+    /**
+     * @brief 事件分布查询处理
+     */
+    void onBtnEventQuery(View view) {
+        IDeviceSessionMgr sessionMgr = AIotAppSdkFactory.getDevSessionMgr();
+        IDevMediaMgr mediaMgr = sessionMgr.getDevMediaMgr(mSessionId);
+        if (mediaMgr == null) {
+            popupMessage("Not found device media mgr with sessionId=" + mSessionId);
+            return;
+        }
+
+        showLoadingView();
+        int ret = mediaMgr.queryEventTimeline(new IDevMediaMgr.OnQueryEventListener() {
+            @Override
+            public void onDevQueryEventDone(int errCode, List<Long> videoTimeList) {
+                Log.d(TAG, "<onBtnEventQuery.onDevQueryEventDone> errCode=" + errCode
+                        + ", videoTimeList=" + videoTimeList);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        hideLoadingView();
+                        popupMessage("Query event timeline done, errCode=" + errCode
+                            + ", videoTimeListCount=" + videoTimeList.size());
+                    }
+                });
+            }
+        });
+
+        if (ret != ErrCode.XOK) {
+            hideLoadingView();
+            popupMessage("Fail to query event timeline, errCode=" + ret);
         }
     }
 

@@ -189,10 +189,10 @@ public class FileListAdapter extends BaseAdapter<FileInfo> {
         List<FileInfo> deviceList = getDatas();
         for (int i = 0; i < deviceList.size(); i++) {
             FileInfo fileInfo = deviceList.get(i);
-            if (fileInfo.mFileId == null) {
+            if (fileInfo.mMediaInfo.mFileId == null) {
                 continue;
             }
-            if (fileId.compareToIgnoreCase(fileInfo.mFileId) == 0) {
+            if (fileId.compareToIgnoreCase(fileInfo.mMediaInfo.mFileId) == 0) {
                 findResult.mPosition = i;
                 findResult.mFileInfo = fileInfo;
                 return findResult;
@@ -228,29 +228,29 @@ public class FileListAdapter extends BaseAdapter<FileInfo> {
         }
 
         // fileId
-        if (!TextUtils.isEmpty(fileInfo.mFileId)) {
-            fileInfo.mViewHolder.setText(R.id.tvFileId, fileInfo.mFileId);
+        if (!TextUtils.isEmpty(fileInfo.mMediaInfo.mFileId)) {
+            fileInfo.mViewHolder.setText(R.id.tvFileId, fileInfo.mMediaInfo.mFileId);
         } else {
             fileInfo.mViewHolder.setText(R.id.tvFileId, "");
         }
 
-        // event
-        fileInfo.mViewHolder.setText(R.id.tvEvent, String.valueOf(fileInfo.mEvent));
+        // eventType
+        fileInfo.mViewHolder.setText(R.id.tvEvent, String.valueOf(fileInfo.mMediaInfo.mType));
 
 
-        // VideoUrl
-        if (!TextUtils.isEmpty(fileInfo.mVideoUrl)) {
-            fileInfo.mViewHolder.setText(R.id.tvVideoUrl, fileInfo.mVideoUrl);
-        } else {
-            fileInfo.mViewHolder.setText(R.id.tvVideoUrl, "");
-        }
-
-        // VideoUrl
-        if (!TextUtils.isEmpty(fileInfo.mImgUrl)) {
-            fileInfo.mViewHolder.setText(R.id.tvImageUrl, fileInfo.mImgUrl);
-        } else {
-            fileInfo.mViewHolder.setText(R.id.tvImageUrl, "");
-        }
+//        // VideoUrl
+//        if (!TextUtils.isEmpty(fileInfo.mVideoUrl)) {
+//            fileInfo.mViewHolder.setText(R.id.tvVideoUrl, fileInfo.mVideoUrl);
+//        } else {
+//            fileInfo.mViewHolder.setText(R.id.tvVideoUrl, "");
+//        }
+//
+//        // VideoUrl
+//        if (!TextUtils.isEmpty(fileInfo.mImgUrl)) {
+//            fileInfo.mViewHolder.setText(R.id.tvImageUrl, fileInfo.mImgUrl);
+//        } else {
+//            fileInfo.mViewHolder.setText(R.id.tvImageUrl, "");
+//        }
 
         // 控制选择按钮是否显示
         CheckBox cbSelect = fileInfo.mViewHolder.getView(R.id.cb_file_select);
@@ -297,29 +297,28 @@ public class FileListAdapter extends BaseAdapter<FileInfo> {
 
 
         // fileId
-        if (!TextUtils.isEmpty(fileInfo.mFileId)) {
-            fileInfo.mViewHolder.setText(R.id.tvFileId, fileInfo.mFileId);
+        if (!TextUtils.isEmpty(fileInfo.mMediaInfo.mFileId)) {
+            fileInfo.mViewHolder.setText(R.id.tvFileId, fileInfo.mMediaInfo.mFileId);
         } else {
             fileInfo.mViewHolder.setText(R.id.tvFileId, "");
         }
 
-        // event
-        fileInfo.mViewHolder.setText(R.id.tvEvent, String.valueOf(fileInfo.mEvent));
+        // eventType
+        fileInfo.mViewHolder.setText(R.id.tvEvent, String.valueOf(fileInfo.mMediaInfo.mType));
 
-
-        // VideoUrl
-        if (!TextUtils.isEmpty(fileInfo.mVideoUrl)) {
-            fileInfo.mViewHolder.setText(R.id.tvVideoUrl, fileInfo.mVideoUrl);
-        } else {
-            fileInfo.mViewHolder.setText(R.id.tvVideoUrl, "");
-        }
-
-        // VideoUrl
-        if (!TextUtils.isEmpty(fileInfo.mImgUrl)) {
-            fileInfo.mViewHolder.setText(R.id.tvImageUrl, fileInfo.mImgUrl);
-        } else {
-            fileInfo.mViewHolder.setText(R.id.tvImageUrl, "");
-        }
+//        // VideoUrl
+//        if (!TextUtils.isEmpty(fileInfo.mVideoUrl)) {
+//            fileInfo.mViewHolder.setText(R.id.tvVideoUrl, fileInfo.mVideoUrl);
+//        } else {
+//            fileInfo.mViewHolder.setText(R.id.tvVideoUrl, "");
+//        }
+//
+//        // VideoUrl
+//        if (!TextUtils.isEmpty(fileInfo.mImgUrl)) {
+//            fileInfo.mViewHolder.setText(R.id.tvImageUrl, fileInfo.mImgUrl);
+//        } else {
+//            fileInfo.mViewHolder.setText(R.id.tvImageUrl, "");
+//        }
 
         // 控制选择按钮是否显示
         CheckBox cbSelect = fileInfo.mViewHolder.getView(R.id.cb_file_select);

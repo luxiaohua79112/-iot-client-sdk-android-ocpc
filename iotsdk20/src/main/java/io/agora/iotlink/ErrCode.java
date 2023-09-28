@@ -134,8 +134,9 @@ public class ErrCode {
     public static final int XERR_MEDIAMGR_DOWNLOAD_EXCEPT = -40011; ///< 下载时存储卡状态异常（格式不对，被系统推出）
     public static final int XERR_MEDIAMGR_DOWNLOAD_SDCARD = -40012; ///< 下载时存储卡不存在
     public static final int XERR_MEDIAMGR_DOWNLOAD_PARTIAL = -40013;     ///< 只下载了部分文件
-    public static final int XERR_MEDIAMGR_DOWNLOAD_UNKNOWN = -40005;     ///< 未知原因下载失败
-    public static final int XERR_MEDIAMGR_DOWNLOAD_NOT_EXIST = -40006;   ///< 下载的文件不存在
+    public static final int XERR_MEDIAMGR_DOWNLOAD_UNKNOWN = -40014;     ///< 未知原因下载失败
+    public static final int XERR_MEDIAMGR_DOWNLOAD_NOT_EXIST = -40015;   ///< 下载的文件不存在
+    public static final int XERR_MEDIAMGR_QUERYEVENT = -40016;           ///< 查询事件分布失败
 
     //
     // RTM模块相应的错误

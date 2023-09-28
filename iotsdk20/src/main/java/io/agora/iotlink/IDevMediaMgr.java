@@ -12,6 +12,7 @@ package io.agora.iotlink;
 
 import android.view.View;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,17 +34,34 @@ public interface IDevMediaMgr  {
         public String mFileId;          ///< 文件Id, 0表示则返回根目录文件夹目录
         public long mBeginTimestamp;    ///< 查询时间段的开始时间戳，单位秒
         public long mEndTimestamp;      ///< 查询时间段的结束时间戳，单位秒
-        public int mPageIndex;          ///< 查询开始的页索引，从1开始
-        public int mPageSize;           ///< 一页文件数量
 
 
         @Override
         public String toString() {
             String infoText = "{ mFileId=" + mFileId
                     + ", mBeginTimestamp=" + mBeginTimestamp
-                    + ", mEndTimestamp=" + mEndTimestamp
-                    + ", mPageIndex=" + mPageIndex
-                    + ", mPageSize=" + mPageSize + " }";
+                    + ", mEndTimestamp=" + mEndTimestamp + " }";
+            return infoText;
+        }
+    }
+
+    /**
+     * @brief 查询到的 设备事件项
+     */
+    public static class DevEventItem {
+        public int mEventType;      ///< 告警类型：0-画面变动、1-异常情况、2-有人移动、3-异常响声、4-宝宝哭声
+        public long mStartTime;     ///< 设备录像文件的开始时间（时间戳精确到秒）
+        public long mStopTime;      ///< 设备录像文件的结束时间（时间戳精确到秒）
+        public String mPicUrl;      ///< 设备录像封面图片地址
+        public String mVideoUrl;    ///< 设备录像下载地址
+
+        @Override
+        public String toString() {
+            String infoText = "{ mEventType=" + mEventType
+                    + ", mStartTime=" + mStartTime
+                    + ", mStopTime=" + mStopTime
+                    + ", mPicUrl=" + mPicUrl
+                    + ", mVideoUrl=" + mVideoUrl  + " }";
             return infoText;
         }
     }
@@ -52,13 +70,11 @@ public interface IDevMediaMgr  {
      * @brief 查询到的 设备媒体项
      */
     public static class DevMediaItem {
-        public String mFileId;            ///< 媒体文件Id，是文件唯一标识
+        public String mFileId;          ///< 设备录像文件夹id
         public long mStartTimestamp;    ///< 录制开始时间，单位秒
         public long mStopTimestamp;     ///< 录制结束时间，单位秒
         public int mType;               ///< 文件类型：0--媒体文件；1--目录
-        public int mEvent;              ///< 事件类型：0-全部事件、1-页面变动、2-有人移动
-        public String mImgUrl;          ///< 录像封面图片URL地址
-        public String mVideoUrl;        ///< 录像下载的URL地址
+        public List<DevEventItem> mEventList = new ArrayList<>();    ///< 事件列表
 
         @Override
         public String toString() {
@@ -66,9 +82,7 @@ public interface IDevMediaMgr  {
                     + ", mStartTimestamp=" + mStartTimestamp
                     + ", mStopTimestamp=" + mStopTimestamp
                     + ", mType=" + mType
-                    + ", mEvent=" + mEvent
-                    + ", mImgUrl=" + mImgUrl
-                    + ", mVideoUrl=" + mVideoUrl  + " }";
+                    + ", mEventList=" + mEventList + " }";
             return infoText;
         }
     }
@@ -157,12 +171,13 @@ public interface IDevMediaMgr  {
      * @brief 每一个文件项下载命令的结果
      */
     public static class DevFileDownloadResult {
-        public String mFileId;            ///< 媒体文件Id，是文件唯一标识
-        public int mErrCode;
+        public String mFileId;              ///< 媒体文件Id，是文件唯一标识
+        public String mFileName;            ///< 单个文件项全录节目
+
 
         @Override
         public String toString() {
-            String infoText = "{ mFileId=" + mFileId + ", mErrCode=" + mErrCode + " }";
+            String infoText = "{ mFileId=" + mFileId + ", mFileName=" + mFileName + " }";
             return infoText;
         }
     }
@@ -174,9 +189,9 @@ public interface IDevMediaMgr  {
         /**
          * @brief 媒体项下载命令完成事件
          * @param errCode : 查询结果错误码，0标识查询成功
-         * @param unDownloadList : 不能进行下载的媒体项列表
+         * @param downloadList : 各个媒体项下载结果列表
          */
-        default void onDevFileDownloadDone(int errCode, final List<DevFileDownloadResult> unDownloadList) {}
+        default void onDevFileDownloadDone(int errCode, final List<DevFileDownloadResult> downloadList) {}
     }
 
     /**
@@ -187,6 +202,27 @@ public interface IDevMediaMgr  {
      * @return 返回错误码
      */
     int downloadFileList(final List<String> downloadList, final OnDownloadListener downloadListener);
+
+
+
+    /**
+     * @brief 设备事件分布查询回调监听器
+     */
+    public static interface OnQueryEventListener {
+        /**
+         * @brief 媒体项查询完成事件
+         * @param errCode : 查询结果错误码，0表示查询成功
+         * @param videoTimeList : 视频时间戳列表
+         */
+        default void onDevQueryEventDone(int errCode, final List<Long> videoTimeList) {}
+    }
+
+    /**
+     * @brief 查询事件分布，该方法是异步调用，通过回调返回查询结果
+     * @param queryListener : 查询结果回调监听器
+     * @return 返回错误码
+     */
+    int queryEventTimeline(final OnQueryEventListener queryListener);
 
 
     ////////////////////////////////////////////////////////////////////////

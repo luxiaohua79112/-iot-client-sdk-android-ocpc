@@ -32,13 +32,15 @@ public class DevFileDelErrInfo  {
     ////////////////////////////////////////////////////////////////////////
     public String mFileId;          ///< 文件Id，是文件的唯一标识
     public int mDelErrCode;         ///< 删除失败错误码
+    public String mFileName;        ///< 删除的文件名
 
     ///////////////////////////////////////////////////////////////////////
     ////////////////////////// Public Methods  ////////////////////////////
     ///////////////////////////////////////////////////////////////////////
     @Override
     public String toString() {
-        String infoText = "{ mFileId=" + mFileId + ", mDelErrCode=" + mDelErrCode + " }";
+        String infoText = "{ mFileId=" + mFileId
+                + ", mDelErrCode=" + mDelErrCode + ", mFileName=" + mFileName + " }";
         return infoText;
     }
 

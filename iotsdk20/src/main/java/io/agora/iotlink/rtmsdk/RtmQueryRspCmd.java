@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import io.agora.iotlink.ErrCode;
+import io.agora.iotlink.IDevMediaMgr;
 import io.agora.iotlink.logger.ALog;
 import io.agora.iotlink.utils.JsonUtils;
 
@@ -31,7 +32,7 @@ public class RtmQueryRspCmd extends RtmBaseCmd  {
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Variable Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
-    public ArrayList<DevFileInfo> mFileList = new ArrayList<>();
+    public ArrayList<IDevMediaMgr.DevMediaItem> mMediaList = new ArrayList<>();
 
 
 
@@ -43,7 +44,7 @@ public class RtmQueryRspCmd extends RtmBaseCmd  {
         String infoText = "{ mSequenceId=" + mSequenceId
                 + ", mDeviceId=" + mDeviceId
                 + ", mCmdId=" + mCmdId
-                + ", mFileList=" + mFileList
+                + ", mMediaList=" + mMediaList
                 + ", mIsRespCmd=" + mIsRespCmd
                 + ", mErrCode=" + mErrCode + " }";
         return infoText;

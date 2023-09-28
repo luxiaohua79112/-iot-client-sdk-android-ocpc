@@ -32,8 +32,6 @@ public class DevFileQueryParam  {
     public String mFileId;     ///< 媒体文件查询 文件Id，null标识 不传则返回根目录文件夹目录
     public long mBeginTime;    ///< 媒体文件查询 开始时间
     public long mEndTime;      ///< 媒体文件查询 结束时间
-    public int mPageIndex;     ///< 媒体文件查询 页面索引，从1开始
-    public int mPageSize;      ///< 媒体文件查询 页面最多记录数
 
 
     ///////////////////////////////////////////////////////////////////////
@@ -43,9 +41,7 @@ public class DevFileQueryParam  {
     public String toString() {
         String infoText = "{ mFileId=" + mFileId
                 + ", mBeginTime=" + mBeginTime
-                + ", mEndTime=" + mEndTime
-                + ", mPageIndex=" + mPageIndex
-                + ", mPageSize=" + mPageSize + " }";
+                + ", mEndTime=" + mEndTime + " }";
         return infoText;
     }
 

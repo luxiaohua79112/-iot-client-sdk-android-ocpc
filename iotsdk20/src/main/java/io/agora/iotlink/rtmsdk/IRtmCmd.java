@@ -58,6 +58,7 @@ public interface IRtmCmd  {
     public static final int CMDID_MEDIA_PAUSE = 2009;      ///< 暂停当前回看
     public static final int CMDID_MEDIA_RESUME = 2010;     ///< 恢复当前回看
     public static final int CMDID_FILE_DOWNLOAD = 2011;    ///< 文件下载
+    public static final int CMDID_EVENTTIMELINE_QUERY = 2012;    ///< 查询事件分布
     public static final int CMDID_CUSTOMIZE_SEND = 3001;   ///< 定制化命令
     public static final int CMDID_DEVICE_RESET = 3002;     ///< 设备重启命令
 

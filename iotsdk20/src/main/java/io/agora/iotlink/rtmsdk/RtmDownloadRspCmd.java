@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import io.agora.iotlink.ErrCode;
+import io.agora.iotlink.IDevMediaMgr;
 import io.agora.iotlink.logger.ALog;
 import io.agora.iotlink.utils.JsonUtils;
 
@@ -31,7 +32,7 @@ public class RtmDownloadRspCmd extends RtmBaseCmd  {
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Variable Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
-    public ArrayList<DevFileDelErrInfo> mErrorList = new ArrayList<>();
+    public ArrayList<IDevMediaMgr.DevFileDownloadResult> mDownloadList = new ArrayList<>();
 
 
 
@@ -44,7 +45,7 @@ public class RtmDownloadRspCmd extends RtmBaseCmd  {
         String infoText = "{ mSequenceId=" + mSequenceId
                 + ", mDeviceId=" + mDeviceId
                 + ", mCmdId=" + mCmdId
-                + ", mErrorList=" + mErrorList
+                + ", mDownloadList=" + mDownloadList
                 + ", mIsRespCmd=" + mIsRespCmd
                 + ", mErrCode=" + mErrCode + " }";
         return infoText;

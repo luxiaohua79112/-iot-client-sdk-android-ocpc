@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import io.agora.iotlink.ErrCode;
+import io.agora.iotlink.IDevMediaMgr;
 import io.agora.iotlink.IDeviceSessionMgr;
 import io.agora.iotlink.base.AtomicBoolean;
 import io.agora.iotlink.base.AtomicInteger;
@@ -218,9 +219,11 @@ public class RtmMgrComp extends BaseThreadComp {
     @Override
     protected void removeAllMessages() {
         synchronized (mMsgQueueLock) {
-            mWorkHandler.removeMessages(MSGID_RTM_SEND_PKT);
-            mWorkHandler.removeMessages(MSGID_RTM_RECV_PKT);
-            mWorkHandler.removeMessages(MSGID_RTM_TIMER);
+            if (mWorkHandler != null) {
+                mWorkHandler.removeMessages(MSGID_RTM_SEND_PKT);
+                mWorkHandler.removeMessages(MSGID_RTM_RECV_PKT);
+                mWorkHandler.removeMessages(MSGID_RTM_TIMER);
+            }
         }
         ALog.getInstance().d(TAG, "<removeAllMessages> done");
     }
@@ -370,6 +373,27 @@ public class RtmMgrComp extends BaseThreadComp {
 
         IRtmCmd responseCmd = null;
         switch (commandId) {
+            case IRtmCmd.CMDID_EVENTTIMELINE_QUERY: {   // 事件分布查询响应命令
+                RtmEventTimelineRspCmd queryRspCmd = new RtmEventTimelineRspCmd();
+                queryRspCmd.mSequenceId = sequenceId;
+                queryRspCmd.mCmdId = commandId;
+                queryRspCmd.mIsRespCmd = true;
+                queryRspCmd.mErrCode = (codeValue == 0) ? ErrCode.XOK : ErrCode.XERR_MEDIAMGR_QUERYEVENT;
+                queryRspCmd.mDeviceId = deviceId;
+
+                JSONObject respDataObj = JsonUtils.parseJsonObject(recvJsonObj, "data", null);
+                if (respDataObj != null) {
+                    JSONArray timeArrayObj = JsonUtils.parseJsonArray(respDataObj, "arr");
+                    if (timeArrayObj != null) {
+                        for (int i = 0; i < timeArrayObj.length(); i++) {
+                            Long videoTime = JsonUtils.getLongFromArray(timeArrayObj, i, 0);
+                            queryRspCmd.mVideoTimeList.add(videoTime);
+                        }
+                    }
+                }
+                responseCmd = queryRspCmd;
+            } break;
+
             case IRtmCmd.CMDID_MEDIA_QUERY: {       // 查询响应命令
                 RtmQueryRspCmd queryRspCmd = new RtmQueryRspCmd();
                 queryRspCmd.mSequenceId = sequenceId;
@@ -388,15 +412,30 @@ public class RtmMgrComp extends BaseThreadComp {
                                 continue;
                             }
 
-                            DevFileInfo fileInfo = new DevFileInfo();
-                            fileInfo.mFileType = JsonUtils.parseJsonIntValue(fileInfoObj, "type", 0);
-                            fileInfo.mFileId = JsonUtils.parseJsonStringValue(fileInfoObj, "id", null);
-                            fileInfo.mEvent = JsonUtils.parseJsonIntValue(fileInfoObj, "event", 0);
-                            fileInfo.mStartTime = JsonUtils.parseJsonLongValue(fileInfoObj, "start", -1);
-                            fileInfo.mStopTime = JsonUtils.parseJsonLongValue(fileInfoObj, "stop", -1);
-                            fileInfo.mImgUrl = JsonUtils.parseJsonStringValue(fileInfoObj, "pic", null);
-                            fileInfo.mVideoUrl = JsonUtils.parseJsonStringValue(fileInfoObj, "url", null);
-                            queryRspCmd.mFileList.add(fileInfo);
+                            IDevMediaMgr.DevMediaItem mediaItem = new IDevMediaMgr.DevMediaItem();
+                            mediaItem.mType = JsonUtils.parseJsonIntValue(fileInfoObj, "type", 0);
+                            mediaItem.mFileId = JsonUtils.parseJsonStringValue(fileInfoObj, "id", null);
+                            mediaItem.mStartTimestamp = JsonUtils.parseJsonLongValue(fileInfoObj, "start", -1);
+                            mediaItem.mStopTimestamp = JsonUtils.parseJsonLongValue(fileInfoObj, "stop", -1);
+
+                            JSONArray eventJsonArray = JsonUtils.parseJsonArray(fileInfoObj, "event");
+                            if (eventJsonArray != null) {
+                                for (int j = 0; j < eventJsonArray.length(); j++) {
+                                    JSONObject eventJsonObj = JsonUtils.getJsonObjFromArray(eventJsonArray, i);
+                                    if (eventJsonObj == null) {
+                                        continue;
+                                    }
+                                    IDevMediaMgr.DevEventItem eventItem = new IDevMediaMgr.DevEventItem();
+                                    eventItem.mEventType = JsonUtils.parseJsonIntValue(eventJsonObj, "eventType", 0);
+                                    eventItem.mStartTime = JsonUtils.parseJsonLongValue(eventJsonObj, "start", -1);
+                                    eventItem.mStopTime = JsonUtils.parseJsonLongValue(eventJsonObj, "stop", -1);
+                                    eventItem.mPicUrl = JsonUtils.parseJsonStringValue(eventJsonObj, "pic", null);
+                                    eventItem.mVideoUrl = JsonUtils.parseJsonStringValue(eventJsonObj, "url", null);
+                                    mediaItem.mEventList.add(eventItem);
+                                }
+                            }
+
+                            queryRspCmd.mMediaList.add(mediaItem);
                         }
                     }
                 }
@@ -489,26 +528,13 @@ public class RtmMgrComp extends BaseThreadComp {
 
                 JSONObject respDataObj = JsonUtils.parseJsonObject(recvJsonObj, "data", null);
                 if (respDataObj != null) {
-                    JSONArray undelArrayObj = JsonUtils.parseJsonArray(respDataObj, "downloadFailList");
-                    if (undelArrayObj != null) {
-                        for (int i = 0; i < undelArrayObj.length(); i++) {
-                            JSONObject undelItemObj =  JsonUtils.getJsonObjFromArray(undelArrayObj, i);
-                            if (undelItemObj == null) {
-                                continue;
-                            }
-
-                            DevFileDelErrInfo errInfo = new DevFileDelErrInfo();
-                            int errorValue = JsonUtils.parseJsonIntValue(undelItemObj, "error", 0);
-                            if (errorValue == 0) {
-                                errInfo.mDelErrCode = ErrCode.XOK;
-                            } else if (errorValue == 1) {
-                                errInfo.mDelErrCode = ErrCode.XERR_MEDIAMGR_DOWNLOAD_NOT_EXIST;
-                            } else {
-                                errInfo.mDelErrCode = ErrCode.XERR_MEDIAMGR_DOWNLOAD_UNKNOWN;
-                            }
-                            errInfo.mFileId = JsonUtils.parseJsonStringValue(undelItemObj, "id", null);
-                            dnloadRspCmd.mErrorList.add(errInfo);
-                        }
+                    // TODO: 当前协议中仅支持返回一个下载项的结果
+                    JSONObject resultObj = JsonUtils.parseJsonObject(respDataObj, "result", null);
+                    if (resultObj != null) {
+                        IDevMediaMgr.DevFileDownloadResult downloadResult = new IDevMediaMgr.DevFileDownloadResult();
+                        downloadResult.mFileId = JsonUtils.parseJsonStringValue(resultObj, "id", null);
+                        downloadResult.mFileName = JsonUtils.parseJsonStringValue(resultObj, "fileName", null);
+                        dnloadRspCmd.mDownloadList.add(downloadResult);
                     }
                 }
                 responseCmd = dnloadRspCmd;
