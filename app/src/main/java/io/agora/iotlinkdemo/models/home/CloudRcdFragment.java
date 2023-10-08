@@ -23,6 +23,7 @@ import com.agora.baselibrary.utils.StringUtils;
 
 import java.io.File;
 
+import io.agora.avmodule.AvMediaConverter;
 import io.agora.avmodule.AvMediaInfo;
 import io.agora.iotlink.AIotAppSdkFactory;
 import io.agora.iotlink.AlarmVideoDownloader;
@@ -40,7 +41,8 @@ import io.agora.iotlinkdemo.utils.FileUtils;
 
 public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudrcdBinding>
         implements PermissionHandler.ICallback, IDeviceSessionMgr.ISessionCallback,
-                    IVodPlayer.ICallback, AlarmVideoDownloader.ICallback    {
+                    IVodPlayer.ICallback, AlarmVideoDownloader.ICallback,
+        AvMediaConverter.IAvMediaCvtCallback    {
 
     private static final String TAG = "IOTLINK/CloudRcdFrag";
     private static final long TIMER_INTERVAL = 500;       ///< 定时器500ms
@@ -67,6 +69,9 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
 
     private AlarmVideoDownloader mDownloader;
     private AvMediaInfo mDnloadMediaInfo;
+
+    private AvMediaConverter mMediaCvter;
+    private AvMediaInfo mSrcMediaInfo;
 
 
     ///////////////////////////////////////////////////////////////////////////
@@ -211,11 +216,13 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
         });
 
         getBinding().btnDownloadOpenclose.setOnClickListener(view -> {
-            onBtnDnloadOpenClose(view);
+            //onBtnDnloadOpenClose(view);
+            onBtnCvterOpenClose(view);
         });
 
         getBinding().btnDownloadStartstop.setOnClickListener(view -> {
-            onBtnDnloadStartStop(view);
+            //onBtnDnloadStartStop(view);
+            onBtnCvterStartStop(view);
         });
 
         getBinding().sbDownloading.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -494,7 +501,7 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
     void onBtnDnloadOpenClose(View view) {
         //String mediaFilePath = "/sdcard/test.mp4";
         //String mediaFilePath = "http://cloud-store-test.s3.cn-east-1.jdcloud-oss.com/ts-muxer.m3u8";
-        String cloudFilePath = "https://stream-media.s3.cn-north-1.jdcloud-oss.com/iot-three/726181688096107589_1694508560758_711350438.m3u8";
+        String cloudFilePath = "https://stream-media.s3.cn-north-1.jdcloud-oss.com/0000000/output.m3u8";
 
         File file = getActivity().getExternalFilesDir(null);
         String cachePath = file.getAbsolutePath();
@@ -645,4 +652,99 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
     }
 
 
+    ///////////////////////////////////////////////////////////////////////////
+    //////////////////////////////// 云录视频转换处理  ////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    void onBtnCvterOpenClose(View view) {
+        int ret;
+
+        if (mMediaCvter == null) {
+            String srcFileUrl = "https://stream-media.s3.cn-north-1.jdcloud-oss.com/0000000/output.m3u8";
+            //String srcFileUrl = "/sdcard/test.mp4";
+
+            File file = getActivity().getExternalFilesDir(null);
+            String cachePath = file.getAbsolutePath();
+            String dstFilePath = cachePath + "/converted.mp4";
+            FileUtils.deleteFile(dstFilePath);
+
+            AvMediaConverter.MediaCvtParam cvtParam = new AvMediaConverter.MediaCvtParam();
+            cvtParam.mCallback = this;
+            cvtParam.mContext = this.getContext();
+            cvtParam.mSrcFileUrl = srcFileUrl;
+            cvtParam.mDstFilePath = dstFilePath;
+
+            mMediaCvter = new AvMediaConverter();
+            ret = mMediaCvter.initialize(cvtParam);
+            if (ret != ErrCode.XOK) {
+                popupMessage("Fail to open converter, errCode=" + ret);
+                mMediaCvter = null;
+                return;
+            }
+            popupMessage("Opening media converter ......");
+
+        } else {
+            mMediaCvter.release();
+            mMediaCvter = null;
+            popupMessage("Media converter closed!");
+
+            getBinding().btnDownloadOpenclose.setText("打开下载");
+            getBinding().btnDownloadStartstop.setEnabled(false);
+            getBinding().btnDownloadStartstop.setText("开始下载");
+        }
+    }
+
+    void onBtnCvterStartStop(View view) {
+        if (mMediaCvter == null) {
+            return;
+        }
+
+        int state = mMediaCvter.getState();
+        if (state == AvMediaConverter.CONVERT_STATE_PAUSED) {
+            mMediaCvter.start();
+            getBinding().btnDownloadStartstop.setText("暂停下载");
+
+        } else if (state == AvMediaConverter.CONVERT_STATE_ONGOING) {
+            mMediaCvter.stop();
+            getBinding().btnDownloadStartstop.setText("开始下载");
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////
+    /////////// Override Methods of AvMediaConverter.IAvMediaCvtCallback /////////////
+    /////////////////////////////////////////////////////////////////////////////////
+    @Override
+    public void onMediaCvtOpenDone(AvMediaConverter.MediaCvtParam cvtParam, int errCode) {
+        Log.d(TAG, "<onMediaCvtOpenDone> errCode=" + errCode);
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                hideLoadingView();
+                if (errCode == ErrCode.XOK) {
+                    popupMessage("Open source stream successful!");
+                    getBinding().btnDownloadOpenclose.setText("关闭下载");
+                    getBinding().btnDownloadStartstop.setEnabled(true);
+                    getBinding().btnDownloadStartstop.setText("开始下载");
+
+                } else {
+                    popupMessage("Open source stream failure, errCode=" + errCode);
+                }
+            }
+        });
+    }
+
+    @Override
+    public void onMediaConvertingDone(AvMediaConverter.MediaCvtParam cvtParam, long totalDuration) {
+        Log.d(TAG, "<onMediaConvertingDone> totalDuration=" + totalDuration);
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                popupMessage("Media converting finished!");
+            }
+        });
+    }
+
+    @Override
+    public void onMediaConvertingError(AvMediaConverter.MediaCvtParam cvtParam, int errCode) {
+        Log.d(TAG, "<onMediaConvertingError> errCode=" + errCode);
+    }
 }

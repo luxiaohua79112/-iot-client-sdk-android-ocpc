@@ -25,7 +25,9 @@ add_library( # Sets the name of the library.
         AvCodecUtility.cpp
         AvParseProgress.cpp
         AvParserEng.cpp
+        AvConvertEng.cpp
         AvSoftDecoder_jni.cpp
+        AvNativeCvter_jni.cpp
         )
 
 

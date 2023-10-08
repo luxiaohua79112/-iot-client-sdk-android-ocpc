@@ -32,7 +32,8 @@ public class AvCompBase {
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Variable Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
-    protected final Object mWorkExitEvent = new Object();
+    protected final Object mMsgQueueLock = new Object();
+    protected final AvBaseEvent mWorkExitEvent = new AvBaseEvent();
     protected HandlerThread mWorkThread;
     protected Handler mWorkHandler;
     protected String mComponentName;
@@ -61,9 +62,8 @@ public class AvCompBase {
                 {
                     case MSGID_WORK_EXIT: {  // 工作线程退出消息
                         removeAllMessages();
-                        synchronized (mWorkExitEvent) {
-                            mWorkExitEvent.notify();    // 事件通知
-                        }
+                        processTaskFinsh();
+                        mWorkExitEvent.setEvent(0);
                     } break;
 
                     default: {
@@ -84,17 +84,8 @@ public class AvCompBase {
         if (mWorkHandler != null) {
             // 同步等待线程中所有任务处理完成后，才能正常退出线程
             removeAllMessages();
-
             mWorkHandler.sendEmptyMessage(MSGID_WORK_EXIT);
-            synchronized (mWorkExitEvent) {
-                try {
-                    mWorkExitEvent.wait(EXIT_WAIT_TIMEOUT);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                    Log.e(TAG, "<release> exception=" + e.getMessage());
-                }
-            }
-
+            mWorkExitEvent.waitEvent(EXIT_WAIT_TIMEOUT);
             mWorkHandler = null;
         }
 
@@ -103,23 +94,79 @@ public class AvCompBase {
             mWorkThread = null;
             Log.d(TAG, "<runStop> done");
         }
+    }
 
+    /**
+     * @brief 发送消息，如果队列中有相同的消息则删除
+     */
+    public void sendSingleMessage(Message msg) {
+        synchronized (mMsgQueueLock) {
+            mWorkHandler.removeMessages(msg.what);
+            mWorkHandler.sendMessage(msg);
+        }
+    }
+
+    public void sendSingleMessage(int what, int arg1, int arg2, Object obj, long delayTime) {
+        Message msg = new Message();
+        msg.what = what;
+        msg.arg1 = arg1;
+        msg.arg2 = arg2;
+        msg.obj = obj;
+
+        synchronized (mMsgQueueLock) {
+            if (delayTime > 0) {
+                mWorkHandler.removeMessages(what);
+                mWorkHandler.sendMessageDelayed(msg, delayTime);
+            } else {
+                mWorkHandler.removeMessages(what);
+                mWorkHandler.sendMessage(msg);
+            }
+        }
+    }
+
+    public void sendMessage(int what, int arg1, int arg2, Object obj, long delayTime) {
+        Message msg = new Message();
+        msg.what = what;
+        msg.arg1 = arg1;
+        msg.arg2 = arg2;
+        msg.obj = obj;
+
+        synchronized (mMsgQueueLock) {
+            if (delayTime > 0) {
+                mWorkHandler.sendMessageDelayed(msg, delayTime);
+            } else {
+                mWorkHandler.sendMessage(msg);
+            }
+        }
+    }
+
+    /**
+     * @brief 从消息队列中移除相应的消息
+     */
+    public void removeMessage(int what) {
+        synchronized (mMsgQueueLock) {
+            mWorkHandler.removeMessages(what);
+        }
     }
 
 
-    /*
+
+    /**
      * @brief 退出前清空消息队列，子类应该重写该方法
      */
     protected void removeAllMessages() {
-
     }
 
-    /*
-     * @brief 消息处理，子类可以重写该方法实现自己的消息处理
+    /**
+     * @brief 消息处理，运行在组件线程上，子类可以重写该方法实现自己的消息处理
      */
     protected void processWorkMessage(Message msg)   {
-
     }
 
+    /**
+     * @brief 退出前的释放处理，运行在组件线程上，子类可以重写该方法实现自己的结束处理
+     */
+    protected void processTaskFinsh()   {
+    }
 
 }
