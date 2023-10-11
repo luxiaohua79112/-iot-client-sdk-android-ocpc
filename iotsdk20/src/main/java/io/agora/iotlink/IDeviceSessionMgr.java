@@ -72,6 +72,12 @@ public interface IDeviceSessionMgr  {
         default void onSessionOtherUserOffline(final UUID sessionId, int onlineUserCount) {}
 
         /**
+         * @brief 会话的Token过期，此时应用层需要重新请求token信息，然后调用 renewToken()方法
+         * @param sessionId : 会话唯一标识
+         */
+        default void onSessionTokenWillExpire(final UUID sessionId) {}
+
+        /**
          * @brief 会话错误回调事件，产生该错误后只能断开连接，重新连接设备
          * @param sessionId : 会话唯一标识
          * @param errCode : 错误代码
@@ -85,20 +91,20 @@ public interface IDeviceSessionMgr  {
      * @brief 设备连接参数
      */
     public static class ConnectParam {
-        public String mUserId;              ///< 本地用户的 UserId
         public String mPeerDevId;           ///< 要连接设备的 DeviceId
         public int mLocalRtcUid;            ///< 本地 RTC uid
         public String mChannelName;         ///< 要会话的RTC频道名
         public String mRtcToken;            ///< 要会话的RTC Token
+        public String mRtmUid;              ///< 要会话的 RTM uid
         public String mRtmToken;            ///< 要会话的 RTM Token
 
         @Override
         public String toString() {
-            String infoText = "{ mUserId=" + mUserId
-                    + ", mPeerDevId=" + mPeerDevId
+            String infoText = "{ mPeerDevId=" + mPeerDevId
                     + ", mLocalRtcUid=" + mLocalRtcUid
                     + ", mChannelName=" + mChannelName
                     + ",\n mRtcToken=" + mRtcToken
+                    + ",\n mRtmUid=" + mRtmUid
                     + ",\n mRtmToken=" + mRtmToken + " }";
             return infoText;
         }
@@ -110,6 +116,22 @@ public interface IDeviceSessionMgr  {
     public static class ConnectResult {
         public UUID mSessionId;         ///< 连接时，分配的唯一的 sessionId
         public int mErrCode;            ///< 处理结果错误码
+    }
+
+
+    /**
+     * @brief 设备Token的Renew参数
+     */
+    public static class TokenRenewParam {
+        public String mRtcToken;            ///< 要会话的RTC Token
+        public String mRtmToken;            ///< 要会话的 RTM Token
+
+        @Override
+        public String toString() {
+            String infoText = "{ mRtcToken=" + mRtcToken
+                    + ",\n mRtmToken=" + mRtmToken + " }";
+            return infoText;
+        }
     }
 
     /**
@@ -133,11 +155,12 @@ public interface IDeviceSessionMgr  {
      */
     public static class SessionInfo {
         public UUID mSessionId;         ///< 会话的唯一标识
-        public String mUserId;          ///< 当前用户的 UserId
         public String mPeerDevId;       ///< 对端设备的 DeviceId
         public int mLocalRtcUid;        ///< 本地 RTC uid
         public String mChannelName;     ///< 要会话的RTC频道名
         public String mRtcToken;        ///< 要会话的RTC Token
+
+        public String mRtmUid;          ///< 本地 RTM uid
         public String mRtmToken;        ///< 要会话的 RTM Token
         public int mState;              ///< 会话的状态机
 
@@ -148,7 +171,6 @@ public interface IDeviceSessionMgr  {
         @Override
         public String toString() {
             String infoText = "{ mSessionId=" + mSessionId
-                    + ", mUserId=" + mUserId
                     + ", mPeerDevId=" + mPeerDevId
                     + ", mLocalRtcUid=" + mLocalRtcUid
                     + ", mChannelName=" + mChannelName
@@ -156,6 +178,7 @@ public interface IDeviceSessionMgr  {
                     + ", mAttachMsg=" + mAttachMsg
                     + ", mType=" + mType
                     + ", mUserCount=" + mUserCount
+                    + ", mRtmUid=" + mRtmUid
                     + ",\n mRtcToken=" + mRtcToken
                     + ",\n mRtmToken=" + mRtmToken + " }";
 
@@ -221,6 +244,14 @@ public interface IDeviceSessionMgr  {
      * @return 返回会话信息，如果没有查询到会话，则返回null
      */
     SessionInfo getSessionInfo(final UUID sessionId);
+
+    /**
+     * @brief 对会话进行 renewToken操作
+     * @param sessionId : 设备连接会话Id
+     * @param renewParam : token参数
+     * @return 返回错误码
+     */
+    int renewToken(final UUID sessionId, final TokenRenewParam renewParam);
 
     /**
      * @brief 获取设备预览的组件接口

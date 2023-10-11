@@ -317,6 +317,7 @@ public class HttpTransport {
         public String mChnlName;
         public int mRtcUid;
         public String mRtcToken;
+        public String mRtmUid;
         public String mRtmToken;
         public String mUserId;
     }
@@ -373,7 +374,10 @@ public class HttpTransport {
             result.mChnlName = parseJsonStringValue(dataObj, "cname", null);
             result.mRtcUid = parseJsonIntValue(dataObj, "uid", -1);
             result.mRtcToken = parseJsonStringValue(dataObj, "rtcToken", null);
+
+            result.mRtmUid = parseJsonStringValue(dataObj, "rtmUid", null);
             result.mRtmToken = parseJsonStringValue(dataObj, "rtmToken", null);
+
             result.mUserId = parseJsonStringValue(dataObj, "userId", null);
             result.mErrCode = ErrCode.XOK;
 

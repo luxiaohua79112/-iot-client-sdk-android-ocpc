@@ -65,13 +65,12 @@ public class DeviceSessionMgr extends BaseThreadComp
     private static final int MSGID_SDK_TIMER = 0x1006;           ///< 定时器
     private static final int MSGID_SDK_CONNECT_DEV = 0x1007;     ///< 连接到设备端
     private static final int MSGID_SDK_DISCONNECT_DEV = 0x1008;  ///< 从设备断开连接
-
+    private static final int MSGID_SDK_RENEW_TOKEN = 0x1009;     ///< renew token处理
 
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Variable Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
     private InitParam mInitParam;
-
 
 
     public static final Object mDataLock = new Object();    ///< 同步访问锁,类中所有变量需要进行加锁处理
@@ -86,9 +85,6 @@ public class DeviceSessionMgr extends BaseThreadComp
     private RtmMgrComp mRtmComp;                                ///< RTM组件
 
 
-
-    private RtmClient mRtmEngine;
-    private static final Object mRtmEngLock = new Object();    ///< RTM引擎同步访问锁
 
     ///////////////////////////////////////////////////////////////////////
     //////////////// Override Methods of IDeviceSessionMgr //////////////////
@@ -161,11 +157,11 @@ public class DeviceSessionMgr extends BaseThreadComp
 
             SessionInfo sessionInfo = new SessionInfo();
             sessionInfo.mSessionId = sessionCtx.mSessionId;
-            sessionInfo.mUserId = sessionCtx.mUserId;
             sessionInfo.mPeerDevId = sessionCtx.mDeviceId;
             sessionInfo.mLocalRtcUid = sessionCtx.mLocalRtcUid;
             sessionInfo.mChannelName = sessionCtx.mChnlName;
             sessionInfo.mRtcToken = sessionCtx.mRtcToken;
+            sessionInfo.mRtmUid = sessionCtx.mRtmUid;
             sessionInfo.mRtmToken = sessionCtx.mRtmToken;
             sessionInfo.mAttachMsg = sessionCtx.mAttachMsg;
             sessionInfo.mType = sessionCtx.mType;
@@ -194,12 +190,12 @@ public class DeviceSessionMgr extends BaseThreadComp
         ALog.getInstance().d(TAG, "<connect> ==> BEGIN, connectParam=" + connectParam);
         SessionCtx newSession = new SessionCtx();
         newSession.mSessionId = UUID.randomUUID();
-        newSession.mUserId = connectParam.mUserId;
         newSession.mDeviceId = connectParam.mPeerDevId;
         newSession.mLocalRtcUid = connectParam.mLocalRtcUid;
         newSession.mDeviceRtcUid = DEFAULT_DEV_UID;
         newSession.mChnlName = connectParam.mChannelName;
         newSession.mRtcToken = connectParam.mRtcToken;
+        newSession.mRtmUid = connectParam.mRtmUid;
         newSession.mRtmToken = connectParam.mRtmToken;
         newSession.mType = SESSION_TYPE_DIAL;  // 会话类型
         newSession.mUserCount = 1;      // 至少有一个用户
@@ -252,6 +248,26 @@ public class DeviceSessionMgr extends BaseThreadComp
     }
 
     @Override
+    public int renewToken(final UUID sessionId, final TokenRenewParam renewParam) {
+        SessionCtx sessionCtx = mSessionMgr.getSession(sessionId);
+        if (sessionCtx == null) {
+            ALog.getInstance().e(TAG, "<renewToken> not found session, sessionId=" + sessionId);
+            return ErrCode.XERR_INVALID_PARAM;
+        }
+        if (sessionCtx.mState != SESSION_STATE_CONNECTED) {
+            ALog.getInstance().e(TAG, "<renewToken> bad state, mState=" + sessionCtx.mState);
+            return ErrCode.XERR_BAD_STATE;
+        }
+
+        // 发送 Renew Token 处理消息
+        Object[] params = { sessionId, renewParam};
+        sendSingleMessage(MSGID_SDK_RENEW_TOKEN, 0, 0, params, 0);
+
+        ALog.getInstance().d(TAG, "<renewToken> done");
+        return ErrCode.XOK;
+    }
+
+    @Override
     public SessionInfo getSessionInfo(final UUID sessionId) {
         SessionCtx sessionCtx = mSessionMgr.getSession(sessionId);
         if (sessionCtx == null) {
@@ -261,11 +277,11 @@ public class DeviceSessionMgr extends BaseThreadComp
 
         SessionInfo sessionInfo = new SessionInfo();
         sessionInfo.mSessionId = sessionCtx.mSessionId;
-        sessionInfo.mUserId = sessionCtx.mUserId;
         sessionInfo.mPeerDevId = sessionCtx.mDeviceId;
         sessionInfo.mLocalRtcUid = sessionCtx.mLocalRtcUid;
         sessionInfo.mChannelName = sessionCtx.mChnlName;
         sessionInfo.mRtcToken = sessionCtx.mRtcToken;
+        sessionInfo.mRtmUid = sessionCtx.mRtmUid;
         sessionInfo.mRtmToken = sessionCtx.mRtmToken;
         sessionInfo.mAttachMsg = sessionCtx.mAttachMsg;
         sessionInfo.mType = sessionCtx.mType;
@@ -345,6 +361,10 @@ public class DeviceSessionMgr extends BaseThreadComp
                 onMessageDisconnectDev(msg);
                 break;
 
+            case MSGID_SDK_RENEW_TOKEN:
+                onMessageRenewToken(msg);
+                break;
+
             case MSGID_SDK_TIMER:
                 DoTimer(msg);
                 break;
@@ -362,6 +382,7 @@ public class DeviceSessionMgr extends BaseThreadComp
                 mWorkHandler.removeMessages(MSGID_SDK_TIMER);
                 mWorkHandler.removeMessages(MSGID_SDK_CONNECT_DEV);
                 mWorkHandler.removeMessages(MSGID_SDK_DISCONNECT_DEV);
+                mWorkHandler.removeMessages(MSGID_SDK_RENEW_TOKEN);
             }
         }
     }
@@ -625,6 +646,34 @@ public class DeviceSessionMgr extends BaseThreadComp
         }
     }
 
+    /**
+     * @brief 工作线程中运行，Renew Token处理
+     */
+    void onMessageRenewToken(Message msg) {
+        Object[] params = (Object[])msg.obj;
+        UUID sessionId = (UUID)(params[0]);
+        TokenRenewParam renewParam = (TokenRenewParam) (params[1]);
+
+        // 更新 sessionCtx中已有的 rtcToken 和 rtmToken 两个值
+        SessionCtx sessionCtx = mSessionMgr.getSession(sessionId);
+        if (sessionCtx == null) {
+            ALog.getInstance().w(TAG, "<onMessageRenewToken> session removed, sessionId=" + sessionId);
+            return;
+        }
+        sessionCtx.mRtcToken = renewParam.mRtcToken;
+        sessionCtx.mRtmToken = renewParam.mRtmToken;
+        mSessionMgr.updateSession(sessionCtx);
+
+        // 更新 RTC 的 token
+        talkingRenewToken(sessionCtx, renewParam.mRtcToken);
+
+        // 更新 RTM的token
+        mRtmComp.renewToken(renewParam.mRtmToken);
+
+        ALog.getInstance().d(TAG, "<onMessageRenewToken> done, sessionCtx=" + sessionCtx);
+    }
+
+
     /////////////////////////////////////////////////////////////////////////////
     //////////////////// TalkingEngine.ICallback 回调处理 ////////////////////////
     /////////////////////////////////////////////////////////////////////////////
@@ -789,9 +838,37 @@ public class DeviceSessionMgr extends BaseThreadComp
         //sendSingleMessage(MSGID_RECORDING_ERROR, errCode, 0, sessionId, 0);
     }
 
+    @Override
+    public void onRtcTokenWillExpire(final UUID sessionId, final String token) {
+        // 再处理设备通话的会话
+        SessionCtx sessionCtx = mSessionMgr.getSession(sessionId);
+        if (sessionCtx == null) {
+            ALog.getInstance().d(TAG, "<onRtcTokenWillExperie> session removed, sessionId=" + sessionId);
+            return;
+        }
+        ALog.getInstance().d(TAG, "<onRtcTokenWillExperie> sessionCtx=" + sessionCtx
+                + ", token=" + token );
+
+        // 直接回调 Token过期
+        CallbackTokenWillExpire(sessionCtx);
+    }
+
+
     ///////////////////////////////////////////////////////////////////////
-    ///////////////////////////// RTM处理 /////////////////////////////
+    ///////////////////////////// RTM处理 /////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
+    public void onRtmTokenWillExpire(final UUID sessionId) {
+        // 再处理设备通话的会话
+        SessionCtx sessionCtx = mSessionMgr.getSession(sessionId);
+        if (sessionCtx == null) {
+            ALog.getInstance().d(TAG, "<onRtmTokenWillExpire> session removed, sessionId=" + sessionId);
+            return;
+        }
+        ALog.getInstance().d(TAG, "<onRtmTokenWillExpire> sessionCtx=" + sessionCtx);
+
+        // 直接回调 Token过期
+        CallbackTokenWillExpire(sessionCtx);
+    }
 
 
     ///////////////////////////////////////////////////////////////////////
@@ -869,6 +946,15 @@ public class DeviceSessionMgr extends BaseThreadComp
 
 
     /**
+     * @brief token更新
+     */
+    void talkingRenewToken(final SessionCtx sessionCtx, final String rtcNewToken) {
+        synchronized (mTalkEngLock) {
+            mTalkEngine.renewToken(sessionCtx, rtcNewToken);
+        }
+    }
+
+    /**
      * @brief 设备播放器的频道加入结果
      */
     public static class DevPlayerChnlRslt {
@@ -890,7 +976,6 @@ public class DeviceSessionMgr extends BaseThreadComp
 
         SessionCtx playerSession = new SessionCtx();
         playerSession.mSessionId = UUID.randomUUID();
-        playerSession.mUserId = mInitParam.mUserId;
         playerSession.mDeviceId = chnlInfo.getDeviceId();
         playerSession.mLocalRtcUid = chnlInfo.getRtcUid();
         playerSession.mDeviceRtcUid = chnlInfo.getDevRtcUid();
@@ -1328,11 +1413,11 @@ public class DeviceSessionMgr extends BaseThreadComp
     void CallbackSessionConnectDone(final SessionCtx sessionCtx, int errCode) {
         if (sessionCtx.mSeesionCallback != null) {
             ConnectParam connectParam = new ConnectParam();
-            connectParam.mUserId = sessionCtx.mUserId;
             connectParam.mPeerDevId = sessionCtx.mDeviceId;
             connectParam.mChannelName = sessionCtx.mChnlName;
             connectParam.mLocalRtcUid = sessionCtx.mLocalRtcUid;
             connectParam.mRtcToken = sessionCtx.mRtcToken;
+            connectParam.mRtmUid = sessionCtx.mRtmUid;
             connectParam.mRtmToken = sessionCtx.mRtmToken;
             sessionCtx.mSeesionCallback.onSessionConnectDone(sessionCtx.mSessionId, connectParam, errCode);
         }
@@ -1353,6 +1438,12 @@ public class DeviceSessionMgr extends BaseThreadComp
     void CallbackOtherUserOffline(final SessionCtx sessionCtx, int uid) {
         if (sessionCtx.mSeesionCallback != null) {
             sessionCtx.mSeesionCallback.onSessionOtherUserOffline(sessionCtx.mSessionId, sessionCtx.mUserCount);
+        }
+    }
+
+    void CallbackTokenWillExpire(final SessionCtx sessionCtx) {
+        if (sessionCtx.mSeesionCallback != null) {
+            sessionCtx.mSeesionCallback.onSessionTokenWillExpire(sessionCtx.mSessionId);
         }
     }
 

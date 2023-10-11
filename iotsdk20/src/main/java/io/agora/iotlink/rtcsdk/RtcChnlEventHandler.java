@@ -148,5 +148,9 @@ public class RtcChnlEventHandler extends IRtcEngineEventHandler {
         mTalkingEng.onSnapshotTaken(mSessionId, uid, filePath, width, height, errCode);
     }
 
+    @Override
+    public void onTokenPrivilegeWillExpire(String token) {
+        mTalkingEng.onTokenPrivilegeWillExpire(mSessionId, token);
+    }
 
 };

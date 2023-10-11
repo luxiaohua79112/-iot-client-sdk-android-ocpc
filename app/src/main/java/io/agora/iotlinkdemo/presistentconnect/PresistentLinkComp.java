@@ -19,10 +19,10 @@ import io.agora.iotlink.utils.JsonUtils;
 /**
  * @brief 长联接组件，有自己独立的运行线程
  */
-public class PresistentLinkComp extends BaseThreadComp
-        implements MqttTransport.ICallback {
+public class PresistentLinkComp extends BaseThreadComp {
 
     private static final int DEFAULT_DEV_UID = 10;               ///< 设备端uid，固定为10
+
 
     //
     // The method of all callkit
@@ -104,16 +104,29 @@ public class PresistentLinkComp extends BaseThreadComp
          */
         default void onDevReqConnectDone(int errCode, final UUID connectId,
                                          final String deviceId, int localRtcUid,
-                                         final String chnlName,
-                                         final String rtcToken, final String rtmToken) { }
+                                         final String chnlName, final String rtcToken,
+                                         final String rtmUid, final String rtmToken) { }
     }
 
+
+    /**
+     * @brief Renew token 请求监听器
+     */
+    public static interface OnDevReqRenewTokenListener {
+        /**
+         * @brief 请求设备连接完成
+         * @param connectId : 连接唯一标识
+         * @param rtcToken
+         * @param rtmToken
+         */
+        default void onDevReqRenewTokenDone( int errCode, final UUID connectId,
+                                             final String rtcToken, final String rtmToken) { }
+    }
 
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Constant Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
     private static final String TAG = "IOTSDK/PresLinkComp";
-    private static final int MQTT_TIMEOUT = 10000;
     private static final int UNPREPARE_WAIT_TIMEOUT = 3500;
 
 
@@ -123,9 +136,7 @@ public class PresistentLinkComp extends BaseThreadComp
     //
     private static final int MSGID_PREPARE_NODEACTIVE = 0x0001;
     private static final int MSGID_PREPARE_INIT_DONE = 0x0002;
-    private static final int MSGID_MQTT_STATE_CHANGED = 0x0003;
     private static final int MSGID_PACKET_SEND = 0x0004;
-    private static final int MSGID_PACKET_RECV = 0x0005;
     private static final int MSGID_UNPREPARE = 0x0006;
 
 
@@ -143,10 +154,7 @@ public class PresistentLinkComp extends BaseThreadComp
 
     private PrepareParam mPrepareParam;
     private OnPrepareListener mPrepareListener;
-//    private MqttTransport mMqttTransport = new MqttTransport();
 
-    private String mMqttTopicSub;                                   ///< MQTT订阅的主题
-    private String mMqttTopicPub;                                   ///< MQTT发布的主题
     private TransPktQueue mRecvPktQueue = new TransPktQueue();      ///< 接收数据包队列
     private TransPktQueue mSendPktQueue = new TransPktQueue();      ///< 发送数据包队列
 
@@ -349,42 +357,20 @@ public class PresistentLinkComp extends BaseThreadComp
         }
 
 
-        // 发送请求消息
+
         Log.d(TAG, "<devReqConnect> ==> BEGIN, deviceId=" + deviceId);
         UUID connectId = UUID.randomUUID();
         long traceId = System.currentTimeMillis();
 
-/*
-        // body内容
-        JSONObject body = new JSONObject();
-        try {
-            JSONObject header = new JSONObject();
-            header.put("traceId", traceId );
-            header.put("timestamp", System.currentTimeMillis());
-            header.put("nodeToken", mLocalNode.mToken);
-            header.put("method", METHOD_USER_START_CALL);
-            body.put("header", header);
-
-            JSONObject payloadObj = new JSONObject();
-            payloadObj.put("appId", mInitParam.mAppId);
-            payloadObj.put("deviceId", deviceId);
-            payloadObj.put("extraMsg", attachMsg);
-            body.put("payload", payloadObj);
-
-        } catch (JSONException e) {
-            e.printStackTrace();
-            Log.e(TAG, "<devReqConnect>> [Exit] failure with JSON exp!");
-            result.mErrCode = ErrCode.XERR_JSON_WRITE;
-            return result;
-        }
-*/
 
         // body内容
+        String rtmUid = mLocalNode.mNodeId + "-rtm";
         JSONObject body = new JSONObject();
         try {
             body.put("appId", mInitParam.mAppId);
             body.put("deviceNo", deviceId);
             body.put("userId", mLocalNode.mNodeId);
+            body.put("rtmUid", rtmUid);
 
         } catch (JSONException e) {
             e.printStackTrace();
@@ -396,6 +382,7 @@ public class PresistentLinkComp extends BaseThreadComp
         ConnectionCtx newConnect = new ConnectionCtx();
         newConnect.mConnectId = connectId;
         newConnect.mUserId = mLocalNode.mNodeId;
+        newConnect.mRtmUid = rtmUid;
         newConnect.mDeviceId = deviceId;
         newConnect.mDeviceRtcUid = DEFAULT_DEV_UID;
         newConnect.mAttachMsg = attachMsg;
@@ -405,9 +392,9 @@ public class PresistentLinkComp extends BaseThreadComp
         // 添加到连接管理器中
         mConnectMgr.addConnection(newConnect);
 
-        // 发送主叫的 MQTT呼叫请求数据包
+        // 发送主叫的 HTTP呼叫请求数据包
         TransPacket transPacket = new TransPacket();
-        transPacket.mTopic = getMqttPublishTopic();
+        transPacket.mTopic = "";
         transPacket.mBodyJsonObj = body;
         transPacket.mTraceId = traceId;
         transPacket.mConnectId = connectId;
@@ -444,6 +431,60 @@ public class PresistentLinkComp extends BaseThreadComp
 
         long t2 = System.currentTimeMillis();
         Log.d(TAG, "<devReqDisconnect> <==END, costTime=" + (t2-t1));
+        return ErrCode.XOK;
+    }
+
+
+    /**
+     * @brief 重新请求 RTC和RTM的token
+     */
+    public int devReqRenewToken(final UUID connectId,
+                                final OnDevReqRenewTokenListener renewTokenListener) {
+        long t1 = System.currentTimeMillis();
+
+        if (!mLocalNode.mReady) {
+            Log.e(TAG, "<devReqRenewToken> bad state, sdkState=" + mStateMachine);
+            return ErrCode.XERR_SDK_NOT_READY;
+        }
+
+        // 会话管理器中找到该会话
+        ConnectionCtx connectionCtx = mConnectMgr.getConnection(connectId);
+        if (connectionCtx == null) {
+            Log.e(TAG, "<devReqRenewToken> already disconnect, not found connectId=" + connectId);
+            return ErrCode.XERR_INVALID_PARAM;
+        }
+        long traceId = System.currentTimeMillis();
+
+        // body内容
+        String rtmUid = mLocalNode.mNodeId + "-rtm";
+        JSONObject body = new JSONObject();
+        try {
+            body.put("appId", mInitParam.mAppId);
+            body.put("deviceNo", connectionCtx.mDeviceId);
+            body.put("userId", mLocalNode.mNodeId);
+            body.put("rtmUid", rtmUid);
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+            Log.e(TAG, "<devReqRenewToken>> [Exit] failure with JSON exp!");
+            return ErrCode.XERR_JSON_WRITE;
+        }
+
+        // 更新链接信息
+        connectionCtx.mRenewListener = renewTokenListener;
+        connectionCtx.mTraceId = traceId;
+        mConnectMgr.updateConnection(connectionCtx);
+
+        // 发送主叫的 HTTP呼叫请求数据包
+        TransPacket transPacket = new TransPacket();
+        transPacket.mTopic = "";
+        transPacket.mBodyJsonObj = body;
+        transPacket.mTraceId = traceId;
+        transPacket.mConnectId = connectId;
+        sendPacket(transPacket);
+
+        long t2 = System.currentTimeMillis();
+        Log.d(TAG, "<devReqRenewToken> done, costTime=" + (t2-t1));
         return ErrCode.XOK;
     }
 
@@ -489,20 +530,6 @@ public class PresistentLinkComp extends BaseThreadComp
         return packet;
     }
 
-    /**
-     * @brief 获取MQTT订阅的主题
-     */
-    String getMqttSubscribedTopic() {
-        return mMqttTopicSub;
-    }
-
-    /**
-     * @brief 获取MQTT发布的主题
-     */
-    String getMqttPublishTopic() {
-        return mMqttTopicPub;
-    }
-
 
 
     ///////////////////////////////////////////////////////////////////////////
@@ -519,16 +546,8 @@ public class PresistentLinkComp extends BaseThreadComp
                     onMessageInitDone(msg);
                 break;
 
-            case MSGID_MQTT_STATE_CHANGED:
-                    onMessageMqttStateChanged(msg);
-                break;
-
             case MSGID_PACKET_SEND:
                     onMessagePacketSend(msg);
-                break;
-
-            case MSGID_PACKET_RECV:
-                    onMessagePacketRecv(msg);
                 break;
 
             case MSGID_UNPREPARE:
@@ -536,7 +555,6 @@ public class PresistentLinkComp extends BaseThreadComp
                 break;
         }
 
-         //mMqttTransport.processWorkMessage(msg);
     }
 
     @Override
@@ -544,22 +562,13 @@ public class PresistentLinkComp extends BaseThreadComp
         synchronized (mMsgQueueLock) {
             mWorkHandler.removeMessages(MSGID_PREPARE_NODEACTIVE);
             mWorkHandler.removeMessages(MSGID_PREPARE_INIT_DONE);
-            mWorkHandler.removeMessages(MSGID_MQTT_STATE_CHANGED);
             mWorkHandler.removeMessages(MSGID_PACKET_SEND);
-            mWorkHandler.removeMessages(MSGID_PACKET_RECV);
             mWorkHandler.removeMessages(MSGID_UNPREPARE);
         }
-
-//        if (mMqttTransport != null) {
-//            mMqttTransport.removeAllMessages();
-//        }
     }
 
     @Override
     protected void processTaskFinsh() {
-//        if (mMqttTransport != null) {
-//            mMqttTransport.release();
-//        }
         Log.d(TAG, "<processTaskFinsh> done!");
     }
 
@@ -584,66 +593,6 @@ public class PresistentLinkComp extends BaseThreadComp
         synchronized (mDataLock) {
             prepareParam = mPrepareParam;
         }
-
-/*
-        HttpTransport.NodeActiveResult result = HttpTransport.getInstance().nodeActive(prepareParam);
-        if (result.mErrCode != ErrCode.XOK) {
-            Log.e(TAG, "<onMessagePrepareNodeActive> fail to nodeActive, ret=" + result.mErrCode);
-            sendSingleMessage(MSGID_PREPARE_INIT_DONE, result.mErrCode, 0, null, 0);
-            return;
-        }
-        if (getStateMachine() != PRESISTENTLINK_STATE_PREPARING) {
-            Log.e(TAG, "<onMessagePrepareNodeActive> bad state2, sdkState=" + getStateMachine());
-            return;
-        }
-
-        // 更新本地节点信息
-        synchronized (mDataLock) {
-            mLocalNode.mReady = true;
-            mLocalNode.mUserId = prepareParam.mUserId;
-            mLocalNode.mNodeId = result.mNodeId;
-            mLocalNode.mRegion = result.mNodeRegion;
-            mLocalNode.mToken = result.mNodeToken;
-        }
-
-        // 设置 MQTT订阅和发布的主题
-        mMqttTopicSub = "$falcon/callkit/" + result.mNodeId + "/sub";
-        mMqttTopicPub = "$falcon/callkit/" + result.mNodeId + "/pub";
-
-
-        //
-        // 创建并初始化 Mqtt Transport
-        //
-        MqttTransport.InitParam mqttParam = new MqttTransport.InitParam();
-        mqttParam.mContext = mInitParam.mContext;
-        mqttParam.mThreadComp = this;
-        mqttParam.mCallback = this;
-        mqttParam.mServerUrl = String.format("tcp://%s:%d", result.mMqttServer, result.mMqttPort);
-        mqttParam.mUserName = result.mMqttUserName;
-        mqttParam.mPassword = result.mNodeId + "/" + result.mUserId;
-        mqttParam.mClientId = result.mNodeId;
-
-        mqttParam.mSubTopicArray = new String[1];
-        mqttParam.mSubTopicArray[0] = mMqttTopicSub;
-        mqttParam.mSubQosArray = new int[1];
-        mqttParam.mSubQosArray[0] = 2;
-
-        int ret = mMqttTransport.initialize(mqttParam);
-        if (ret != ErrCode.XOK) {
-            synchronized (mDataLock) {
-                mLocalNode.mReady = false;
-                mLocalNode.mUserId = null;
-                mLocalNode.mNodeId = null;
-            }
-            mMqttTransport.release();
-            Log.e(TAG, "<onMessagePrepareNodeActive> fail to mqtt init, ret=" + ret);
-            sendSingleMessage(MSGID_PREPARE_INIT_DONE, ret, 0, null, 0);
-            return;
-        }
-
-        // 发送一个超时延时的事件，这样如果没有 MQTT初始化回调回来，也能继续后续处理
-        sendSingleMessage(MSGID_PREPARE_INIT_DONE, ErrCode.XERR_TIMEOUT, 0, null, MQTT_TIMEOUT);
-*/
 
         // 更新本地节点信息
         synchronized (mDataLock) {
@@ -685,9 +634,6 @@ public class PresistentLinkComp extends BaseThreadComp
                 mLocalNode.mReady = false;
                 mLocalNode.mNodeId = prepareParam.mUserId;
             }
-//            if (mMqttTransport != null) {
-//                mMqttTransport.release();
-//            }
             setStateMachine(PRESISTENTLINK_STATE_INITIALIZED);  // 设置状态机到初始化状态
 
         } else {
@@ -698,32 +644,6 @@ public class PresistentLinkComp extends BaseThreadComp
         prepareListener.onSdkPrepareDone(prepareParam, msg.arg1);
     }
 
-    /**
-     * @brief 组件线程消息处理：MQTT状态发生变化
-     */
-    void onMessageMqttStateChanged(Message msg) {
-        int sdkState = getStateMachine();
-        if (sdkState == PRESISTENTLINK_STATE_UNPREPARING || sdkState == PRESISTENTLINK_STATE_INITIALIZED){
-            Log.e(TAG, "<onMessageMqttStateChanged> bad state");
-            return;
-        }
-        int newState = msg.arg1;
-        Log.d(TAG, "<onMessageMqttStateChanged> newState=" + newState);
-
-//        boolean ready = false;
-//        if (newState == MqttTransport.MQTT_TRANS_STATE_CONNECTED) {
-//            ready = true;
-//            setStateMachine(PRESISTENTLINK_STATE_RUNNING);
-//
-//        } else if (newState == MqttTransport.MQTT_TRANS_STATE_RECONNECTING) {
-//            setStateMachine(PRESISTENTLINK_STATE_RECONNECTING);
-//        }
-//
-//        // 更新当前本地节点就绪状态
-//        synchronized (mDataLock) {
-//            mLocalNode.mReady = ready;
-//        }
-    }
 
     /**
      * @brief 组件线程消息处理：发送数据包
@@ -743,8 +663,6 @@ public class PresistentLinkComp extends BaseThreadComp
             if (sendingPkt == null) {  // 发送队列为空，没有要发送的数据包了
                 break;
             }
-
-//            mMqttTransport.sendPacket(sendingPkt);
 
             HttpTransport.DevConnectRslt connectRslt = HttpTransport.getInstance().connectDevice(sendingPkt.mBodyJsonObj);
 
@@ -766,135 +684,20 @@ public class PresistentLinkComp extends BaseThreadComp
             mConnectMgr.updateConnection(connectionCtx);
 
             // 回调给应用层
-            if (connectionCtx.mConnectListener != null) {
+            if (connectionCtx.mRenewListener != null) {     // renew监听器不为空，表示 renewToken
+                Log.d(TAG, "<onMessagePacketSend> [DIALING] callback renew token done!");
+                connectionCtx.mRenewListener.onDevReqRenewTokenDone(
+                        connectRslt.mErrCode, connectionCtx.mConnectId,
+                        connectionCtx.mRtcToken, connectionCtx.mRtmToken);
+
+            } else if (connectionCtx.mConnectListener != null) {
+                Log.d(TAG, "<onMessagePacketSend> [DIALING] callback connect done!");
                 connectionCtx.mConnectListener.onDevReqConnectDone(connectRslt.mErrCode, connectionCtx.mConnectId,
-                        connectionCtx.mDeviceId, connectionCtx.mLocalRtcUid,
-                        connectionCtx.mChnlName, connectionCtx.mRtcToken, connectionCtx.mRtmToken);
+                        connectionCtx.mDeviceId, connectionCtx.mLocalRtcUid, connectionCtx.mChnlName,
+                        connectionCtx.mRtcToken, connectionCtx.mRtmUid, connectionCtx.mRtmToken);
             }
-
         }
 
-    }
-
-    /**
-     * @brief 组件线程消息处理：处理接收到的数据包
-     */
-    void onMessagePacketRecv(Message msg) {
-        int sdkState = getStateMachine();
-        if (sdkState != PRESISTENTLINK_STATE_RUNNING) {
-            Log.e(TAG, "<onMessagePacketRecv> bad state, sdkState=" + sdkState);
-            return;
-        }
-
-        //
-        // 将发送队列中的数据包依次发送出去
-        //
-        for (;;) {
-            TransPacket recvedPkt = mRecvPktQueue.dequeue();
-            if (recvedPkt == null) {  // 接收队列为空，没有要接收到的数据包要分发了
-                break;
-            }
-
-            // TODO: 根据数据包不同的topic进行分发处理，当前全部都是呼叫系统的数据包
-            DoMqttParsePacket(recvedPkt);
-        }
-    }
-
-    /**
-     * @brief 组件线程消息处理：处理接收到的数据包
-     */
-    void DoMqttParsePacket(final TransPacket recvedPkt) {
-
-        JSONObject recvJsonObj = JsonUtils.generateJsonObject(recvedPkt.mContent);
-        if (recvJsonObj == null) {
-            Log.e(TAG, "<DoMqttParsePacket> Invalid json=" + recvedPkt.mContent);
-            return;
-        }
-
-        JSONObject headJsonObj = JsonUtils.parseJsonObject(recvJsonObj, "header", null);
-        JSONObject payloadJsonObj = JsonUtils.parseJsonObject(recvJsonObj,"payload", null);
-        int respCode = JsonUtils.parseJsonIntValue(recvJsonObj, "code", 0);
-
-        // 解析 Header 头信息
-        if (headJsonObj == null) {
-            Log.e(TAG, "<DoMqttParsePacket> NO header json obj");
-            return;
-        }
-        String headerMethod = JsonUtils.parseJsonStringValue(headJsonObj, "method", null);
-        if (TextUtils.isEmpty(headerMethod)) {
-            Log.e(TAG, "<DoMqttParsePacket> NO method field in header");
-            return;
-        }
-        long traceId = JsonUtils.parseJsonLongValue(headJsonObj, "traceId", -1);
-        if (traceId < 0) {
-            Log.e(TAG, "<DoMqttParsePacket> NO traceId field in header");
-            return;
-        }
-
-        if (headerMethod.compareToIgnoreCase(METHOD_USER_START_CALL) == 0) {
-            // APP主叫设备回应数据包
-            ConnectionCtx connectionCtx = mConnectMgr.findConnectionByTraceId(traceId);
-            if (connectionCtx == null) {  // 主叫会话已经不存在了，丢弃该包
-                Log.e(TAG, "<DoMqttParsePacket> [DIALING] connection NOT found, drop packet!");
-                return;
-            }
-
-            if (respCode == ErrCode.XOK) {
-                connectionCtx.mRtcToken = JsonUtils.parseJsonStringValue(payloadJsonObj, "token", null);
-                connectionCtx.mChnlName = JsonUtils.parseJsonStringValue(payloadJsonObj, "cname", null);
-                connectionCtx.mLocalRtcUid = JsonUtils.parseJsonIntValue(payloadJsonObj, "uid", -1);
-            }
-
-//            // 这里模拟获取RTM的token
-//            HttpTransport.DevConnectRslt result = HttpTransport.getInstance().connectDevice(
-//                    mInitParam.mAppId, connectionCtx.mUserId, connectionCtx.mDeviceId);
-//            if (result.mErrCode != ErrCode.XOK) {
-//                ALog.getInstance().e(TAG, "<DoMqttParsePacket> fail to request token");
-//            } else {
-//                connectionCtx.mRtmToken = result.mRtmToken;
-//            }
-
-            // 更新连接数据
-            mConnectMgr.updateConnection(connectionCtx);
-
-            // 回调给应用层
-            if (connectionCtx.mConnectListener != null) {
-                connectionCtx.mConnectListener.onDevReqConnectDone(respCode, connectionCtx.mConnectId,
-                        connectionCtx.mDeviceId, connectionCtx.mLocalRtcUid,
-                        connectionCtx.mChnlName, connectionCtx.mRtcToken, connectionCtx.mRtmToken);
-            }
-
-        } else if (headerMethod.compareToIgnoreCase(METHOD_DEVICE_START_CALL) == 0) {
-            // 设备来电数据包
-            if (respCode != ErrCode.XOK) {
-                Log.d(TAG, "<DoMqttParsePacket> [INCOMING] response error, respCode=" + respCode);
-                return;
-            }
-
-            // 判断参数字段，注意: 协议包中这里 peerNodeId 是 APP账号的 NodeId，不是设备的NodeId
-            //  这里 peerNodeId 就用不到了，判断哪个设备直接用 cname 来判断
-            String rtcToken = JsonUtils.parseJsonStringValue(payloadJsonObj, "token", null);
-            String chnlName = JsonUtils.parseJsonStringValue(payloadJsonObj, "cname", null);
-            String peerNodeId = JsonUtils.parseJsonStringValue(payloadJsonObj, "peerId", null);
-            String attachMsg = JsonUtils.parseJsonStringValue(payloadJsonObj, "extraMsg", null);
-            int localUid = JsonUtils.parseJsonIntValue(payloadJsonObj, "uid", -1);
-            long timestamp = JsonUtils.parseJsonLongValue(payloadJsonObj, "timestamp", -1);
-            long version = JsonUtils.parseJsonLongValue(payloadJsonObj, "version", -1);
-            if (TextUtils.isEmpty(rtcToken) || TextUtils.isEmpty(chnlName) || TextUtils.isEmpty(peerNodeId)) {
-                Log.d(TAG, "<DoMqttParsePacket> [INCOMING] invalid parameter, drop packet");
-                return;
-            }
-
-//            // 通过频道名判断该设备是否已经在通话
-//            SessionCtx sessionCtx = mConnectMgr.findSessionByChannelName(chnlName);
-//            if (sessionCtx != null) {
-//                Log.e(TAG, "<DoMqttParsePacket> [INCOMING] session already exist, drop packet!");
-//                return;
-//            }
-//
-//            // 处理MQTT来电消息
-//            DoMqttEventIncoming(traceId, attachMsg, chnlName, rtcToken, localUid);
-        }
     }
 
 
@@ -903,9 +706,6 @@ public class PresistentLinkComp extends BaseThreadComp
      */
     void onMessageUnprepare(Message msg) {
         Log.d(TAG, "<onMessageUnprepare> BEGIN");
-//        if (mMqttTransport != null) {
-//            mMqttTransport.release();
-//        }
         mRecvPktQueue.clear();
         mSendPktQueue.clear();
         Log.d(TAG, "<onMessageUnprepare> END");
@@ -915,40 +715,6 @@ public class PresistentLinkComp extends BaseThreadComp
         }
     }
 
-
-    ///////////////////////////////////////////////////////////////////////////
-    //////////// Methods for Override MqttTransport.ICallback ////////////////
-    //////////////////////////////////////////////////////////////////////////
-    @Override
-    public void onMqttTransInitDone(int errCode) {
-        int sdkState = getStateMachine();
-        if (sdkState != PRESISTENTLINK_STATE_PREPARING) {
-            Log.d(TAG, "<onMqttTransInitDone> bad state, sdkState=" + sdkState);
-            return;
-        }
-
-        removeMessage(MSGID_PREPARE_INIT_DONE);  // 移除已有的超时消息
-        sendSingleMessage(MSGID_PREPARE_INIT_DONE, errCode, 0, null, 0);
-    }
-
-    @Override
-    public void onMqttTransStateChanged(int newState) {
-        sendSingleMessage(MSGID_MQTT_STATE_CHANGED, newState, 0, null, 0);
-    }
-
-    @Override
-    public void onMqttTransReceived(final TransPacket transPacket) {
-        // 插入数据包到接收队列中
-        mRecvPktQueue.inqueue(transPacket);
-
-        // 消息通知组件线程进行接收包分发处理
-        sendSingleMessage(MSGID_PACKET_RECV, 0, 0, null, 0);
-    }
-
-    @Override
-    public void onMqttTransError(int errCode) {
-        Log.e(TAG, "<onMqttTransError> errCode=" + errCode);
-    }
 
 
 

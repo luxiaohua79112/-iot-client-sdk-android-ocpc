@@ -140,15 +140,14 @@ public class RtmMgrComp extends BaseThreadComp {
         mReqCmdMgr.clear();
 
         // 创建 RTM引擎对象
-        int ret = rtmEngCreate();
+        int ret = rtmEngCreate(sessionCtx);
         if (ret != ErrCode.XOK) {
             connectDevListener.onRtmConnectDevDone(sessionCtx, ret);
             return;
         }
 
         // 同步进行 RTM登录
-        IDeviceSessionMgr.InitParam sessionMgrInitParam = mSessionMgr.getInitParam();
-        rtmEngLogin(sessionCtx, sessionMgrInitParam.mUserId, connectDevListener);
+        rtmEngLogin(sessionCtx, sessionCtx.mRtmUid, connectDevListener);
 
         mHeartbeatTimestamp = System.currentTimeMillis();
 
@@ -195,6 +194,21 @@ public class RtmMgrComp extends BaseThreadComp {
         return ErrCode.XOK;
     }
 
+    /**
+     * @brief 发送命令到设备，非阻塞调用
+     */
+    public int renewToken(final String newRtmToken) {
+        int rtmState = mState.getValue();
+        if (mState.getValue() != RTM_STATE_RUNNING) {
+            ALog.getInstance().e(TAG, "<renewToken> bad state, rtmState=" + rtmState);
+            return ErrCode.XERR_BAD_STATE;
+        }
+
+        rtmEngRenewToken(newRtmToken);
+
+        ALog.getInstance().d(TAG, "<renewToken> newRtmToken=" + newRtmToken);
+        return ErrCode.XOK;
+    }
 
     ///////////////////////////////////////////////////////////////////////////
     //////////////// Methods for Override BaseThreadComp //////////////////////
@@ -602,7 +616,7 @@ public class RtmMgrComp extends BaseThreadComp {
     /**
      * @brief 初始化 RtmSdk
      */
-    private int rtmEngCreate() {
+    private int rtmEngCreate(final SessionCtx sessionCtx) {
         mSendMsgOptions = new SendMessageOptions();
 
         RtmClientListener rtmListener = new RtmClientListener() {
@@ -645,11 +659,13 @@ public class RtmMgrComp extends BaseThreadComp {
             @Override
             public void onTokenExpired() {
                 ALog.getInstance().d(TAG, "<rtmEngCreate.onTokenExpired>");
+                mSessionMgr.onRtmTokenWillExpire(sessionCtx.mSessionId);
             }
 
             @Override
             public void onTokenPrivilegeWillExpire() {
                 ALog.getInstance().d(TAG, "<rtmEngCreate.onTokenPrivilegeWillExpire>");
+                mSessionMgr.onRtmTokenWillExpire(sessionCtx.mSessionId);
             }
 
             @Override
@@ -765,7 +781,36 @@ public class RtmMgrComp extends BaseThreadComp {
         return ErrCode.XOK;
     }
 
+    /**
+     * @brief 更新token
+     */
+    private int rtmEngRenewToken(final String newToken)
+    {
+        if (mRtmClient == null) {
+            return ErrCode.XERR_BAD_STATE;
+        }
 
+        mState.setValue(RTM_STATE_RENEWING);  // 切换到正在更新token
+        mRtmClient.renewToken(newToken, new ResultCallback<Void>() {
+            @Override
+            public void onSuccess(Void responseInfo) {
+                ALog.getInstance().d(TAG, "<rtmEngRenewToken.onSuccess> success");
+                mState.setValue(RTM_STATE_RUNNING);  // 更新成功，切换到运行状态
+            }
+
+            @Override
+            public void onFailure(ErrorInfo errorInfo) {
+                ALog.getInstance().i(TAG, "<rtmEngRenewToken.onFailure> failure"
+                        + ", errInfo=" + errorInfo.getErrorCode()
+                        + ", errDesc=" + errorInfo.getErrorDescription());
+                int errCode = mapRtmLoginErrCode(errorInfo.getErrorCode());
+                mState.setValue(RTM_STATE_RUNNING);  // 更新失败，依然切换回运行状态
+            }
+        });
+
+        ALog.getInstance().d(TAG, "<rtmEngRenewToken> done");
+        return ErrCode.XOK;
+    }
 
 
     ///////////////////////////////////////////////////////////////////////////

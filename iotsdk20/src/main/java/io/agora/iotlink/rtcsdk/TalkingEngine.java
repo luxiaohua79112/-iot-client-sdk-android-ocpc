@@ -111,6 +111,11 @@ public class TalkingEngine implements AGEventHandler,
          * @brief 录像时产生错误
          */
         default void onRecordingError(final UUID sessionId, int errCode) {  }
+
+        /**
+         * @brief 录像时产生错误
+         */
+        default void onRtcTokenWillExpire(final UUID sessionId, final String token) {  }
     }
 
 
@@ -469,6 +474,49 @@ public class TalkingEngine implements AGEventHandler,
 
         ALog.getInstance().d(TAG, "<leaveChannel> Exit");
         return true;
+    }
+
+
+    /**
+     * @brief 根据会话信息，退出指定的频道
+     */
+    public boolean renewToken(final SessionCtx sessionCtx, final String newToken)   {
+        if (mRtcEngine == null) {
+            ALog.getInstance().e(TAG, "<renewToken> bad state");
+            return false;
+        }
+
+        ALog.getInstance().d(TAG, "<renewToken> Enter, sessionCtx=" + sessionCtx.toString());
+        long t1 = System.currentTimeMillis();
+
+        ChannelMediaOptions options = new ChannelMediaOptions();
+        options.channelProfile = Constants.CHANNEL_PROFILE_LIVE_BROADCASTING;
+        options.clientRoleType = Constants.CLIENT_ROLE_BROADCASTER;
+        options.autoSubscribeAudio = false;      // 不自动订阅音频流
+        options.autoSubscribeVideo = false;      // 不自动订阅视频流
+        options.publishCameraTrack = false;     // 不推本地视频
+        options.publishMicrophoneTrack = sessionCtx.mPubLocalAudio;
+        options.token = newToken;   // 要更新的token
+
+        RtcConnection rtcConnection = new RtcConnection();
+        rtcConnection.channelId = sessionCtx.mChnlName;
+        rtcConnection.localUid = sessionCtx.mLocalRtcUid;
+
+        int ret = mRtcEngine.updateChannelMediaOptionsEx(options, rtcConnection);
+
+        boolean mutePeerAudio = (!sessionCtx.mSubDevAudio);
+        int retDevAudio = mRtcEngine.muteRemoteAudioStreamEx(sessionCtx.mDeviceRtcUid, mutePeerAudio, rtcConnection);
+        ALog.getInstance().d(TAG, "<renewToken> mutePeerAudio=" + mutePeerAudio
+                + ", retDevAudio=" + retDevAudio);
+
+        boolean mutePeerVideo = (!sessionCtx.mSubDevVideo);
+        int retDevVideo = mRtcEngine.muteRemoteVideoStreamEx(sessionCtx.mDeviceRtcUid, mutePeerVideo, rtcConnection);
+        ALog.getInstance().d(TAG, "<renewToken> mutePeerVideo=" + mutePeerVideo
+                + ", retDevVideo=" + retDevVideo);
+
+        long t2 = System.currentTimeMillis();
+        ALog.getInstance().d(TAG, "<renewToken> done, costTime=" + (t2-t1) + ", ret=" + ret);
+        return (ret == Constants.ERR_OK);
     }
 
     /**
@@ -1101,6 +1149,17 @@ public class TalkingEngine implements AGEventHandler,
          }
      }
 
+    void onTokenPrivilegeWillExpire(final UUID sessionId, String token) {
+        ALog.getInstance().d(TAG, "<onTokenPrivilegeWillExpire> sessionId=" + sessionId
+                + ", token=" + token);
+        if (mRtcEngine == null) {
+            return;
+        }
+
+        if (mInitParam.mCallback != null) {
+            mInitParam.mCallback.onRtcTokenWillExpire(sessionId, token);
+        }
+    }
 
 
     ////////////////////////////////////////////////////////////////////////////

@@ -393,8 +393,8 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
                 new PresistentLinkComp.OnDevReqConnectListener() {
                     @Override
                     public void onDevReqConnectDone(int errCode, UUID connectId, String deviceId,
-                                                    int localRtcUid, String chnlName,
-                                                    String rtcToken, String rtmToken) {
+                                                    int localRtcUid, String chnlName, String rtcToken,
+                                                    String rtmUid, String rtmToken) {
                         Log.d(TAG, "<onDevReqConnectDone> errCode=" + errCode + ", connectId=" + connectId);
 
                         getActivity().runOnUiThread(new Runnable() {
@@ -434,12 +434,13 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
                                 //
                                 // SDK中 连接设备会话 操作
                                 //
+                                String localNodeId = PresistentLinkComp.getInstance().getLocalNodeId();
                                 IDeviceSessionMgr.ConnectParam connectParam = new IDeviceSessionMgr.ConnectParam();
-                                connectParam.mUserId = PresistentLinkComp.getInstance().getLocalNodeId();
                                 connectParam.mPeerDevId = deviceId;
                                 connectParam.mLocalRtcUid = localRtcUid;
                                 connectParam.mChannelName = chnlName;
                                 connectParam.mRtcToken = rtcToken;
+                                connectParam.mRtmUid = rtmUid;
                                 connectParam.mRtmToken = rtmToken;
 
                                 IDeviceSessionMgr.ConnectResult sdkConnectRslt = sessionMgr.connect(connectParam, mFragment);
@@ -788,8 +789,6 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
                 return;
             }
         }
-
-
     }
 
 
@@ -937,6 +936,64 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
     public void onSessionError(final UUID sessionId, int errCode) {
         Log.d(TAG, "<onSessionError> sessionId=" + sessionId + ", errCode" + errCode);
     }
+
+    @Override
+    public void onSessionTokenWillExpire(final UUID sessionId) {
+        Log.d(TAG, "<onSessionTokenWillExpire> sessionId=" + sessionId);
+
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                DeviceListAdapter.FindResult findResult = mDevListAdapter.findItemBySessionId(sessionId);
+                if (findResult.mDevInfo == null) {
+                    Log.e(TAG, "<onSessionTokenWillExpire> NOT found session, sessionId=" + sessionId);
+                    return;
+                }
+
+                // 长联接获取新的token
+                int ret = PresistentLinkComp.getInstance().devReqRenewToken(findResult.mDevInfo.mConnectId,
+                        new PresistentLinkComp.OnDevReqRenewTokenListener() {
+                            @Override
+                            public void onDevReqRenewTokenDone(int errCode, UUID connectId, String rtcToken, String rtmToken) {
+                                doRenewToken(sessionId, errCode, connectId, rtcToken, rtmToken);
+                            }
+                        });
+                if (ret != ErrCode.XOK) {
+                    popupMessage("不能获取新token, 错误码=" + ret);
+                    return;
+                }
+            }
+        });
+    }
+
+    void doRenewToken(final UUID sessionId, int errCode, UUID connectId, String rtcToken, String rtmToken) {
+
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (errCode != ErrCode.XOK) {
+                    popupMessage("长联接获取新token失败, 错误码=" + errCode);
+                    return;
+                }
+
+                // 进行 token 更新操作
+                IDeviceSessionMgr sessionMgr = AIotAppSdkFactory.getDevSessionMgr();
+                IDeviceSessionMgr.TokenRenewParam renewParam = new IDeviceSessionMgr.TokenRenewParam();
+                renewParam.mRtcToken = rtcToken;
+                renewParam.mRtmToken = rtmToken;
+                int ret = sessionMgr.renewToken(sessionId, renewParam);
+                if (ret != ErrCode.XOK) {
+                    popupMessage("更新Token失败, 错误码=" + ret);
+                } else {
+                    popupMessage("更新Token成功!");
+                }
+            }
+        });
+
+
+
+    }
+
 
 
     ///////////////////////////////////////////////////////////////////////////

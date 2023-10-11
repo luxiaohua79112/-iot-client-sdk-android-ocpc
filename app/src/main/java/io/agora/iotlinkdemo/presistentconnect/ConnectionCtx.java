@@ -27,12 +27,13 @@ public class ConnectionCtx  {
     public int mDeviceRtcUid;       ///< 设备端的 Rtc Uid
     public String mChnlName;        ///< 频道名
     public String mRtcToken;        ///< 分配的RTC token
+    public String mRtmUid;          ///< 要会话的 RTM Uid
     public String mRtmToken;        ///< 要会话的 RTM Token
 
     public String mAttachMsg;       ///< 呼叫或者来电时的附带消息
 
     public PresistentLinkComp.OnDevReqConnectListener mConnectListener;
-
+    public PresistentLinkComp.OnDevReqRenewTokenListener mRenewListener;
 
 
 
@@ -44,6 +45,7 @@ public class ConnectionCtx  {
     public String toString() {
         String infoText = "{ mConnectId=" + mConnectId
                 + ", mUserId=" + mUserId
+                + ", mRtmUid=" + mRtmUid
                 + ", mDeviceId=" + mDeviceId
                 + ", mLocalRtcUid=" + mLocalRtcUid
                 + ", mDeviceRtcUid=" + mDeviceRtcUid

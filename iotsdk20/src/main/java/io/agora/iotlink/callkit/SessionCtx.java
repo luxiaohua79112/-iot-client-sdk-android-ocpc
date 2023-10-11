@@ -30,12 +30,13 @@ public class SessionCtx  {
     //////////////////////// Variable Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
     public UUID mSessionId;         ///< 会话Id，是会话的唯一标识
-    public String mUserId;          ///< 本地的 NodeId
     public String mDeviceId;        ///< 设备的 NodeId
     public int mLocalRtcUid;        ///< 本地 RTC uid
     public int mDeviceRtcUid;       ///< 设备端的 Rtc Uid
     public String mChnlName;        ///< 频道名
     public String mRtcToken;        ///< 分配的RTC token
+
+    public String mRtmUid;          ///< 本地的 RTM uid
     public String mRtmToken;        ///< 要会话的 RTM Token
     public int mRtcState;           ///< RTC的连接状态
     public int mRtmState;           ///< RTM的连接状态
@@ -66,7 +67,6 @@ public class SessionCtx  {
     @Override
     public String toString() {
         String infoText = "{ mSessionId=" + mSessionId
-                + ", mUserId=" + mUserId
                 + ", mDeviceId=" + mDeviceId
                 + ", mLocalRtcUid=" + mLocalRtcUid
                 + ", mDeviceRtcUid=" + mDeviceRtcUid
@@ -77,6 +77,7 @@ public class SessionCtx  {
                 + ", mPubLocalAudio=" + mPubLocalAudio
                 + ", mSubDevVideo=" + mSubDevVideo
                 + ", mSubDevAudio=" + mSubDevAudio
+                + ", mRtmUid=" + mRtmUid
                 + ",\n mRtcToken=" + mRtcToken
                 + ",\n mRtmToken=" + mRtmToken + " }";
         return infoText;

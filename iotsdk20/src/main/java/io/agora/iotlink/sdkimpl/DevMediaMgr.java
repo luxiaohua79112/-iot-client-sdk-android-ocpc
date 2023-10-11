@@ -69,7 +69,6 @@ public class DevMediaMgr implements IDevMediaMgr {
 
     private UUID mDevSessionId;
     private DeviceSessionMgr mSessionMgr;
-    private String mUserId;
     private String mDeviceId;
 
     private View mDisplayView;
@@ -86,7 +85,6 @@ public class DevMediaMgr implements IDevMediaMgr {
         mDevSessionId = sessionId;
         mSessionMgr = sessionMgr;
         IDeviceSessionMgr.SessionInfo sessionInfo = mSessionMgr.getSessionInfo(sessionId);
-        mUserId = sessionInfo.mUserId;
         mDeviceId = sessionInfo.mPeerDevId;
         mPlayingState.setValue(DEVPLAYER_STATE_STOPPED);  // 停止播放状态
     }
