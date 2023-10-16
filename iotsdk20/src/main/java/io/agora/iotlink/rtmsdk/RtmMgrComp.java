@@ -640,7 +640,14 @@ public class RtmMgrComp extends BaseThreadComp {
                 responseCmd = customizeRspCmd;
             } break;
 
-            default: {  // 其他响应命令，都不需要响应数据
+            case IRtmCmd.CMDID_PTZ_CTRL:
+            case IRtmCmd.CMDID_PTZ_RESET:
+            case IRtmCmd.CMDID_SDCARD_FMT:
+            case IRtmCmd.CMDID_MEDIA_STOP:
+            case IRtmCmd.CMDID_MEDIA_RATE:
+            case IRtmCmd.CMDID_MEDIA_PAUSE:
+            case IRtmCmd.CMDID_MEDIA_RESUME:
+            case IRtmCmd.CMDID_DEVICE_RESET:   {  // 其他响应命令，都不需要响应数据
                 RtmBaseCmd baseCmd = new RtmBaseCmd();
                 baseCmd.mSequenceId = sequenceId;
                 baseCmd.mCmdId = commandId;
@@ -649,6 +656,10 @@ public class RtmMgrComp extends BaseThreadComp {
                 baseCmd.mDeviceId = deviceId;
                 responseCmd = baseCmd;
             } break;
+
+            default: {  // 不支持的命令，直接返回空
+                return null;
+            }
         }
 
         ALog.getInstance().d(TAG, "<parseRspCmdData> END, responseCmd=" + responseCmd);
