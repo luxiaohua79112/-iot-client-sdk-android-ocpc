@@ -204,18 +204,46 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
         getBinding().btnEventQuery.setOnClickListener(view -> {
             onBtnEventQuery(view);
         });
+
+        getBinding().btnRawMsg.setOnClickListener(view -> {
+            onBtnRawMessage(view);
+        });
     }
 
     @Override
     protected void onStart() {
         super.onStart();
         Log.d(TAG, "<onStart> mSessionId=" + mSessionId);
+
+        IDeviceSessionMgr sessionMgr = AIotAppSdkFactory.getDevSessionMgr();
+        IDevController devController = sessionMgr.getDevController(mSessionId);
+        if (devController != null) {
+            devController.devRawMsgSetRecvListener(new IDevController.OnDevMsgRecvListener() {
+                @Override
+                public void onDevMsgRecved(String deviceRtmUid, String recvedData) {
+                    Log.d(TAG, "<onDevMsgRecved> deviceRtmUid=" + deviceRtmUid
+                            + ", recvedData=" + recvedData);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            popupMessage("接收到RTM消息: " + recvedData);
+                        }
+                    });
+                }
+            });
+        }
     }
 
     @Override
     protected void onStop() {
         super.onStop();
         Log.d(TAG, "<onStop> ");
+
+        IDeviceSessionMgr sessionMgr = AIotAppSdkFactory.getDevSessionMgr();
+        IDevController devController = sessionMgr.getDevController(mSessionId);
+        if (devController != null) {
+            devController.devRawMsgSetRecvListener(null);
+        }
     }
 
     @Override
@@ -859,6 +887,43 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
         if (ret != ErrCode.XOK) {
             hideLoadingView();
             popupMessage("Fail to query event timeline, errCode=" + ret);
+        }
+    }
+
+    /**
+     * @brief 收发原始消息数据
+     */
+    void onBtnRawMessage(View view) {
+        IDeviceSessionMgr sessionMgr = AIotAppSdkFactory.getDevSessionMgr();
+        IDevController devController = sessionMgr.getDevController(mSessionId);
+        if (devController == null) {
+            popupMessage("Not found device controller with sessionId=" + mSessionId);
+            return;
+        }
+
+        String sendingMsg = "Raw message at: " + String.valueOf(System.currentTimeMillis());
+        int ret = devController.devRawMsgSend(sendingMsg, new IDevController.OnDevMsgSendListener() {
+            @Override
+            public void onDevMsgSendDone(int errCode, String sendingMsg) {
+                Log.d(TAG, "<onBtnRawMessage.onDevMsgSendDone> errCode=" + errCode
+                        + ", sendingMsg=" + sendingMsg);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        hideLoadingView();
+                        if (errCode != ErrCode.XOK) {
+                            popupMessage("Fail to send raw message, errCode=" + errCode);
+                        } else {
+                            popupMessage("Send raw message successful!");
+                        }
+                    }
+                });
+            }
+        });
+
+        if (ret != ErrCode.XOK) {
+            hideLoadingView();
+            popupMessage("It cannot send raw message, errCode=" + ret);
         }
     }
 

@@ -209,6 +209,17 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/btn_play_stop" />
 
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_raw_msg"
+        android:layout_width="100dp"
+        android:layout_height="50dp"
+        android:layout_marginStart="260dp"
+        android:layout_marginTop="10dp"
+        android:background="#80D6D6D6"
+        android:text="原始消息"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btn_play_stop" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvFileList"
         android:layout_width="match_parent"

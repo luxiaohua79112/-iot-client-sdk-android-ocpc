@@ -33,6 +33,28 @@ public interface IDevController  {
         default void onDeviceCmdDone(int errCode, final String respData) {}
     }
 
+    /**
+     * @brief 设备的消息发送监听器
+     */
+    public static interface OnDevMsgSendListener {
+        /**
+         * @brief 设备消息发送完成回调
+         * @param sendingMsg: APP端发送的消息
+         */
+        default void onDevMsgSendDone(int errCode, final String sendingMsg) {}
+    }
+
+    /**
+     * @brief 设备的Rtm消息接收监听器
+     */
+    public static interface OnDevMsgRecvListener {
+        /**
+         * @brief 接收到设备端的消息时回调
+         * @param recvedData: 设备端返回的消息数据
+         */
+        default void onDevMsgRecved(final String deviceRtmUid, final String recvedData) {}
+    }
+
 
     ////////////////////////////////////////////////////////////////////////
     //////////////////////////// Public Methods ///////////////////////////
@@ -77,5 +99,23 @@ public interface IDevController  {
      * @return 返回错误码
      */
     int sendCmdDevReset(final OnCommandCmdListener cmdListener);
+
+
+
+
+    /**
+     * @brief 发送原始消息裸数据到设备
+     * @param sendingMsg : 需要发送的
+     * @param sendListener: 发送监听器，当发送成功或者失败候触发
+     * @return 返回错误码
+     */
+    int devRawMsgSend(final String sendingMsg, final OnDevMsgSendListener sendListener);
+
+    /**
+     * @brief 设置设备原始消息裸数据 接收监听器
+     * @param recvListener: 消息接收监听器，当接收到设备端消息时触发监听接口，如果为null，则接收到裸数据不再回调
+     * @return 返回错误码
+     */
+    int devRawMsgSetRecvListener(final OnDevMsgRecvListener recvListener);
 
 }

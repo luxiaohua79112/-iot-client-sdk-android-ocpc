@@ -45,16 +45,9 @@ public class DevController  implements IDevController {
     private static final String TAG = "IOTSDK/DevController";
 
 
-    //
-    // The mesage Id
-    //
-
-
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Variable Definition ///////////////////////////
     ////////////////////////////////////////////////////////////////////////
-
-
     private UUID mSessionId;
     private DeviceSessionMgr mSessionMgr;
     private String mDeviceId;
@@ -195,5 +188,23 @@ public class DevController  implements IDevController {
                 + ", resetCmd=" + resetCmd);
         return ret;
     }
+
+
+
+    @Override
+    public int devRawMsgSend(final String sendingMsg, final OnDevMsgSendListener sendListener) {
+        int ret = mSessionMgr.getRtmMgrComp().sendRawMsgToDev(mDeviceId, sendingMsg, sendListener);
+        ALog.getInstance().d(TAG, "<devRawMsgSend> done, ret=" + ret
+                + ", sendingMsg=" + sendingMsg);
+        return ret;
+    }
+
+
+    @Override
+    public int devRawMsgSetRecvListener(final OnDevMsgRecvListener recvListener) {
+        mSessionMgr.getRtmMgrComp().setRawMsgRecvListener(recvListener);
+        return ErrCode.XOK;
+    }
+
 
 }

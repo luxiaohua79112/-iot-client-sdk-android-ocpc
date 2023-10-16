@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import io.agora.iotlink.ErrCode;
+import io.agora.iotlink.IDevController;
 import io.agora.iotlink.IDevMediaMgr;
 import io.agora.iotlink.IDeviceSessionMgr;
 import io.agora.iotlink.base.AtomicBoolean;
@@ -49,7 +50,8 @@ public class RtmMgrComp extends BaseThreadComp {
     private static final long COMMAND_TIMEOUT = 10000;               ///< 命令响应超时10秒
     private static final long TIMER_INTERVAL = 4000;                ///< 定时器间隔 4秒
     private static final long HEARTBEAT_INTVAL = 120000;            ///< 心跳包定时2分钟发送一次
-    private static final String HEARTBEAT_CONTENT = "{ }";
+    private static final String HEARTBEAT_CONTENT = "{ }";          ///< 心跳包数据
+
 
     //
     // RTM的状态机
@@ -82,6 +84,8 @@ public class RtmMgrComp extends BaseThreadComp {
     private RtmPktQueue mRecvPktQueue = new RtmPktQueue();  ///< 接收数据包队列
     private RtmPktQueue mSendPktQueue = new RtmPktQueue();  ///< 发送数据包队列
     private RtmCmdMgr mReqCmdMgr = new RtmCmdMgr();        ///< 请求命令管理器
+
+    private IDevController.OnDevMsgRecvListener mRawMsgRecvListener = null;
 
 
     ///////////////////////////////////////////////////////////////////////
@@ -186,6 +190,8 @@ public class RtmMgrComp extends BaseThreadComp {
         RtmPacket packet = new RtmPacket();
         packet.mSequenceId = command.getSequenceId();
         packet.mPeerId = command.getDeviceId();
+        packet.mSendListener = null;
+        packet.mPktType = RtmPacket.PKT_TYPE_COMMAND;
         packet.mPktData = command.getReqCmdData();
         mSendPktQueue.inqueue(packet);
         sendSingleMessage(MSGID_RTM_SEND_PKT, 0, 0, null, 0);
@@ -195,7 +201,42 @@ public class RtmMgrComp extends BaseThreadComp {
     }
 
     /**
-     * @brief 发送命令到设备，非阻塞调用
+     * @brief 发送原始消息裸数据到设备，不用放到命令处理器中，非阻塞调用
+     */
+    public int sendRawMsgToDev(final String deviceId, final String sendingMsg,
+                               final IDevController.OnDevMsgSendListener sendListener) {
+        int rtmState = mState.getValue();
+        if (mState.getValue() != RTM_STATE_RUNNING) {
+            ALog.getInstance().e(TAG, "<sendRawMsgToDev> bad state, rtmState=" + rtmState);
+            return ErrCode.XERR_BAD_STATE;
+        }
+
+        // 发送消息处理
+        RtmPacket packet = new RtmPacket();
+        packet.mSequenceId = RtmCmdSeqId.getSeuenceId();
+        packet.mPeerId = deviceId;
+        packet.mSendListener = sendListener;
+        packet.mPktType = RtmPacket.PKT_TYPE_RAWMSG;
+        packet.mPktData = sendingMsg;
+        mSendPktQueue.inqueue(packet);
+        sendSingleMessage(MSGID_RTM_SEND_PKT, 0, 0, null, 0);
+
+        ALog.getInstance().d(TAG, "<sendRawMsgToDev> sendingMsg=" + sendingMsg);
+        return ErrCode.XOK;
+    }
+
+    /**
+     * @brief 设置 原始消息裸数据 监听器
+     */
+    public void setRawMsgRecvListener(final IDevController.OnDevMsgRecvListener recvListener) {
+        synchronized (mDataLock) {
+            mRawMsgRecvListener = recvListener;
+        }
+    }
+
+
+    /**
+     * @brief 更新token，非阻塞调用
      */
     public int renewToken(final String newRtmToken) {
         int rtmState = mState.getValue();
@@ -277,8 +318,13 @@ public class RtmMgrComp extends BaseThreadComp {
 
             // 解析回应命令数据包,生成回应命令
             IRtmCmd responseCmd = parseRspCmdData(recvedPkt.mPeerId, recvedPkt.mPktData);
-            if (responseCmd == null) {   // 回应命令解析失败
-                ALog.getInstance().e(TAG, "<onMessageRecvPkt> fail to parse recved packet, mPeerId=" + recvedPkt.mPeerId);
+            if (responseCmd == null) {   // 回应命令解析失败，作为原始裸数据进行回调
+                synchronized (mDataLock) {
+                    ALog.getInstance().d(TAG, "<onMessageRecvPkt> callback raw message recved, mPktData=" + recvedPkt.mPktData);
+                    if (mRawMsgRecvListener != null) {
+                        mRawMsgRecvListener.onDevMsgRecved(recvedPkt.mPeerId, recvedPkt.mPktData);
+                    }
+                }
                 continue;
             }
 
@@ -750,6 +796,12 @@ public class RtmMgrComp extends BaseThreadComp {
             public void onSuccess(Void aVoid) {
                 ALog.getInstance().d(TAG, "<rtmEngSendData.onSuccess>");
 
+                if (rtmPacket.mPktType == RtmPacket.PKT_TYPE_RAWMSG) {  // 发送的原始裸数据处理
+                    if (rtmPacket.mSendListener != null) {
+                        rtmPacket.mSendListener.onDevMsgSendDone(ErrCode.XOK, rtmPacket.mPktData);
+                    }
+                    return;
+                }
             }
 
             @Override
@@ -758,6 +810,13 @@ public class RtmMgrComp extends BaseThreadComp {
                         + ", errInfo=" + errorInfo.getErrorCode()
                         + ", errDesc=" + errorInfo.getErrorDescription());
                 int errCode = mapRtmMsgErrCode(errorInfo.getErrorCode());
+
+                if (rtmPacket.mPktType == RtmPacket.PKT_TYPE_RAWMSG) {  // 发送的原始裸数据处理
+                    if (rtmPacket.mSendListener != null) {
+                        rtmPacket.mSendListener.onDevMsgSendDone(errCode, rtmPacket.mPktData);
+                    }
+                    return;  // 不再进行其他处理
+                }
 
                 // 发送失败后要进行处理
                 IRtmCmd rtmCmd = mReqCmdMgr.removeCommand(rtmPacket.mSequenceId);   // 从命令管理器中删除改请求命令
