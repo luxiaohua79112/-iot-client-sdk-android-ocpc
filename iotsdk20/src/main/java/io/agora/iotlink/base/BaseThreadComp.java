@@ -102,8 +102,10 @@ public class BaseThreadComp {
      */
     public void sendSingleMessage(Message msg) {
         synchronized (mMsgQueueLock) {
-            mWorkHandler.removeMessages(msg.what);
-            mWorkHandler.sendMessage(msg);
+            if (mWorkHandler != null) {
+                mWorkHandler.removeMessages(msg.what);
+                mWorkHandler.sendMessage(msg);
+            }
         }
     }
 
@@ -115,12 +117,14 @@ public class BaseThreadComp {
         msg.obj = obj;
 
         synchronized (mMsgQueueLock) {
-            if (delayTime > 0) {
-                mWorkHandler.removeMessages(what);
-                mWorkHandler.sendMessageDelayed(msg, delayTime);
-            } else {
-                mWorkHandler.removeMessages(what);
-                mWorkHandler.sendMessage(msg);
+            if (mWorkHandler != null) {
+                if (delayTime > 0) {
+                    mWorkHandler.removeMessages(what);
+                    mWorkHandler.sendMessageDelayed(msg, delayTime);
+                } else {
+                    mWorkHandler.removeMessages(what);
+                    mWorkHandler.sendMessage(msg);
+                }
             }
         }
     }
@@ -133,10 +137,12 @@ public class BaseThreadComp {
         msg.obj = obj;
 
         synchronized (mMsgQueueLock) {
-            if (delayTime > 0) {
-                mWorkHandler.sendMessageDelayed(msg, delayTime);
-            } else {
-                mWorkHandler.sendMessage(msg);
+            if (mWorkHandler != null) {
+                if (delayTime > 0) {
+                    mWorkHandler.sendMessageDelayed(msg, delayTime);
+                } else {
+                    mWorkHandler.sendMessage(msg);
+                }
             }
         }
     }
@@ -146,7 +152,9 @@ public class BaseThreadComp {
      */
     public void removeMessage(int what) {
         synchronized (mMsgQueueLock) {
-           mWorkHandler.removeMessages(what);
+            if (mWorkHandler != null) {
+                mWorkHandler.removeMessages(what);
+            }
         }
     }
 
