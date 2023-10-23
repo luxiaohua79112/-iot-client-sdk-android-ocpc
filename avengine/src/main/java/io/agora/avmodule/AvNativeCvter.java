@@ -119,6 +119,24 @@ public class AvNativeCvter  {
     }
 
 
+    /**
+     * @brief 获取转换进度百分比
+     * @return 返回错误码
+     *          XERR_FILE_EOF 表示转换完成；
+     *          XERR_FILE_READ: 表示源数据流读取失败
+     *          XERR_FILE_WRITE: 表示写入文件失败
+     */
+    public int getConvertProgress() {
+        if (mCvterHandler == 0) {
+            return 0;
+        }
+
+        int progress = native_cvterGetProgress(mCvterHandler);
+        return progress;
+    }
+
+
+
     /**************************************************************/
     /********************  Native JNI Define *********************/
     /*************************************************************/
@@ -126,6 +144,6 @@ public class AvNativeCvter  {
     public native int native_cvterClose(long hCvter);
     public native int native_cvterGetMediaInfo(long hCvter, AvMediaInfo outMediaInfo);
     public native int native_cvterDoStep(long hCvter);
-
+    public native int native_cvterGetProgress(long hCvter);
 
 }

@@ -70,7 +70,8 @@ int32_t CAvConvertEng::Open(std::string src_file_path, std::string dst_file_path
     }
 
     ret = OutStreamOpen();
-
+    cvt_time_ = 0;
+    cvt_progress_ = 0;
 
     LOGD("<CAvConvertEng::Open> done, ret=%d\n", ret);
     return ret;
@@ -99,7 +100,9 @@ int32_t CAvConvertEng::DoConvert() {
   ret = av_read_frame(in_format_ctx_.get(), packet.get());
   if (ret == AVERROR_EOF) {   // 媒体文件读取结束
       int writeRet = av_write_trailer(out_format_ctx_.get());  // 写入文件尾部信息
-      LOGD("<CAvConvertEng::DoConvert> [ERROR] av_read_frame() is EOF, writeRet=%d\n", writeRet);
+      cvt_progress_ = 100;
+      LOGD("<CAvConvertEng::DoConvert> [ERROR] av_read_frame() is EOF, writeRet=%d, cvt_progress_=%d\n",
+           writeRet, cvt_progress_);
       return XERR_FILE_EOF;
 
   } else if (ret < 0) {   // 数据包读取失败
@@ -122,6 +125,10 @@ int32_t CAvConvertEng::DoConvert() {
       packet->dts = out_video_dts;
       LOGD("<CAvConvertEng::DoConvert> [VIDEO] video_time=%" PRId64 ", in_video_pts=%" PRId64 ", out_video_pts=%" PRId64 ", in_video_dts=%" PRId64 ", out_video_dts=%" PRId64 " \n",
            video_time, in_video_pts, out_video_pts, in_video_dts, out_video_dts);
+
+      // 计算当前进度
+      cvt_time_ = static_cast<int64_t>(out_video_pts * 1000 * av_q2d(out_video_stream_->time_base) * 1000);
+      cvt_progress_ = (int32_t)(cvt_time_ * 100L / in_media_info_->video_duration_);
 
   } else if (packet->stream_index == in_media_info_->audio_track_index_) { // 音频
       // 包的流索引改为输出音频流索引值
@@ -146,8 +153,12 @@ int32_t CAvConvertEng::DoConvert() {
       return XERR_FILE_WRITE;
   }
 
-  LOGD("<CAvConvertEng::DoConvert> done, ret=%d\n", ret);
+  LOGD("<CAvConvertEng::DoConvert> done, ret=%d, cvt_progress_=%d\n", ret, cvt_progress_);
   return XOK;
+}
+
+int32_t CAvConvertEng::GetCvtProgress() {
+    return cvt_progress_;
 }
 
 

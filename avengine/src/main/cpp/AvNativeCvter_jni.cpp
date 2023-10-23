@@ -251,3 +251,22 @@ JNIEXPORT jint JNICALL Java_io_agora_avmodule_AvNativeCvter_native_1cvterDoStep
   int ret = pEngHandler->pCvtEng->DoConvert();
   return (jint)ret;
 }
+
+/*
+ * Class:     io_agora_avmodule_AvNativeCvter
+ * Method:    native_cvterGetProgress
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_io_agora_avmodule_AvNativeCvter_native_1cvterGetProgress
+  (JNIEnv *env, jobject thiz, jlong jlEng)
+{
+  AVCVTERENG_HANDLER* pEngHandler = (AVCVTERENG_HANDLER*)jlEng;
+
+  if (nullptr == pEngHandler || nullptr == pEngHandler->pCvtEng) {
+    LOGE("<native_1cvterGetProgress> [ERROR] invalid parameter\n");
+    return 0;
+  }
+
+  int progress = pEngHandler->pCvtEng->GetCvtProgress();
+  return (jint)progress;
+}

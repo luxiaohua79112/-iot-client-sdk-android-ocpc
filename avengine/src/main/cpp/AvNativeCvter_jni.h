@@ -39,6 +39,14 @@ JNIEXPORT jint JNICALL Java_io_agora_avmodule_AvNativeCvter_native_1cvterGetMedi
 JNIEXPORT jint JNICALL Java_io_agora_avmodule_AvNativeCvter_native_1cvterDoStep
   (JNIEnv *, jobject, jlong);
 
+/*
+ * Class:     io_agora_avmodule_AvNativeCvter
+ * Method:    native_cvterGetProgress
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_io_agora_avmodule_AvNativeCvter_native_1cvterGetProgress
+  (JNIEnv *, jobject, jlong);
+
 #ifdef __cplusplus
 }
 #endif

@@ -29,6 +29,9 @@ public:
   //   XERR_FILE_EOF: 转码完成；   XERR_FILE_READ: 数据包读取失败；  XERR_FILE_WRITE: 写入失败
   int32_t DoConvert();
 
+  // 获取当前转换进度，返回转换进度百分比
+  int32_t GetCvtProgress();
+
 
 protected:
   int32_t InStreamOpen();
@@ -55,6 +58,8 @@ private:
   AVStreamPtr             out_video_stream_ = nullptr;    ///< 输出视频流
   AVStreamPtr             out_audio_stream_ = nullptr;    ///< 输出音频流
 
+  int64_t                 cvt_time_ = 0;                  ///< 当前转换的时间
+  int64_t                 cvt_progress_ = 0;              ///< 转换进度百分比，范围 [0, 100]
 
 };
 

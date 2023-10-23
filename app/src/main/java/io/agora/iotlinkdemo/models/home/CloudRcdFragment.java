@@ -53,6 +53,8 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
     //
     private static final int MSGID_PLAYING_TIMER = 0x2001;       ///< 播放定时器
     private static final int MSGID_DNLOADING_TIMER = 0x2002;     ///< 下载定时器
+    private static final int MSGID_CVTING_TIMER = 0x2003;       ///< 转换定时器
+
 
 
 
@@ -118,6 +120,10 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
 
                     case MSGID_DNLOADING_TIMER:
                         onMessageDnloadingTimer();
+                        break;
+
+                    case MSGID_CVTING_TIMER:
+                        onMessageCvtingTimer();
                         break;
                 }
             }
@@ -351,7 +357,8 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
         //String mediaFilePath = "http://cloud-store-test.s3.cn-east-1.jdcloud-oss.com/ts-muxer.m3u8";
         //String mediaFilePath = "https://stream-media.s3.cn-north-1.jdcloud-oss.com/iot-three/726181688096107589_1694508560758_711350438.m3u8";
         //String mediaFilePath = "https://stream-media.s3.cn-north-1.jdcloud-oss.com/iot-seven/766781697442934487_1697453301090_2080565081.m3u8?agora-key=NzgxNTU1MDY4MTJhMTYxMQ==";
-        String mediaFilePath = "https://s3.cn-north-1.jdcloud-oss.com/stream-media/testVideo/output.m3u8";
+        //String mediaFilePath = "https://s3.cn-north-1.jdcloud-oss.com/stream-media/testVideo/output.m3u8";
+        String mediaFilePath = "/sdcard/VIDEO_20231023_1698047661725.mp4";
 
         int playState = mVodPlayer.getPlayingState();
         if (playState == IVodPlayer.VODPLAYER_STATE_CLOSED) {
@@ -691,6 +698,7 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
             mMediaCvter.release();
             mMediaCvter = null;
             popupMessage("Media converter closed!");
+            mMsgHandler.removeMessages(MSGID_CVTING_TIMER);
 
             getBinding().btnDownloadOpenclose.setText("打开下载");
             getBinding().btnDownloadStartstop.setEnabled(false);
@@ -714,6 +722,26 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
         }
     }
 
+
+    /**
+     * @brief 转换定时器处理
+     */
+    void onMessageCvtingTimer() {
+        if (mMediaCvter == null) {
+            return;
+        }
+
+        int cvtState = mMediaCvter.getState();
+        if (cvtState == AvMediaConverter.CONVERT_STATE_ONGOING ||
+            cvtState == AvMediaConverter.CONVERT_STATE_PAUSED ) {
+
+            int progress = mMediaCvter.getProgress() * 10;
+            getBinding().sbDownloading.setProgress(progress);
+        }
+
+        mMsgHandler.sendEmptyMessageDelayed(MSGID_CVTING_TIMER, TIMER_INTERVAL);
+    }
+
     //////////////////////////////////////////////////////////////////////////////////
     /////////// Override Methods of AvMediaConverter.IAvMediaCvtCallback /////////////
     /////////////////////////////////////////////////////////////////////////////////
@@ -729,6 +757,7 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
                     getBinding().btnDownloadOpenclose.setText("关闭下载");
                     getBinding().btnDownloadStartstop.setEnabled(true);
                     getBinding().btnDownloadStartstop.setText("开始下载");
+                    mMsgHandler.sendEmptyMessage(MSGID_CVTING_TIMER);
 
                 } else {
                     popupMessage("Open source stream failure, errCode=" + errCode);

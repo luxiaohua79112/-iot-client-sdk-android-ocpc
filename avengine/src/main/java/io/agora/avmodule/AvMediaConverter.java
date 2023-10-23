@@ -98,6 +98,7 @@ public class AvMediaConverter extends AvCompBase {
 
     private AvNativeCvter mNativeCvter;
     private AvMediaInfo mMediaInfo;         ///< 原始媒体文件信息
+    private int mCvtProgress = 0;           ///< 当前转换进度
     private volatile int mState = CONVERT_STATE_CLOSED;
 
 
@@ -114,6 +115,7 @@ public class AvMediaConverter extends AvCompBase {
         int ret;
 
         mCvtParam = cvtParam;
+        mCvtProgress = 0;
 
         // 启动组件线程
         ret = runStart(COMP_NAME);
@@ -213,6 +215,15 @@ public class AvMediaConverter extends AvCompBase {
         return ErrCode.XOK;
     }
 
+    /*
+     * @brief 获取当前转换进度
+     * @return 进度百分比，值范围 [0, 100]
+     */
+    public int getProgress() {
+        synchronized (mDataLock) {
+            return mCvtProgress;
+        }
+    }
 
     ///////////////////////////////////////////////////////////////////////////////////
     ///////////////////////// Override AvCompBase Methods /////////////////////////////
@@ -286,6 +297,10 @@ public class AvMediaConverter extends AvCompBase {
 
 
         int ret = mNativeCvter.doConvertStep();
+        int cvtProgress = mNativeCvter.getConvertProgress();
+        synchronized (mDataLock) {
+            mCvtProgress = cvtProgress;
+        }
         if (ret == ErrCode.XERR_FILE_EOF) {
             Log.d(TAG, "<onMessageConvert> convering is done!");
             if (mCvtParam.mCallback != null) {  // 回调给上层 转换完成
