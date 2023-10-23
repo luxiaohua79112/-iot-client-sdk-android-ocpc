@@ -217,26 +217,13 @@ public interface IDeviceSessionMgr  {
     ConnectResult connect(final ConnectParam connectParam,
                           final ISessionCallback sessionCallback);
 
-    /**
-     * @brief 连接设备监听器
-     */
-    public static interface OnSessionDisconnectListener {
-
-        /**
-         * @brief 断开设备完成回调
-         * @param sessionId: 设备连接会话Id
-         * @param errCode: 断开结果，0表示成功断开
-         */
-        default void onSessionDisconnectDone(final UUID sessionId, int errCode) { }
-    }
 
     /**
      * @brief 断开设备连接，同步调用，会断开设备所有的连接并且停止所有的预览、控制处理等
      * @param sessionId : 设备连接会话Id
-     * @param disconnectListener : 断连完成回调
      * @return 返回错误码
      */
-    int disconnect(final UUID sessionId, final OnSessionDisconnectListener disconnectListener);
+    int disconnect(final UUID sessionId);
 
     /**
      * @brief 根据 sessionId 获取会话状态信息

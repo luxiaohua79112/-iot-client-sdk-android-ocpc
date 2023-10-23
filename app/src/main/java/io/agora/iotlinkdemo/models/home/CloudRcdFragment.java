@@ -349,7 +349,9 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
     void onBtnOpenClose(View view) {
         //String mediaFilePath = "/sdcard/test.mp4";
         //String mediaFilePath = "http://cloud-store-test.s3.cn-east-1.jdcloud-oss.com/ts-muxer.m3u8";
-        String mediaFilePath = "https://stream-media.s3.cn-north-1.jdcloud-oss.com/iot-three/726181688096107589_1694508560758_711350438.m3u8";
+        //String mediaFilePath = "https://stream-media.s3.cn-north-1.jdcloud-oss.com/iot-three/726181688096107589_1694508560758_711350438.m3u8";
+        //String mediaFilePath = "https://stream-media.s3.cn-north-1.jdcloud-oss.com/iot-seven/766781697442934487_1697453301090_2080565081.m3u8?agora-key=NzgxNTU1MDY4MTJhMTYxMQ==";
+        String mediaFilePath = "https://s3.cn-north-1.jdcloud-oss.com/stream-media/testVideo/output.m3u8";
 
         int playState = mVodPlayer.getPlayingState();
         if (playState == IVodPlayer.VODPLAYER_STATE_CLOSED) {
@@ -501,7 +503,8 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
     void onBtnDnloadOpenClose(View view) {
         //String mediaFilePath = "/sdcard/test.mp4";
         //String mediaFilePath = "http://cloud-store-test.s3.cn-east-1.jdcloud-oss.com/ts-muxer.m3u8";
-        String cloudFilePath = "https://stream-media.s3.cn-north-1.jdcloud-oss.com/0000000/output.m3u8";
+        //String cloudFilePath = "https://stream-media.s3.cn-north-1.jdcloud-oss.com/0000000/output.m3u8";
+        String cloudFilePath = "https://s3.cn-north-1.jdcloud-oss.com/stream-media/testVideo/output.m3u8";
 
         File file = getActivity().getExternalFilesDir(null);
         String cachePath = file.getAbsolutePath();
@@ -659,8 +662,10 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
         int ret;
 
         if (mMediaCvter == null) {
-            String srcFileUrl = "https://stream-media.s3.cn-north-1.jdcloud-oss.com/0000000/output.m3u8";
+            //String srcFileUrl = "https://stream-media.s3.cn-north-1.jdcloud-oss.com/0000000/output.m3u8";
             //String srcFileUrl = "/sdcard/test.mp4";
+            //String srcFileUrl = "https://stream-media.s3.cn-north-1.jdcloud-oss.com/iot-seven/766781697442934487_1697453301090_2080565081.m3u8?agora-key=NzgxNTU1MDY4MTJhMTYxMQ==";
+            String srcFileUrl = "https://s3.cn-north-1.jdcloud-oss.com/stream-media/testVideo/output.m3u8";
 
             File file = getActivity().getExternalFilesDir(null);
             String cachePath = file.getAbsolutePath();

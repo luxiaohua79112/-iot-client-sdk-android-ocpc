@@ -45,6 +45,7 @@ public class PermissionHandler {
     public static final int PERM_ID_WRITE_STORAGE = 0x1006;
     public static final int PERM_ID_BLUETOOTH_SCAN = 0x1007;
     public static final int PERM_ID_BLUETOOTH_CONNECT = 0x1008;
+    public static final int PERM_ID_READ_PHONE_STATE = 0x1009;
 
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Variable Definition ///////////////////////////
@@ -194,6 +195,9 @@ public class PermissionHandler {
 
             case PERM_ID_BLUETOOTH_CONNECT:
                 return Manifest.permission.BLUETOOTH_CONNECT;
+
+            case PERM_ID_READ_PHONE_STATE:
+                return Manifest.permission.READ_PHONE_STATE;
         }
 
         return "";

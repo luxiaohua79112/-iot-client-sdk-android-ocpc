@@ -103,11 +103,18 @@ public class VodPlayer implements IVodPlayer {
             // 使用openGLES渲染
             mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "opensles", 1);
 
+            mIjkPlayer.setOnBufferingUpdateListener(new IMediaPlayer.OnBufferingUpdateListener() {
+                @Override
+                public void onBufferingUpdate(IMediaPlayer iMediaPlayer, int percent) {
+                    ALog.getInstance().d(TAG, "<open.onBufferingUpdate> percent=" + percent);
+                }
+            });
+
             mIjkPlayer.setOnVideoSizeChangedListener(new IMediaPlayer.OnVideoSizeChangedListener() {
                 @Override
-                public void onVideoSizeChanged(IMediaPlayer iMediaPlayer,  int width, int height, int sarNum, int sarDen) {
+                public void onVideoSizeChanged(IMediaPlayer iMediaPlayer, int width, int height, int sarNum, int sarDen) {
                     ALog.getInstance().d(TAG, "<open.onVideoSizeChanged> width=" + width
-                        + ", height=" + height + ", sarNum=" + sarNum + ", sarDen=" + sarDen);
+                            + ", height=" + height + ", sarNum=" + sarNum + ", sarDen=" + sarDen);
                 }
             });
 

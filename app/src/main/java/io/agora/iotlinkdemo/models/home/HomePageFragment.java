@@ -412,29 +412,11 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
 
                                 IDeviceSessionMgr sessionMgr = AIotAppSdkFactory.getDevSessionMgr();
 
-                                //
-                                // 初始化 SDK引擎
-                                //
-                                PresistentLinkComp.InitParam linkInitParam = PresistentLinkComp.getInstance().getInitParam();
-                                IDeviceSessionMgr.InitParam initParam = new IDeviceSessionMgr.InitParam();
-                                initParam.mContext = linkInitParam.mContext;
-                                initParam.mAppId = linkInitParam.mAppId;
-                                initParam.mProjectID = linkInitParam.mProjectID;
-                                initParam.mUserId = PresistentLinkComp.getInstance().getLocalNodeId();
-                                File file = initParam.mContext.getExternalFilesDir(null);
-                                String cachePath = file.getAbsolutePath();
-                                initParam.mLogFilePath = cachePath + "/callkit.log";
-                                int retSdk = sessionMgr.initialize(initParam);
-                                if (retSdk != ErrCode.XOK) {
-                                    popupMessage("Fail to init SDK, errCode=" + errCode);
-                                    return;
-                                }
 
 
                                 //
                                 // SDK中 连接设备会话 操作
                                 //
-                                String localNodeId = PresistentLinkComp.getInstance().getLocalNodeId();
                                 IDeviceSessionMgr.ConnectParam connectParam = new IDeviceSessionMgr.ConnectParam();
                                 connectParam.mPeerDevId = deviceId;
                                 connectParam.mLocalRtcUid = localRtcUid;
@@ -487,22 +469,11 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
             // SDK中断开连接
             if (deviceInfo.mSessionId != null) {
                 IDeviceSessionMgr sessionMgr = AIotAppSdkFactory.getDevSessionMgr();
-                int ret = sessionMgr.disconnect(deviceInfo.mSessionId, new IDeviceSessionMgr.OnSessionDisconnectListener() {
-                    @Override
-                    public void onSessionDisconnectDone(UUID sessionId, int errCode) {
-                        Log.d(TAG, "<onSessionDisconnectDone> sessionId=" + sessionId);
-                        getActivity().runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                AIotAppSdkFactory.getDevSessionMgr().release();
-                                popupMessage("Disconnect device: " + deviceInfo.mNodeId + " successful!");
-                            }
-                        });
-                    }
-                });
+                int ret = sessionMgr.disconnect(deviceInfo.mSessionId);
                 if (ret != ErrCode.XOK) {
                     popupMessage("SDK Disconnect device: " + deviceInfo.mNodeId + " failure, ret=" + ret);
-                    return;
+                } else {
+                    popupMessage("SDK Disconnect device: " + deviceInfo.mNodeId + " successful!");
                 }
             }
 

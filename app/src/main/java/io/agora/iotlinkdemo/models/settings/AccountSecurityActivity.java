@@ -82,19 +82,13 @@ public class AccountSecurityActivity extends BaseViewBindingActivity<ActivityAcc
 
                 @Override
                 public void onRightButtonClick() {
-//                    // 进行登出操作
-//                    int errCode = AIotAppSdkFactory.getInstance().unprepare();
-//                    if (errCode == ErrCode.XOK) {
-//                        popupMessage("User account logout successful!");
-//
-//                        AppStorageUtil.safePutString(mActivity, Constant.ACCOUNT, "");
-//                        gotoLoginActivity();
-//
-//                    } else {
-//                        popupMessage("User account logout failure, errCode=" + errCode);
-//                    }
+                    // 进行登出操作
+                    PresistentLinkComp.getInstance().unprepare();
+                    AIotAppSdkFactory.getDevSessionMgr().release();
+                    popupMessage("User account logout successful!");
 
-                    popupMessage("当前不支持登出操作!");
+                    AppStorageUtil.safePutString(mActivity, Constant.ACCOUNT, "");
+                    gotoLoginActivity();
                 }
             });
         }

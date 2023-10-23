@@ -5,8 +5,6 @@
     <!-- 访问网络权限 -->
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- 摄像头权限 -->
-    <uses-permission android:name="android.permission.CAMERA" />
     <!-- 麦克风权限 -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <!-- 音频设置权限 -->

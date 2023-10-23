@@ -22,6 +22,7 @@ import io.agora.iotlink.IDevMediaMgr;
 import io.agora.iotlink.IDeviceSessionMgr;
 import io.agora.iotlink.base.AtomicBoolean;
 import io.agora.iotlink.base.AtomicInteger;
+import io.agora.iotlink.base.AtomicUuid;
 import io.agora.iotlink.base.BaseEvent;
 import io.agora.iotlink.base.BaseThreadComp;
 import io.agora.iotlink.callkit.SessionCtx;
@@ -80,6 +81,7 @@ public class RtmMgrComp extends BaseThreadComp {
     private AtomicInteger mState = new AtomicInteger();         ///< RTM状态机
     private SendMessageOptions mSendMsgOptions;                 ///< RTM消息配置
     private long mHeartbeatTimestamp = 0;                       ///< 上次发送心跳包的时间戳
+    private AtomicUuid mCurrSessionId = new AtomicUuid();       ///< 当前会话的 sessionId
 
     private RtmPktQueue mRecvPktQueue = new RtmPktQueue();  ///< 接收数据包队列
     private RtmPktQueue mSendPktQueue = new RtmPktQueue();  ///< 发送数据包队列
@@ -97,6 +99,13 @@ public class RtmMgrComp extends BaseThreadComp {
     public int initialize(final DeviceSessionMgr sessionMgr) {
         mSessionMgr = sessionMgr;
         mState.setValue(RTM_STATE_IDLE);  // 未登录空闲状态
+        mCurrSessionId.setValue(null);
+
+        // 创建 RTM引擎对象
+        int ret = rtmEngCreate();
+        if (ret != ErrCode.XOK) {
+            return ret;
+        }
 
         // 启动组件线程
         runStart(TAG);
@@ -112,46 +121,40 @@ public class RtmMgrComp extends BaseThreadComp {
         // 停止组件线程
         runStop();
 
-        rtmEngDestroy();          // 直接释放 RTM引擎对象，正常应该在断连时释放
+        rtmEngDestroy();          // 直接释放 RTM引擎对象
 
         // 清除队列
         mRecvPktQueue.clear();
         mSendPktQueue.clear();
         mReqCmdMgr.clear();
+        mCurrSessionId.setValue(null);
 
         ALog.getInstance().d(TAG, "<release> done");
     }
 
     /**
-     * @brief 连接设备监听器
+     * @brief 连接到某个设备，连接结果通过监听器异步返回
      */
-    public static interface OnRtmConnectDevListener {
-        /**
-         * @brief 连接设备完成回调
-         * @param sessionCtx: 会话上下文
-         * @param errCode: 连接结果
-         */
-        default void onRtmConnectDevDone(final SessionCtx sessionCtx, int errCode) { }
-    }
-
-    /**
-     * @brief 连接到某个设备，连接结果通过监听器异步返回，但还是会有阻塞调用
-     */
-    public void connectToDevice(final SessionCtx sessionCtx,
-                               final OnRtmConnectDevListener connectDevListener) {
+    public void connectToDevice(final SessionCtx sessionCtx) {
         mRecvPktQueue.clear();
         mSendPktQueue.clear();
         mReqCmdMgr.clear();
 
-        // 创建 RTM引擎对象
-        int ret = rtmEngCreate(sessionCtx);
-        if (ret != ErrCode.XOK) {
-            connectDevListener.onRtmConnectDevDone(sessionCtx, ret);
-            return;
+        // 设置当前新的会话 sessionId
+        mCurrSessionId.setValue(sessionCtx.mSessionId);
+
+        int currState = mState.getValue();
+        if (currState == RTM_STATE_IDLE) {  // 当前还未登录
+            rtmEngLogin(sessionCtx.mRtmUid, sessionCtx.mRtmToken);
+
+        } else if (currState == RTM_STATE_RUNNING) {  // 当前已经登录了
+            rtmEngInnerRenewToken(sessionCtx);
+            mSessionMgr.onRtmConnectDevDone(sessionCtx.mSessionId, ErrCode.XOK); // 直接回调成功
+
+        } else {  // 当前正在上一次登录或者RenewToken时，也直接认为成功
+            mSessionMgr.onRtmConnectDevDone(sessionCtx.mSessionId, ErrCode.XOK); // 直接回调成功
         }
 
-        // 同步进行 RTM登录
-        rtmEngLogin(sessionCtx, sessionCtx.mRtmUid, connectDevListener);
 
         mHeartbeatTimestamp = System.currentTimeMillis();
 
@@ -165,7 +168,9 @@ public class RtmMgrComp extends BaseThreadComp {
      */
     public void disconnectFromDevice(final SessionCtx sessionCtx) {
         removeMessage(MSGID_RTM_TIMER);  // 清除定时器
-        rtmEngDestroy();          // 直接释放 RTM引擎对象，正常应该在断连时释放
+
+        // 清除当前会话的 sessionId
+        mCurrSessionId.setValue(null);
 
         // 清除队列
         mRecvPktQueue.clear();
@@ -673,7 +678,7 @@ public class RtmMgrComp extends BaseThreadComp {
     /**
      * @brief 初始化 RtmSdk
      */
-    private int rtmEngCreate(final SessionCtx sessionCtx) {
+    private int rtmEngCreate() {
         mSendMsgOptions = new SendMessageOptions();
 
         RtmClientListener rtmListener = new RtmClientListener() {
@@ -715,14 +720,20 @@ public class RtmMgrComp extends BaseThreadComp {
 
             @Override
             public void onTokenExpired() {
-                ALog.getInstance().d(TAG, "<rtmEngCreate.onTokenExpired>");
-                mSessionMgr.onRtmTokenWillExpire(sessionCtx.mSessionId);
+                UUID sessionId = mCurrSessionId.getValue();
+                ALog.getInstance().d(TAG, "<rtmEngCreate.onTokenExpired> sessionId=" + sessionId);
+                if (sessionId != null) {  // 还在会话中
+                    mSessionMgr.onRtmTokenWillExpire(sessionId);
+                }
             }
 
             @Override
             public void onTokenPrivilegeWillExpire() {
-                ALog.getInstance().d(TAG, "<rtmEngCreate.onTokenPrivilegeWillExpire>");
-                mSessionMgr.onRtmTokenWillExpire(sessionCtx.mSessionId);
+                UUID sessionId = mCurrSessionId.getValue();
+                ALog.getInstance().d(TAG, "<rtmEngCreate.onTokenPrivilegeWillExpire> sessionId=" + sessionId);
+                if (sessionId != null) {  // 还在会话中
+                    mSessionMgr.onRtmTokenWillExpire(sessionId);
+                }
             }
 
             @Override
@@ -762,30 +773,36 @@ public class RtmMgrComp extends BaseThreadComp {
     /**
      * @brief 登录用户账号
      */
-    private int rtmEngLogin(final SessionCtx sessionCtx, final String userId,
-                            final OnRtmConnectDevListener connectDevListener)
+    private int rtmEngLogin(final String rtmUid, final String rtmToken)
     {
         if (mRtmClient == null) {
+            ALog.getInstance().e(TAG, "<rtmEngLogin> bad status");
             return ErrCode.XERR_BAD_STATE;
         }
 
         mState.setValue(RTM_STATE_LOGINING);  // 切换到正在登录状态
-        mRtmClient.login(sessionCtx.mRtmToken, userId, new ResultCallback<Void>() {
+        mRtmClient.login(rtmToken, rtmUid, new ResultCallback<Void>() {
             @Override
             public void onSuccess(Void responseInfo) {
-                ALog.getInstance().d(TAG, "<rtmEngLogin.onSuccess> success");
+                UUID sessionId = mCurrSessionId.getValue();
+                ALog.getInstance().d(TAG, "<rtmEngLogin.onSuccess> success, sessionId=" + sessionId);
                 mState.setValue(RTM_STATE_RUNNING);  // 登录成功，切换到运行状态
-                connectDevListener.onRtmConnectDevDone(sessionCtx, ErrCode.XOK);
+                if (sessionId != null) {
+                    mSessionMgr.onRtmConnectDevDone(sessionId, ErrCode.XOK);
+                }
             }
 
             @Override
             public void onFailure(ErrorInfo errorInfo) {
-                ALog.getInstance().i(TAG, "<rtmEngLogin.onFailure> failure"
+                UUID sessionId = mCurrSessionId.getValue();
+                ALog.getInstance().i(TAG, "<rtmEngLogin.onFailure> failure, sessionId=" + sessionId
                         + ", errInfo=" + errorInfo.getErrorCode()
                         + ", errDesc=" + errorInfo.getErrorDescription());
                 int errCode = mapRtmLoginErrCode(errorInfo.getErrorCode());
                 mState.setValue(RTM_STATE_IDLE);  // 登录失败，切换到 未登录空闲状态
-                connectDevListener.onRtmConnectDevDone(sessionCtx, errCode);
+                if (sessionId != null) {
+                    mSessionMgr.onRtmConnectDevDone(sessionId, errCode);
+                }
             }
         });
 
@@ -793,63 +810,35 @@ public class RtmMgrComp extends BaseThreadComp {
         return ErrCode.XOK;
     }
 
+
     /**
-     * @brief 发送消息到对端
+     * @brief 在连接设备的时候，更新token，不用管是否更新成功
      */
-    private int rtmEngSendData(final RtmPacket rtmPacket) {
+    private int rtmEngInnerRenewToken(final SessionCtx sessionCtx)
+    {
         if (mRtmClient == null) {
             return ErrCode.XERR_BAD_STATE;
         }
 
-        RtmMessage rtmMsg = mRtmClient.createMessage(rtmPacket.mPktData.getBytes(StandardCharsets.UTF_8));
-        mRtmClient.sendMessageToPeer(rtmPacket.mPeerId, rtmMsg, mSendMsgOptions, new ResultCallback<Void>() {
+        mRtmClient.renewToken(sessionCtx.mRtmToken, new ResultCallback<Void>() {
             @Override
-            public void onSuccess(Void aVoid) {
-                ALog.getInstance().d(TAG, "<rtmEngSendData.onSuccess>");
-
-                if (rtmPacket.mPktType == RtmPacket.PKT_TYPE_RAWMSG) {  // 发送的原始裸数据处理
-                    if (rtmPacket.mSendListener != null) {
-                        rtmPacket.mSendListener.onDevMsgSendDone(ErrCode.XOK, rtmPacket.mPktData);
-                    }
-                    return;
-                }
+            public void onSuccess(Void responseInfo) {
+                ALog.getInstance().d(TAG, "<rtmEngInnerRenewToken.onSuccess> success");
             }
 
             @Override
             public void onFailure(ErrorInfo errorInfo) {
-                ALog.getInstance().i(TAG, "<rtmEngSendData.onFailure> failure"
+                ALog.getInstance().i(TAG, "<rtmEngInnerRenewToken.onFailure> failure"
                         + ", errInfo=" + errorInfo.getErrorCode()
                         + ", errDesc=" + errorInfo.getErrorDescription());
-                int errCode = mapRtmMsgErrCode(errorInfo.getErrorCode());
-
-                if (rtmPacket.mPktType == RtmPacket.PKT_TYPE_RAWMSG) {  // 发送的原始裸数据处理
-                    if (rtmPacket.mSendListener != null) {
-                        rtmPacket.mSendListener.onDevMsgSendDone(errCode, rtmPacket.mPktData);
-                    }
-                    return;  // 不再进行其他处理
-                }
-
-                // 发送失败后要进行处理
-                IRtmCmd rtmCmd = mReqCmdMgr.removeCommand(rtmPacket.mSequenceId);   // 从命令管理器中删除改请求命令
-                if (rtmCmd == null) {
-                    ALog.getInstance().i(TAG, "<rtmEngSendData.onFailure> not found command"
-                            + ", mSequenceId=" + rtmPacket.mSequenceId);
-                    return;
-                }
-
-                //
-                // 回调上层，请求--响应超时
-                //
-                IRtmCmd.OnRtmCmdRespListener cmdRespListener = rtmCmd.getRespListener();
-                if (cmdRespListener != null) {
-                    cmdRespListener.onRtmCmdResponsed(rtmCmd.getCommandId(), errCode, rtmCmd, null );
-                }
             }
         });
 
-        ALog.getInstance().d(TAG, "<sendMessage> done, rtmPacket=" + rtmPacket);
+        ALog.getInstance().d(TAG, "<rtmEngInnerRenewToken> done");
         return ErrCode.XOK;
     }
+
+
 
     /**
      * @brief 更新token
@@ -882,6 +871,74 @@ public class RtmMgrComp extends BaseThreadComp {
         return ErrCode.XOK;
     }
 
+    /**
+     * @brief 发送消息到对端
+     */
+    private int rtmEngSendData(final RtmPacket rtmPacket) {
+        if (mRtmClient == null) {
+            return ErrCode.XERR_BAD_STATE;
+        }
+
+        RtmMessage rtmMsg = mRtmClient.createMessage(rtmPacket.mPktData.getBytes(StandardCharsets.UTF_8));
+        mRtmClient.sendMessageToPeer(rtmPacket.mPeerId, rtmMsg, mSendMsgOptions, new ResultCallback<Void>() {
+            @Override
+            public void onSuccess(Void aVoid) {
+                ALog.getInstance().d(TAG, "<rtmEngSendData.onSuccess> rtmPacket=" + rtmPacket);
+
+                if (rtmPacket.mPktType == RtmPacket.PKT_TYPE_RAWMSG) {  // 发送的原始裸数据处理
+                    if (rtmPacket.mSendListener != null) {
+                        rtmPacket.mSendListener.onDevMsgSendDone(ErrCode.XOK, rtmPacket.mPktData);
+                    }
+                    return;
+                }
+            }
+
+            @Override
+            public void onFailure(ErrorInfo errorInfo) {
+                ALog.getInstance().i(TAG, "<rtmEngSendData.onFailure> failure"
+                        + ", errInfo=" + errorInfo.getErrorCode()
+                        + ", errDesc=" + errorInfo.getErrorDescription()
+                        + ", rtmPacket=" + rtmPacket);
+                int errCode = mapRtmMsgErrCode(errorInfo.getErrorCode());
+
+                if (rtmPacket.mPktType == RtmPacket.PKT_TYPE_RAWMSG) {  // 发送的原始裸数据处理
+                    if (rtmPacket.mSendListener != null) {
+                        rtmPacket.mSendListener.onDevMsgSendDone(errCode, rtmPacket.mPktData);
+                    }
+                    return;  // 不再进行其他处理
+                }
+
+                // 发送失败后要进行处理
+                IRtmCmd rtmCmd = mReqCmdMgr.removeCommand(rtmPacket.mSequenceId);   // 从命令管理器中删除改请求命令
+                if (rtmCmd == null) {
+                    ALog.getInstance().i(TAG, "<rtmEngSendData.onFailure> not found command"
+                            + ", mSequenceId=" + rtmPacket.mSequenceId);
+                    return;
+                }
+
+                //
+                // 回调上层，请求--响应超时
+                //
+                IRtmCmd.OnRtmCmdRespListener cmdRespListener = rtmCmd.getRespListener();
+                if (cmdRespListener != null) {
+                    cmdRespListener.onRtmCmdResponsed(rtmCmd.getCommandId(), errCode, rtmCmd, null );
+                }
+            }
+        });
+
+        ALog.getInstance().d(TAG, "<sendMessage> done, rtmPacket=" + rtmPacket);
+        return ErrCode.XOK;
+    }
+
+
+    /*
+     * @brief 设置当前通话的 sessionId
+     */
+    void setCurrSessionId(UUID sessionId) {
+
+
+
+    }
 
     ///////////////////////////////////////////////////////////////////////////
     ////////////////////// Methods for Mapping Error Code /////////////////////
