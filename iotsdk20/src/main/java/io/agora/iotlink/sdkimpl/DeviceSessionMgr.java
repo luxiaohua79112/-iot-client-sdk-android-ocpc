@@ -915,7 +915,7 @@ public class DeviceSessionMgr extends BaseThreadComp
             mTalkEngine.leaveChannel(sessionCtx);
 
             // 如果当前没有会话了，直接释放整个RtcSDK
-            if (sessionCount <= 0) {
+            if (sessionCount <= 1) {
                 mTalkEngine.release();
             }
         }
