@@ -58,7 +58,7 @@ public class SessionCtx  {
     public boolean mPubLocalAudio;  ///< 是否推送本地音频流
     public boolean mSubDevAudio;    ///< 当前是否订阅设备端音频流
     public boolean mSubDevVideo;    ///< 当前是否订阅设备端视频流
-
+    public boolean mRecvedFirstFrame;   ///< 是否已经收到首帧视频帧
 
     ///////////////////////////////////////////////////////////////////////
     ////////////////////////// Public Methods  ////////////////////////////
@@ -77,6 +77,7 @@ public class SessionCtx  {
                 + ", mPubLocalAudio=" + mPubLocalAudio
                 + ", mSubDevVideo=" + mSubDevVideo
                 + ", mSubDevAudio=" + mSubDevAudio
+                + ", mRecvedFirstFrame=" + mRecvedFirstFrame
                 + ", mRtmUid=" + mRtmUid
                 + ",\n mRtcToken=" + mRtcToken
                 + ",\n mRtmToken=" + mRtmToken + " }";

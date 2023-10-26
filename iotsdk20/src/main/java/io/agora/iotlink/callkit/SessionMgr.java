@@ -111,6 +111,28 @@ public class SessionMgr {
     }
 
     /**
+     * @brief 根据 频道名 和 peerUid 找到第一个会话
+     * @return 返回提取到的session，如果未提取到则返回null
+     */
+    public SessionCtx findSessionByChannelInfo(final String chnName, int peerUid) {
+        synchronized (mSessionMap) {
+            for (Map.Entry<UUID, SessionCtx> entry : mSessionMap.entrySet()) {
+                SessionCtx sessionCtx = entry.getValue();
+                if (sessionCtx.mChnlName == null) {
+                    continue;
+                }
+                if ((chnName.compareToIgnoreCase(sessionCtx.mChnlName) == 0) &&
+                    (sessionCtx.mDeviceRtcUid == peerUid)) {
+                    return sessionCtx;
+                }
+            }
+        }
+
+        return null;
+    }
+
+
+    /**
      * @brief 根据 sessionId 删除会话信息
      * @return 返回删除的会话，如果未找到则返回null
      */

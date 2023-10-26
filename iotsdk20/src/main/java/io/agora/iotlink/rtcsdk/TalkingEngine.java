@@ -70,12 +70,6 @@ public class TalkingEngine implements AGEventHandler,
      * @brief 通话引擎回调接口
      */
     public interface ICallback {
-
-
-
-        /////////////////////////////////////////////////////////////////////////////
-        //////////////////// TalkingEngine.ICallback 回调处理 ////////////////////////
-        /////////////////////////////////////////////////////////////////////////////
         /**
          * @brief 本地加入频道成功
          */
@@ -97,10 +91,9 @@ public class TalkingEngine implements AGEventHandler,
         default void onUserOffline(final UUID sessionId, int uid, int reason) {  }
 
         /**
-         * @brief 对端首帧出图
+         * @brief 渲染视频帧
          */
-        default void onPeerFirstVideoDecoded(final UUID sessionId, int uid,
-                                             int videoWidth, int videoHeight) { }
+        default void onRenderVideoFrame(final String channelId, int uid, VideoFrame videoFrame) { }
 
         /**
          * @brief 截图完成回调
@@ -145,7 +138,6 @@ public class TalkingEngine implements AGEventHandler,
     }
 
 
-
     ///////////////////////////////////////////////////////////////////////////
     ///////////////////// Variable Definition /////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
@@ -184,6 +176,7 @@ public class TalkingEngine implements AGEventHandler,
     private AvCapability.VideoCaps mVideoCaps;
     private int mMaxEncodeWidth = RECORD_TARGET_WIDTH;
     private int mMaxEncodeHeight = RECORD_TARGET_HEIGHT;
+
 
     ///////////////////////////////////////////////////////////////////////////
     //////////////////////// Public Methods ///////////////////////////////////
@@ -620,6 +613,7 @@ public class TalkingEngine implements AGEventHandler,
         retDevVideo = mRtcEngine.muteRemoteVideoStreamEx(sessionCtx.mDeviceRtcUid, mutePeerVideo, rtcConnection);
         ALog.getInstance().d(TAG, "<subscribeStop> mutePeerVideo=" + mutePeerVideo
                 + ", retDevVideo=" + retDevVideo);
+
 
         long t2 = System.currentTimeMillis();
         ALog.getInstance().d(TAG, "<subscribeStop> ret=" + ret
@@ -1074,10 +1068,6 @@ public class TalkingEngine implements AGEventHandler,
         if (mRtcEngine == null) {
             return;
         }
-
-        if (mInitParam.mCallback != null) {
-            mInitParam.mCallback.onPeerFirstVideoDecoded(sessionId, uid, width, height);
-        }
     }
 
     void onLastmileQuality(final UUID sessionId, int quality) {
@@ -1185,7 +1175,6 @@ public class TalkingEngine implements AGEventHandler,
         if (mRtcEngine == null) {
             return;
         }
-
     }
 
     @Override
@@ -1312,11 +1301,6 @@ public class TalkingEngine implements AGEventHandler,
         return false;
     }
 
-//    @Override
-//    public boolean onScreenCaptureVideoFrame(VideoFrame videoFrame)  {
-//        return false;
-//    }
-
     @Override
     public boolean onMediaPlayerVideoFrame(VideoFrame videoFrame, int var2)  {
         return false;
@@ -1326,6 +1310,10 @@ public class TalkingEngine implements AGEventHandler,
     public boolean onRenderVideoFrame(String channelId, int uid, VideoFrame videoFrame)  {
         if (mRtcEngine == null) {
             return false;
+        }
+
+        if (mInitParam.mCallback != null) {  // 回调给上层
+            mInitParam.mCallback.onRenderVideoFrame(channelId, uid, videoFrame);
         }
 
         boolean isCacheVideo;

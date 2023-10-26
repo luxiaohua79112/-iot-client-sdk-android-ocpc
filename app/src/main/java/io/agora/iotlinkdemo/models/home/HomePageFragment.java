@@ -686,6 +686,59 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
     }
 
     /**
+     * @brief 预览 按钮点击事件
+     */
+    void onDevItemPreviewClick(View view, int position, DeviceInfo deviceInfo) {
+        if (mDevListAdapter.isInSelectMode()) {
+            return;
+        }
+        if (deviceInfo.mSessionId == null) {
+            return;
+        }
+        IDeviceSessionMgr sessionMgr = AIotAppSdkFactory.getDevSessionMgr();
+        IDevPreviewMgr previewMgr = sessionMgr.getDevPreviewMgr(deviceInfo.mSessionId);
+        if (previewMgr == null) {
+            return;
+        }
+
+        IDeviceSessionMgr.SessionInfo sessionInfo = sessionMgr.getSessionInfo(deviceInfo.mSessionId);
+        if (sessionInfo.mState != IDeviceSessionMgr.SESSION_STATE_CONNECTED) {
+            Log.d(TAG, "<onDevItemShotCaptureClick> device not connected, state=" + sessionInfo.mState);
+            return;
+        }
+
+        // 开始预览操作
+        boolean previewing = previewMgr.isPreviewing();
+        int ret;
+
+        if (previewing) {
+            // 停止预览操作
+            ret = previewMgr.previewStop();
+            if (ret != ErrCode.XOK) {
+                popupMessage("Fail to previewStop, errCode=" + ret);
+                return;
+            }
+
+        } else {
+            // 启动预览操作
+            ret = previewMgr.previewStart(true, new IDevPreviewMgr.OnPreviewListener() {
+                @Override
+                public void onDeviceFirstVideo(UUID sessionId, int videoWidth, int videoHeight) {
+                    Log.d(TAG, "<onDeviceFirstVideo> sessionId=" + sessionId
+                            + ", videoWidth=" + videoWidth + ", videoHeight=" + videoHeight);
+                }
+            });
+            if (ret != ErrCode.XOK) {
+                popupMessage("Fail to previewStart, errCode=" + ret);
+                return;
+            }
+        }
+
+
+
+    }
+
+    /**
      * @brief 选择 按钮点击事件
      */
     void onDevItemCheckBox(CompoundButton compoundButton, int position, final DeviceInfo deviceInfo,

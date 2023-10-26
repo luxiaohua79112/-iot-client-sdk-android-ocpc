@@ -123,8 +123,11 @@ int32_t CAvConvertEng::DoConvert() {
       int64_t out_video_dts = av_rescale_q(in_video_dts,in_video_stream_->time_base, out_video_stream_->time_base);
       packet->pts = out_video_pts;
       packet->dts = out_video_dts;
-      LOGD("<CAvConvertEng::DoConvert> [VIDEO] video_time=%" PRId64 ", in_video_pts=%" PRId64 ", out_video_pts=%" PRId64 ", in_video_dts=%" PRId64 ", out_video_dts=%" PRId64 " \n",
-           video_time, in_video_pts, out_video_pts, in_video_dts, out_video_dts);
+
+      float video_time_sec = (float)(video_time / 1000000.0f);
+      LOGD("<CAvConvertEng::DoConvert> [VIDEO] video_time_sec=%.3f, video_time=%" PRId64 ", pkt_pts=%" PRId64
+            ", in_video_pts=%" PRId64 ", out_video_pts=%" PRId64 ", in_video_dts=%" PRId64 ", out_video_dts=%" PRId64 " \n",
+           video_time_sec, video_time, packet->pts, in_video_pts, out_video_pts, in_video_dts, out_video_dts);
 
       // 计算当前进度
       cvt_time_ = static_cast<int64_t>(out_video_pts * 1000 * av_q2d(out_video_stream_->time_base) * 1000);
@@ -142,8 +145,10 @@ int32_t CAvConvertEng::DoConvert() {
       int64_t out_audio_dts = av_rescale_q(in_audio_dts,in_audio_stream_->time_base, out_audio_stream_->time_base);
       packet->pts = out_audio_pts;
       packet->dts = out_audio_dts;
-      LOGD("<CAvConvertEng::DoConvert> [AUDIO] audio_time=%" PRId64 ", in_audio_pts=%" PRId64 ", out_audio_pts=%" PRId64 ", in_audio_dts=%" PRId64 ", out_audio_dts=%" PRId64 " \n",
-           audio_time, in_audio_pts, out_audio_pts, in_audio_dts, out_audio_dts);
+      float audio_time_sec = (float)(audio_time / 1000000.0f);
+      LOGD("<CAvConvertEng::DoConvert> [AUDIO] audio_time_sec=%.3f, audio_time=%" PRId64 ", pkt_pts=%" PRId64
+            ", in_audio_pts=%" PRId64 ", out_audio_pts=%" PRId64 ", in_audio_dts=%" PRId64 ", out_audio_dts=%" PRId64 " \n",
+           audio_time_sec, audio_time, packet->pts, in_audio_pts, out_audio_pts, in_audio_dts, out_audio_dts);
   }
 
 
@@ -234,10 +239,10 @@ int32_t CAvConvertEng::InStreamOpen() {
                 in_media_info_->video_duration_ = in_format_ctx_->duration;
             }
 
-            LOGD("<CAvConvertEng::InStreamOpen> [VIDEO] idx=%d, codec=%d, fmt=%d, w=%d, h=%d, rotation=%d, fps=%d, duration=%" PRId64 "\n",
+            LOGD("<CAvConvertEng::InStreamOpen> [VIDEO] idx=%d, codec=%d, fmt=%d, w=%d, h=%d, rotation=%d, fps=%d, duration=%" PRId64 ", start_time=%" PRId64 " \n",
                  in_media_info_->video_track_index_, in_media_info_->video_codec_, in_media_info_->color_format_,
                  in_media_info_->video_width_, in_media_info_->video_height_, in_media_info_->rotation_,
-                 in_media_info_->frame_rate_, in_media_info_->video_duration_);
+                 in_media_info_->frame_rate_, in_media_info_->video_duration_, in_video_stream_->start_time);
 
         } else if (pAvStream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
         {
@@ -266,11 +271,11 @@ int32_t CAvConvertEng::InStreamOpen() {
                 in_media_info_->audio_duration_ = in_format_ctx_->duration;
             }
 
-            LOGD("<CAvConvertEng::InStreamOpen> [AUDIO] idx=%d, codec=%d, fmt=%d, bytesPerSmpl=%d, channels=%d, samplerate=%d, duration=%" PRId64 "\n",
+            LOGD("<CAvConvertEng::InStreamOpen> [AUDIO] idx=%d, codec=%d, fmt=%d, bytesPerSmpl=%d, channels=%d, samplerate=%d, duration=%" PRId64 ", start_time=%" PRId64 " \n",
                  in_media_info_->audio_track_index_, in_media_info_->audio_codec_,
                  in_media_info_->sample_foramt_, in_media_info_->bytes_per_sample_,
                  in_media_info_->channels_, in_media_info_->sample_rate_,
-                 in_media_info_->audio_duration_);
+                 in_media_info_->audio_duration_, in_audio_stream_->start_time);
         }
     }
     if (in_media_info_->video_duration_ > in_media_info_->audio_duration_) {

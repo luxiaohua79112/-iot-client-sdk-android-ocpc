@@ -386,6 +386,12 @@ public class DeviceListAdapter extends BaseAdapter<DeviceInfo> {
             mOwner.onDevItemShotCaptureClick(view, position, deviceInfo);
         });
 
+        // 预览按钮
+        Button btnPreview = holder.getView(R.id.btn_preview);
+        btnPreview.setOnClickListener(view -> {
+            mOwner.onDevItemPreviewClick(view, position, deviceInfo);
+        });
+
         // 选择按钮
         CheckBox cbSlect = holder.getView(R.id.cb_dev_select);
         cbSlect.setChecked(deviceInfo.mSelected);

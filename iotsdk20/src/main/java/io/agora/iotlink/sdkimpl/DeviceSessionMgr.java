@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import io.agora.base.VideoFrame;
 import io.agora.iotlink.ErrCode;
 import io.agora.iotlink.IDeviceSessionMgr;
 import io.agora.iotlink.IDevController;
@@ -768,26 +769,25 @@ public class DeviceSessionMgr extends BaseThreadComp
     }
 
     @Override
-    public void onPeerFirstVideoDecoded(final UUID sessionId, int peerUid, int videoWidth, int videoHeight) {
-        // 先处理设备播放的会话
-        SessionCtx playerSession = mDevPlayerMgr.getSession(sessionId);
-        if ((playerSession != null) && (playerSession.mDevMediaMgr != null)) {
-            playerSession.mDevMediaMgr.onPeerFirstVideoDecoded(sessionId, peerUid, videoWidth, videoHeight);
-            return;
-        }
+    public void onRenderVideoFrame(final String channelId, int uid, VideoFrame videoFrame) {
 
-        // 再处理设备通话的会话
-        SessionCtx sessionCtx = mSessionMgr.getSession(sessionId);
+        // 只处理设备通话的会话
+        SessionCtx sessionCtx = mSessionMgr.findSessionByChannelInfo(channelId, uid);
         if (sessionCtx == null) {
-            ALog.getInstance().d(TAG, "<onPeerFirstVideoDecoded> session removed"
-                    + ", peerUid=" + peerUid + ", width=" + videoWidth + ", height=" + videoHeight );
             return;
         }
-        ALog.getInstance().d(TAG, "<onPeerFirstVideoDecoded> sessionCtx=" + sessionCtx
-                + ", peerUid=" + peerUid + ", width=" + videoWidth + ", height=" + videoHeight );
+        if (!sessionCtx.mRecvedFirstFrame) {  // 还没有收到首帧
 
-        // 发送对端RTC首帧出图事件
-        sendSingleMessage(MSGID_SDK_DEV_FIRSTFRAME, videoWidth, videoHeight, sessionId, 0);
+            // 更新sessionCtx，设置收到首帧
+            sessionCtx.mRecvedFirstFrame = true;
+            mSessionMgr.updateSession(sessionCtx);
+            ALog.getInstance().d(TAG, "<onRenderVideoFrame> recv first frame, sessionCtx=" + sessionCtx);
+
+            // 发送对端首帧出图事件
+            int videoWidth = videoFrame.getRotatedWidth();
+            int videoHeight = videoFrame.getRotatedHeight();
+            sendSingleMessage(MSGID_SDK_DEV_FIRSTFRAME, videoWidth, videoHeight, sessionCtx.mSessionId, 0);
+        }
     }
 
     @Override
@@ -1078,7 +1078,7 @@ public class DeviceSessionMgr extends BaseThreadComp
         sessionCtx.mSubDevAudio = bSubAudio;    // 根据参数确定是否订阅设备音频流
         sessionCtx.mSubDevVideo = true;         // 默认订阅设备视频流
         sessionCtx.mPubLocalAudio = false;      // 默认不推本地音频流
-
+        sessionCtx.mRecvedFirstFrame = false;   // 没有收到首帧视频帧
         mSessionMgr.updateSession(sessionCtx);
 
         boolean ret = true;
@@ -1110,6 +1110,7 @@ public class DeviceSessionMgr extends BaseThreadComp
         sessionCtx.mSubDevAudio = false;        // 停止订阅设备音频流
         sessionCtx.mSubDevVideo = false;        // 停止订阅设备视频流
         sessionCtx.mPubLocalAudio = false;      // 停止推送本地音频流
+        sessionCtx.mRecvedFirstFrame = false;   // 没有收到首帧视频帧
         mSessionMgr.updateSession(sessionCtx);
 
         boolean ret = true;

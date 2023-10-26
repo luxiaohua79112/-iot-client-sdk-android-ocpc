@@ -156,7 +156,11 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
         });
 
         getBinding().btnOpenClose.setOnClickListener(view -> {
-            onBtnOpenClose(view);
+            onBtnOpenClose(view, false);
+        });
+
+        getBinding().btnEncrypt.setOnClickListener(view -> {
+            onBtnOpenClose(view, true);
         });
 
         getBinding().btnPlayPause.setOnClickListener(view -> {
@@ -352,13 +356,25 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
     /**
      * @brief 打开或者关闭媒体文件 按钮
      */
-    void onBtnOpenClose(View view) {
+    void onBtnOpenClose(View view, boolean cryptUrl) {
+        String mediaFilePath;
+
         //String mediaFilePath = "/sdcard/test.mp4";
         //String mediaFilePath = "http://cloud-store-test.s3.cn-east-1.jdcloud-oss.com/ts-muxer.m3u8";
         //String mediaFilePath = "https://stream-media.s3.cn-north-1.jdcloud-oss.com/iot-three/726181688096107589_1694508560758_711350438.m3u8";
         //String mediaFilePath = "https://stream-media.s3.cn-north-1.jdcloud-oss.com/iot-seven/766781697442934487_1697453301090_2080565081.m3u8?agora-key=NzgxNTU1MDY4MTJhMTYxMQ==";
         //String mediaFilePath = "https://s3.cn-north-1.jdcloud-oss.com/stream-media/testVideo/output.m3u8";
-        String mediaFilePath = "/sdcard/VIDEO_20231023_1698047661725.mp4";
+        //String mediaFilePath = "/sdcard/VIDEO_20231023_1698047661725.mp4";
+
+//        if (cryptUrl) {
+//            //mediaFilePath = "https://stream-media.s3.cn-north-1.jdcloud-oss.com/iot-seven/766781697442934487_1697453301090_2080565081.m3u8?agora-key=NzgxNTU1MDY4MTJhMTYxMQ==";
+//            mediaFilePath = "https://stream-media.s3.cn-north-1.jdcloud-oss.com/iot-seven/766781697442934487_1698129396741_913585703.m3u8?agora-key=NzI2MjU1MGUwMzM0NjM2NQ==";
+//        } else {
+//            mediaFilePath = "https://s3.cn-north-1.jdcloud-oss.com/stream-media/testVideo/output.m3u8";
+//        }
+
+        mediaFilePath = "http://stream-media.s3.cn-north-1.jdcloud-oss.com/iot-three/abcdefghijklmnopqrst/694981695177193038_1698226406024_1912937646.m3u8";
+
 
         int playState = mVodPlayer.getPlayingState();
         if (playState == IVodPlayer.VODPLAYER_STATE_CLOSED) {
@@ -672,7 +688,11 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
             //String srcFileUrl = "https://stream-media.s3.cn-north-1.jdcloud-oss.com/0000000/output.m3u8";
             //String srcFileUrl = "/sdcard/test.mp4";
             //String srcFileUrl = "https://stream-media.s3.cn-north-1.jdcloud-oss.com/iot-seven/766781697442934487_1697453301090_2080565081.m3u8?agora-key=NzgxNTU1MDY4MTJhMTYxMQ==";
-            String srcFileUrl = "https://s3.cn-north-1.jdcloud-oss.com/stream-media/testVideo/output.m3u8";
+            //String srcFileUrl = "https://s3.cn-north-1.jdcloud-oss.com/stream-media/testVideo/output.m3u8";
+            //String srcFileUrl = "https://stream-media.s3.cn-north-1.jdcloud-oss.com/iot-seven/766781697442934487_1698129396741_913585703.m3u8?agora-key=NzI2MjU1MGUwMzM0NjM2NQ==";
+            //String srcFileUrl = "https://stream-media.s3.cn-north-1.jdcloud-oss.com/iot-seven/766781697442934487_1698129309342_1557621640.m3u8?agora-key=ZDU3ZDEwMTMwMzJlMjc5MA==";
+
+            String srcFileUrl = "http://stream-media.s3.cn-north-1.jdcloud-oss.com/iot-three/abcdefghijklmnopqrst/694981695177193038_1698226406024_1912937646.m3u8";
 
             File file = getActivity().getExternalFilesDir(null);
             String cachePath = file.getAbsolutePath();
