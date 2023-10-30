@@ -814,13 +814,29 @@ public class DeviceSessionMgr extends BaseThreadComp
     @Override
     public void onRenderVideoFrame(final String channelId, int uid, VideoFrame videoFrame) {
 
-        // 只处理设备通话的会话
+        // 先处理设备SD卡播放播放的会话
+        SessionCtx playerSession = mDevPlayerMgr.findSessionByChannelInfo(channelId, uid);
+        if ((playerSession != null) && (playerSession.mDevMediaMgr != null)
+                && (playerSession.mDeviceRtcUid == uid)) {
+            if (!playerSession.mRecvedFirstFrame) {  // 还没有收到首帧
+                // 更新sessionCtx，设置收到首帧
+                playerSession.mRecvedFirstFrame = true;
+                mDevPlayerMgr.updateSession(playerSession);
+                ALog.getInstance().d(TAG, "<onRenderVideoFrame> recv sdcard playing first frame, sessionId=" + playerSession.mSessionId);
+
+                int frameWidth = videoFrame.getRotatedWidth();
+                int frameHeight = videoFrame.getRotatedHeight();
+                playerSession.mDevMediaMgr.onPeerFirstVideoDecoded(playerSession.mSessionId, uid, frameWidth, frameHeight);
+            }
+            return;
+        }
+
+        // 然后处理设备通话的会话
         SessionCtx sessionCtx = mSessionMgr.findSessionByChannelInfo(channelId, uid);
         if (sessionCtx == null) {
             return;
         }
         if (!sessionCtx.mRecvedFirstFrame) {  // 还没有收到首帧
-
             // 更新sessionCtx，设置收到首帧
             sessionCtx.mRecvedFirstFrame = true;
             mSessionMgr.updateSession(sessionCtx);
@@ -1030,6 +1046,7 @@ public class DeviceSessionMgr extends BaseThreadComp
         playerSession.mPubLocalAudio = false;   // SD卡播放时 默认不推本地音频流
         playerSession.mSubDevVideo = true;      // SD卡播放时 默认订阅设备音频流
         playerSession.mSubDevAudio = true;      // SD卡播放时 默认订阅设备视频流
+        playerSession.mRecvedFirstFrame = false;
         mDevPlayerMgr.addSession(playerSession);
 
         // 开始进入频道
