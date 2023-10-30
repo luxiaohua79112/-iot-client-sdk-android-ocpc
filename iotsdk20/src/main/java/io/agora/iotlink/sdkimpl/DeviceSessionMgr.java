@@ -68,6 +68,9 @@ public class DeviceSessionMgr extends BaseThreadComp
     private static final int MSGID_SDK_CONNECT_DEV = 0x1007;     ///< 连接到设备端
     private static final int MSGID_SDK_DISCONNECT_DEV = 0x1008;  ///< 从设备断开连接
     private static final int MSGID_SDK_RENEW_TOKEN = 0x1009;     ///< renew token处理
+    private static final int MSGID_DEVMEDIAMGR_DEVONLINE = 0x100A;     ///< 消息处理SD卡播放时设备上线
+    private static final int MSGID_DEVMEDIAMGR_DEVOFFLINE = 0x100B;     ///< 消息处理SD卡播放时设备下线
+
 
     ////////////////////////////////////////////////////////////////////////
     //////////////////////// Variable Definition ///////////////////////////
@@ -237,7 +240,6 @@ public class DeviceSessionMgr extends BaseThreadComp
         }
 
         // 发送断连消息
-
         Object[] params = { removeSession};
         removeMessage(MSGID_SDK_CONNECT_DEV);  // 删除连接设备的消息
         sendSingleMessage(MSGID_SDK_DISCONNECT_DEV, 0, 0, params, 0);
@@ -369,6 +371,13 @@ public class DeviceSessionMgr extends BaseThreadComp
             case MSGID_SDK_TIMER:
                 DoTimer(msg);
                 break;
+
+            case MSGID_DEVMEDIAMGR_DEVONLINE:
+                onMessageDevMediaMgrDevOnline(msg);
+                break;
+            case MSGID_DEVMEDIAMGR_DEVOFFLINE:
+                onMessageDevMediaMgrDevOffline(msg);
+                break;
         }
     }
 
@@ -384,6 +393,8 @@ public class DeviceSessionMgr extends BaseThreadComp
                 mWorkHandler.removeMessages(MSGID_SDK_CONNECT_DEV);
                 mWorkHandler.removeMessages(MSGID_SDK_DISCONNECT_DEV);
                 mWorkHandler.removeMessages(MSGID_SDK_RENEW_TOKEN);
+                mWorkHandler.removeMessages(MSGID_DEVMEDIAMGR_DEVONLINE);
+                mWorkHandler.removeMessages(MSGID_DEVMEDIAMGR_DEVOFFLINE);
             }
         }
     }
@@ -671,6 +682,32 @@ public class DeviceSessionMgr extends BaseThreadComp
         ALog.getInstance().d(TAG, "<onMessageRenewToken> done, sessionCtx=" + sessionCtx);
     }
 
+    /**
+     * @brief 工作线程中运行，SD卡媒体文件RTC频道播放时，设备RTC上线
+     */
+    void onMessageDevMediaMgrDevOnline(Message msg) {
+        Object[] params = (Object[])msg.obj;
+        SessionCtx playerSession = (SessionCtx)params[0];
+        UUID sessionId = (UUID)params[1];
+        Integer uid = (Integer)params[2];
+
+        ALog.getInstance().d(TAG, "<onMessageDevMediaMgrDevOnline> done, sessionId=" + sessionId);
+        playerSession.mDevMediaMgr.onUserOnline(sessionId, uid, 0);
+    }
+
+    /**
+     * @brief 工作线程中运行，SD卡媒体文件RTC频道播放时，设备RTC掉线
+     */
+    void onMessageDevMediaMgrDevOffline(Message msg) {
+        Object[] params = (Object[])msg.obj;
+        SessionCtx playerSession = (SessionCtx)params[0];
+        UUID sessionId = (UUID)params[1];
+        Integer uid = (Integer)params[2];
+
+        ALog.getInstance().d(TAG, "<onMessageDevMediaMgrDevOffline> done, sessionId=" + sessionId);
+        playerSession.mDevMediaMgr.onUserOffline(sessionId, uid, 0);
+    }
+
 
     /////////////////////////////////////////////////////////////////////////////
     //////////////////// TalkingEngine.ICallback 回调处理 ////////////////////////
@@ -696,8 +733,11 @@ public class DeviceSessionMgr extends BaseThreadComp
 
         // 先处理设备播放的会话
         SessionCtx playerSession = mDevPlayerMgr.getSession(sessionId);
-        if ((playerSession != null) && (playerSession.mDevMediaMgr != null)) {
-            playerSession.mDevMediaMgr.onUserOnline(sessionId, uid, elapsed);
+        if ((playerSession != null) && (playerSession.mDevMediaMgr != null)
+                && (playerSession.mDeviceRtcUid == uid)) {
+            // 发送SD卡播放时，设备上线消息
+            Object[] params = { playerSession, sessionId, uid };
+            sendSingleMessage(MSGID_DEVMEDIAMGR_DEVONLINE, 0, 0, params, 0);
             return;
         }
 
@@ -736,8 +776,11 @@ public class DeviceSessionMgr extends BaseThreadComp
 
         // 先处理设备播放的会话
         SessionCtx playerSession = mDevPlayerMgr.getSession(sessionId);
-        if ((playerSession != null) && (playerSession.mDevMediaMgr != null)) {
-            playerSession.mDevMediaMgr.onUserOffline(sessionId, uid, reason);
+        if ((playerSession != null) && (playerSession.mDevMediaMgr != null)
+                && (playerSession.mDeviceRtcUid == uid)) {
+            // 发送SD卡播放时，设备下线消息
+            Object[] params = { playerSession, sessionId, uid };
+            sendSingleMessage(MSGID_DEVMEDIAMGR_DEVOFFLINE, 0, 0, params, 0);
             return;
         }
 

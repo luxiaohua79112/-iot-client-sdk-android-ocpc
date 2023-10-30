@@ -23,6 +23,7 @@ import com.agora.baselibrary.utils.StringUtils;
 
 import java.io.File;
 
+import io.agora.avmodule.AvDiagnoser;
 import io.agora.avmodule.AvMediaConverter;
 import io.agora.avmodule.AvMediaInfo;
 import io.agora.iotlink.AIotAppSdkFactory;
@@ -42,6 +43,7 @@ import io.agora.iotlinkdemo.utils.FileUtils;
 public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudrcdBinding>
         implements PermissionHandler.ICallback, IDeviceSessionMgr.ISessionCallback,
                     IVodPlayer.ICallback, AlarmVideoDownloader.ICallback,
+                    AvDiagnoser.IAvDiagnoserCallback,
         AvMediaConverter.IAvMediaCvtCallback    {
 
     private static final String TAG = "IOTLINK/CloudRcdFrag";
@@ -74,6 +76,9 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
 
     private AvMediaConverter mMediaCvter;
     private AvMediaInfo mSrcMediaInfo;
+
+    private AvDiagnoser mDiagnoser;
+    private AvMediaInfo mDiagnoseMediaInfo;
 
 
     ///////////////////////////////////////////////////////////////////////////
@@ -275,6 +280,11 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
             }
         });
 
+
+        getBinding().btnDiagnose.setOnClickListener(view -> {
+            onBtnDiagnose(view);
+        });
+
         Log.d(TAG, "<initListener> done");
     }
 
@@ -373,7 +383,7 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
 //            mediaFilePath = "https://s3.cn-north-1.jdcloud-oss.com/stream-media/testVideo/output.m3u8";
 //        }
 
-        mediaFilePath = "http://stream-media.s3.cn-north-1.jdcloud-oss.com/iot-three/abcdefghijklmnopqrst/694981695177193038_1698226406024_1912937646.m3u8";
+        mediaFilePath = "http://stream-media.s3.cn-north-1.jdcloud-oss.com/iot-three/abcdefghijklmnopqrst/694981695177193038_1698400103240_1204949715.m3u8";
 
 
         int playState = mVodPlayer.getPlayingState();
@@ -801,4 +811,80 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
     public void onMediaConvertingError(AvMediaConverter.MediaCvtParam cvtParam, int errCode) {
         Log.d(TAG, "<onMediaConvertingError> errCode=" + errCode);
     }
+
+
+
+    ///////////////////////////////////////////////////////////////////////////
+    //////////////////////////////// 诊断处理  ////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    void onBtnDiagnose(View view) {
+        int ret;
+
+        if (mDiagnoser == null) {
+            //String srcFileUrl = "http://stream-media.s3.cn-north-1.jdcloud-oss.com/iot-three/abcdefghijklmnopqrst/694981695177193038_1698226406024_1912937646.m3u8";
+            //String srcFileUrl = "https://stream-media.s3.cn-north-1.jdcloud-oss.com/iot-seven/766781697442934487_1697453301090_2080565081.m3u8?agora-key=NzgxNTU1MDY4MTJhMTYxMQ==";
+            //String srcFileUrl = "http://stream-media.s3.cn-north-1.jdcloud-oss.com/iot-three/abcdefghijklmnopqrst/694981695177193038_1698391049764_964956074.m3u8";
+            String srcFileUrl = "http://stream-media.s3.cn-north-1.jdcloud-oss.com/iot-three/abcdefghijklmnopqrst/694981695177193038_1698400103240_1204949715.m3u8";
+
+            AvDiagnoser.DiagnoseParam diagnoseParam = new AvDiagnoser.DiagnoseParam();
+            diagnoseParam.mCallback = this;
+            diagnoseParam.mContext = this.getContext();
+            diagnoseParam.mSrcFileUrl = srcFileUrl;
+
+            mDiagnoser = new AvDiagnoser();
+            ret = mDiagnoser.initialize(diagnoseParam);
+            if (ret != ErrCode.XOK) {
+                popupMessage("Fail to open diagnoser, errCode=" + ret);
+                mDiagnoser = null;
+                return;
+            }
+            popupMessage("Opening diagnoser ......");
+
+        } else {
+            mDiagnoser.release();
+            mDiagnoser = null;
+            popupMessage("Diagnoser closed!");
+
+        }
+    }
+
+    @Override
+    public void onDiagnoserOpenDone(AvDiagnoser.DiagnoseParam diagnoseParam, int errCode) {
+        Log.d(TAG, "<onDiagnoserOpenDone> errCode=" + errCode);
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                hideLoadingView();
+                if (errCode == ErrCode.XOK) {
+                    popupMessage("Open diagnoser successful!");
+
+                    mDiagnoser.start();
+
+                } else {
+                    popupMessage("Open diagnoser failure, errCode=" + errCode);
+                }
+            }
+        });
+    }
+
+    @Override
+    public void onDiagnoserParsingDone(AvDiagnoser.DiagnoseParam diagnoseParam, long totalDuration) {
+        Log.d(TAG, "<onDiagnoserParsingDone> totalDuration=" + totalDuration);
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                popupMessage("Diagnoser parsing finished!");
+                mDiagnoser.release();
+                mDiagnoser = null;
+            }
+        });
+    }
+
+    @Override
+    public void onDiagnoserParseError(AvDiagnoser.DiagnoseParam diagnoseParam, int errCode) {
+        Log.d(TAG, "<onDiagnoserParseError> errCode=" + errCode);
+    }
+
+
+
 }

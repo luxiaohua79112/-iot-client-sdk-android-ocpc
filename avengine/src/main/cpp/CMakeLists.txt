@@ -28,6 +28,8 @@ add_library( # Sets the name of the library.
         AvConvertEng.cpp
         AvSoftDecoder_jni.cpp
         AvNativeCvter_jni.cpp
+        AvDiagnoseEng.cpp
+        AvNativeDiagnose_jni.cpp
         )
 
 
