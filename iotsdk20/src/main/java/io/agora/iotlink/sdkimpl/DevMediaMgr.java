@@ -719,7 +719,7 @@ public class DevMediaMgr implements IDevMediaMgr {
         String fileId = mPlayChnlInfo.getPlayingFileId();
         mPlayingState.setValue(DEVPLAYER_STATE_STOPPED);   // 状态机: 停止播放
         mPlayingClock.stopWithProgress(0);  // 播放器停止运行，并且设置进度为 0
-        //RtcChnlExit();      // 退出频道
+        RtcChnlExit();      // 退出频道
 
         if (playingCallback != null) {  // 回调给应用层
             ALog.getInstance().d(TAG, "<onUserOffline> callback onDevMediaPlayingDone!");
