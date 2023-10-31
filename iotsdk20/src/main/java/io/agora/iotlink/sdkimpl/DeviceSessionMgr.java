@@ -1087,6 +1087,30 @@ public class DeviceSessionMgr extends BaseThreadComp
         return ErrCode.XOK;
     }
 
+    /**
+     * @brief 设备播放器频道 设置音量是否静音
+     */
+    int devPlayerChnlAudioMute(final UUID playerSessionId, boolean mute) {
+        SessionCtx playerSession = mDevPlayerMgr.getSession(playerSessionId);
+        if (playerSession == null) {
+            ALog.getInstance().e(TAG, "<devPlayerChnlAudioMute> not found playerSession"
+                    + ", sessionId=" + playerSessionId);
+            return ErrCode.XERR_INVALID_PARAM;
+        }
+
+        // 更新是否订阅音频流
+        playerSession.mSubDevAudio = (!mute);
+        mDevPlayerMgr.updateSession(playerSession);
+
+        boolean ret;
+        synchronized (mTalkEngLock) {
+            ret = mTalkEngine.mutePeerAudioStream(playerSession);
+        }
+
+        ALog.getInstance().d(TAG, "<devPlayerChnlAudioMute> done, sessionId=" + playerSessionId
+                + ", ret=" + ret + ", mute=" + mute);
+        return (ret ? ErrCode.XOK : ErrCode.XERR_UNSUPPORTED);
+    }
 
 
     /////////////////////////////////////////////////////////////////////////////

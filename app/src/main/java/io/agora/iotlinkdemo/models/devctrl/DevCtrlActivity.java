@@ -75,6 +75,7 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
 
     public static DevCtrlActivity mActivity;
     private UUID mSessionId = null;
+    private boolean mVoiceMute = false;
     private FileListAdapter mFileListAdapter;
 
     private DialogImageDisplay mImgDisplayDlg;
@@ -96,6 +97,7 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
         mSessionId = PushApplication.getInstance().getFullscrnSessionId();
         IDeviceSessionMgr.SessionInfo sessionInfo = sessionMgr.getSessionInfo(mSessionId);
         getBinding().tvNodeId.setText(sessionInfo.mPeerDevId);
+        mVoiceMute = false;
 
         //
         // 初始化文件列表
@@ -207,6 +209,10 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
 
         getBinding().btnRawMsg.setOnClickListener(view -> {
             onBtnRawMessage(view);
+        });
+
+        getBinding().btnVoiceMute.setOnClickListener(view -> {
+            onBtnVoiceMute(view);
         });
     }
 
@@ -924,6 +930,27 @@ public class DevCtrlActivity extends BaseViewBindingActivity<ActivityDevCtrlBind
         if (ret != ErrCode.XOK) {
             hideLoadingView();
             popupMessage("It cannot send raw message, errCode=" + ret);
+        }
+    }
+
+    /**
+     * @brief 音量静音处理
+     */
+    void onBtnVoiceMute(View view) {
+
+        IDeviceSessionMgr sessionMgr = AIotAppSdkFactory.getDevSessionMgr();
+        IDevMediaMgr mediaMgr = sessionMgr.getDevMediaMgr(mSessionId);
+        if (mediaMgr == null) {
+            popupMessage("Not found device media manager with sessionId=" + mSessionId);
+            return;
+        }
+
+        mVoiceMute = (!mVoiceMute);
+        int ret = mediaMgr.setAudioMute(mVoiceMute);
+        if (ret != ErrCode.XOK) {
+            popupMessage("set voice mute: " + mVoiceMute + " failure, errCode=" + ret);
+        } else {
+            popupMessage("set voice mute: " + mVoiceMute + " successful!");
         }
     }
 

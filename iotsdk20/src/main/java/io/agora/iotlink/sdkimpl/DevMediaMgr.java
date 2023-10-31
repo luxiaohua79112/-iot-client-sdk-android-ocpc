@@ -619,7 +619,8 @@ public class DevMediaMgr implements IDevMediaMgr {
 
     @Override
     public int setAudioMute(boolean mute) {
-        return ErrCode.XERR_UNSUPPORTED;
+        int ret = RtcChnlAudioMute(mute);
+        return ret;
     }
 
 
@@ -663,6 +664,14 @@ public class DevMediaMgr implements IDevMediaMgr {
         mPlayChnlInfo.clear();
 
         ALog.getInstance().d(TAG, "<RtcChnlExit> done");
+        return ErrCode.XOK;
+    }
+
+    /**
+     * @brief 设置音量
+     */
+    int RtcChnlAudioMute(boolean mute) {
+        int ret = mSessionMgr.devPlayerChnlAudioMute(mPlaySessionId.getValue(), mute);
         return ErrCode.XOK;
     }
 

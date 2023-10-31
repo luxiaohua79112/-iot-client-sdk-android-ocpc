@@ -629,10 +629,9 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
             return;
         }
 
-        // 取消设备端音视频流的订阅
-        previewMgr.muteDeviceAudio(true);
-        previewMgr.muteDeviceVideo(true);
-        Log.d(TAG, "<onDevItemFullscrnClick> unsubscribe device, sessionId=" + deviceInfo.mSessionId
+        // 停止预览
+        previewMgr.previewStop();
+        Log.d(TAG, "<onDevItemFullscrnClick> stop preview, sessionId=" + deviceInfo.mSessionId
                 + ", mNodeId=" + deviceInfo.mNodeId);
 
         PushApplication.getInstance().setFullscrnSessionId(deviceInfo.mSessionId);
@@ -801,10 +800,15 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
 
                 IDeviceSessionMgr deviceSessionMgr = AIotAppSdkFactory.getDevSessionMgr();
                 IDevPreviewMgr previewMgr = deviceSessionMgr.getDevPreviewMgr(sessionId);
-                if (previewMgr != null) {  // 重新订阅音视频
-                    previewMgr.muteDeviceVideo(false);
-                    previewMgr.muteDeviceAudio(false);
-                    Log.d(TAG, "<resubscribeDevice> re-subscribe device");
+                if (previewMgr != null) {  // 重新预览操作
+                    previewMgr.previewStart(true, new IDevPreviewMgr.OnPreviewListener() {
+                        @Override
+                        public void onDeviceFirstVideo(UUID sessionId, int videoWidth, int videoHeight) {
+                            Log.d(TAG, "<resubscribeDevice> sessionId=" + sessionId
+                                    + ", videoWidth=" + videoWidth + ", videoHeight=" + videoHeight);
+                        }
+                    });
+                    Log.d(TAG, "<resubscribeDevice> re-start preview device");
 
                 } else {
                     Log.e(TAG, "<resubscribeDevice> NOT found preview manager!");
