@@ -965,7 +965,7 @@ public class DeviceSessionMgr extends BaseThreadComp
     }
 
     /**
-     * @brief 停止通话，状态机切换到空闲，清除对端设备和peerUid
+     * @brief 停止通话
      */
     void talkingStop(final SessionCtx sessionCtx) {
         int sessionCount = mSessionMgr.size();
@@ -979,6 +979,7 @@ public class DeviceSessionMgr extends BaseThreadComp
             }
         }
     }
+
 
     /**
      * @brief 退出所有的频道，并且释放整个通话引擎
@@ -1050,19 +1051,31 @@ public class DeviceSessionMgr extends BaseThreadComp
         mDevPlayerMgr.addSession(playerSession);
 
         // 开始进入频道
-        int ret = talkingPrepare(playerSession);
-        if (ret != ErrCode.XOK) {
-            ALog.getInstance().e(TAG, "<devPlayerChnlEnter> fail to prepare, ret=" + ret);
-            mDevPlayerMgr.removeSession(playerSession.mSessionId);
-            result.mErrCode = ret;
-            return result;
+        synchronized (mTalkEngLock) {
+            // 如果RtcSdk还未创建，则立即返回错误，不允许进行播放，因为此时必定要存在预览频道的
+            if (!mTalkEngine.isReady()) {
+                ALog.getInstance().e(TAG, "<devPlayerChnlEnter> talk engine NOT ready!");
+                mDevPlayerMgr.removeSession(playerSession.mSessionId);
+                result.mErrCode = ErrCode.XERR_BAD_STATE;
+                return result;
+            }
+
+            // 加入频道
+            boolean ret = mTalkEngine.joinChannel(playerSession);
+            if (!ret) {
+                ALog.getInstance().e(TAG, "<devPlayerChnlEnter> fail to join channel!");
+                mDevPlayerMgr.removeSession(playerSession.mSessionId);
+                result.mErrCode = ErrCode.XERR_BAD_STATE;
+                return result;
+            }
+
+            // 设置SD卡视频播放的显示控件
+            View displayView = chnlInfo.getDisplayView();
+            if (displayView != null)  {
+                mTalkEngine.setRemoteVideoView(playerSession, displayView);
+            }
         }
 
-        // 设置显示控件
-        View displayView = chnlInfo.getDisplayView();
-        if (displayView != null) {
-            setDisplayView(playerSession, displayView);
-        }
 
         result.mSessionId = playerSession.mSessionId;
         ALog.getInstance().d(TAG, "<devPlayerChnlEnter> done, chnlInfo=" + chnlInfo
@@ -1081,7 +1094,10 @@ public class DeviceSessionMgr extends BaseThreadComp
             return ErrCode.XERR_INVALID_PARAM;
         }
 
-        talkingStop(playerSession);
+        // 只退出频道，不能释放 RtcEngine
+        synchronized (mTalkEngLock) {
+            mTalkEngine.leaveChannel(playerSession);
+        }
 
         ALog.getInstance().d(TAG, "<devPlayerChnlExit> done");
         return ErrCode.XOK;
