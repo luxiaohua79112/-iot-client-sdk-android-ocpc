@@ -52,7 +52,7 @@ public class DeviceSessionMgr extends BaseThreadComp
     private static final String TAG = "IOTSDK/DeviceSessionMgr";
     private static final int DEFAULT_DEV_UID = 10;               ///< 设备端uid，固定为10
     private static final long TIMER_INTERVAL = 2000;             ///< 定时器间隔 2秒
-    private static final long CONNECT_TIMEOUT = 30000;           ///< 设备连接超时30秒
+    private static final long CONNECT_TIMEOUT = 5000;            ///< 设备连接超时5秒
     private static final long DISCONNECT_TIMEOUT = 2500;         ///< 断联完成超时2.5秒
 
 
@@ -213,6 +213,7 @@ public class DeviceSessionMgr extends BaseThreadComp
         newSession.mConnectTimestamp = System.currentTimeMillis();
         newSession.mRtcState = SessionCtx.STATE_CONNECTING;
         newSession.mRtmState = SessionCtx.STATE_CONNECTING;
+        newSession.mDevOnline = false;  // 设备未上线
 
         // 添加到会话管理器中
         mSessionMgr.addSession(newSession);
@@ -413,20 +414,38 @@ public class DeviceSessionMgr extends BaseThreadComp
      * @brief 工作线程中运行，定时器
      */
     void DoTimer(Message msg) {
+
+        //
+        // 处理设备超时未上线，作为掉线处理
+        //
         List<SessionCtx> timeoutSessionList = mSessionMgr.queryTimeoutSessionList(CONNECT_TIMEOUT);
-
-        //
-        // 处理连接超时的会话
-        //
         for (SessionCtx sessionCtx : timeoutSessionList) {
-            mSessionMgr.removeSession(sessionCtx.mSessionId);   // 从会话管理器中删除本次会话
-            talkingStop(sessionCtx);    // 退出通话
-            mRtmComp.disconnectFromDevice(sessionCtx);  // RTM断开设备
+            ALog.getInstance().d(TAG, "<DoTimer> detected device offline, sessionCtx=" + sessionCtx);
 
-            // 回调呼叫超时失败
-            ALog.getInstance().d(TAG, "<DoTimer> callback connecting timeout, sessionCtx=" + sessionCtx);
-            CallbackSessionConnectDone(sessionCtx, ErrCode.XERR_TIMEOUT);
+            // 从会话管理器中删除本次会话
+            mSessionMgr.removeSession(sessionCtx.mSessionId);
+            // 停止预览或者录像
+            if (sessionCtx.mDevPreviewMgr != null) {
+                sessionCtx.mDevPreviewMgr.previewStop();
+                sessionCtx.mDevPreviewMgr.recordingStop();
+            }
+
+            // 停止设备端播放
+            if (sessionCtx.mDevMediaMgr != null) {
+                sessionCtx.mDevMediaMgr.stop();
+            }
+
+            // 结束通话
+            talkingStop(sessionCtx);
+
+            // RTM断开设备
+            mRtmComp.disconnectFromDevice(sessionCtx);
+
+            // 回调设备端断开连接
+            CallbackSessionDisconnected(sessionCtx);
         }
+
+
 
         sendSingleMessage(MSGID_SDK_TIMER, 0, 0, null, TIMER_INTERVAL);
     }
@@ -714,14 +733,31 @@ public class DeviceSessionMgr extends BaseThreadComp
     /////////////////////////////////////////////////////////////////////////////
     @Override
     public void onTalkingJoinDone(final UUID sessionId, final String channel, int uid) {
+        // 先处理设备播放的会话
         SessionCtx playerSession = mDevPlayerMgr.getSession(sessionId);
         if ((playerSession != null) && (playerSession.mDevMediaMgr != null)) {
             playerSession.mDevMediaMgr.onTalkingJoinDone(sessionId, channel, uid);
         }
+
+        // 再处理设备通话的会话
+        SessionCtx sessionCtx = mSessionMgr.getSession(sessionId);
+        if ((sessionCtx != null) && (uid == sessionCtx.mLocalRtcUid)) {
+            ALog.getInstance().d(TAG, "<onTalkingJoinDone> uid=" + uid);
+
+            // 更新 RTC连接状态
+            sessionCtx.mRtcState = SessionCtx.STATE_CONNECTED;
+            mSessionMgr.updateSession(sessionCtx);
+
+            // 发送连接完成事件
+            sendSingleMessage(MSGID_SDK_CONNECT_DONE, ErrCode.XOK, 0, sessionId, 0);
+            return;
+        }
+
     }
 
     @Override
     public void onTalkingLeftDone(final UUID sessionId) {
+        // 先处理设备播放的会话
         SessionCtx playerSession = mDevPlayerMgr.getSession(sessionId);
         if ((playerSession != null) && (playerSession.mDevMediaMgr != null)) {
             playerSession.mDevMediaMgr.onTalkingLeftDone(sessionId);
@@ -751,12 +787,9 @@ public class DeviceSessionMgr extends BaseThreadComp
         ALog.getInstance().d(TAG, "<onUserOnline> uid=" + uid + ", sessionCtx=" + sessionCtx);
 
         if (uid == sessionCtx.mDeviceRtcUid) {  // 对端设备加入频道
-            // 更新 RTC连接状态
-            sessionCtx.mRtcState = SessionCtx.STATE_CONNECTED;
+            // 更新 设备上线状态
+            sessionCtx.mDevOnline = true;
             mSessionMgr.updateSession(sessionCtx);
-
-            // 发送连接完成事件
-            sendSingleMessage(MSGID_SDK_CONNECT_DONE, ErrCode.XOK, 0, sessionId, 0);
             return;
         }
 

@@ -159,7 +159,7 @@ public class SessionMgr {
             for (Map.Entry<UUID, SessionCtx> entry : mSessionMap.entrySet()) {
                 SessionCtx sessionCtx = entry.getValue();
 
-                if (sessionCtx.mState == IDeviceSessionMgr.SESSION_STATE_CONNECTING) {
+                if (!sessionCtx.mDevOnline) {  // 设备未上线状态
                     long timeDiff = currTimestamp - sessionCtx.mConnectTimestamp;
                     if (timeDiff > connectTimeout) {  // 呼叫超时
                         timeoutList.add(sessionCtx);

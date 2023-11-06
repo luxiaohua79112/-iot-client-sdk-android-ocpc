@@ -60,6 +60,8 @@ public class SessionCtx  {
     public boolean mSubDevVideo;    ///< 当前是否订阅设备端视频流
     public boolean mRecvedFirstFrame;   ///< 是否已经收到首帧视频帧
 
+    public boolean mDevOnline;      ///< 设备是否在线
+
     ///////////////////////////////////////////////////////////////////////
     ////////////////////////// Public Methods  ////////////////////////////
     ///////////////////////////////////////////////////////////////////////
@@ -79,6 +81,7 @@ public class SessionCtx  {
                 + ", mSubDevAudio=" + mSubDevAudio
                 + ", mRecvedFirstFrame=" + mRecvedFirstFrame
                 + ", mRtmUid=" + mRtmUid
+                + ", mDevOnline=" + mDevOnline
                 + ",\n mRtcToken=" + mRtcToken
                 + ",\n mRtmToken=" + mRtmToken + " }";
         return infoText;
