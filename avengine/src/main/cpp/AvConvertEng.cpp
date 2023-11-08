@@ -132,6 +132,9 @@ int32_t CAvConvertEng::DoConvert() {
       // 计算当前进度
       cvt_time_ = static_cast<int64_t>(out_video_pts * 1000 * av_q2d(out_video_stream_->time_base) * 1000);
       cvt_progress_ = (int32_t)(cvt_time_ * 100L / in_media_info_->video_duration_);
+      if (cvt_progress_ > 100) {
+        cvt_progress_ = 100;
+      }
 
   } else if (packet->stream_index == in_media_info_->audio_track_index_) { // 音频
       // 包的流索引改为输出音频流索引值
