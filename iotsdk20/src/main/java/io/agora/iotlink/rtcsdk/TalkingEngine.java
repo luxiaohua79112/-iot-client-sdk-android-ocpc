@@ -269,13 +269,6 @@ public class TalkingEngine implements AGEventHandler,
             ALog.getInstance().e(TAG, "<initialize> fail to set HW decoder, ret=" + ret);
         }
 
-        // 关闭麦克风选麦处理
-        String micSelect = "{\"che.audio.enable_mic_selection\":false}";
-        ret = mRtcEngine.setParameters(micSelect);
-        if (ret != 0) {
-            ALog.getInstance().e(TAG, "<initialize> fail to select MIC, ret=" + ret);
-        }
-
         mRtcEngine.registerVideoFrameObserver(this);
         mRtcEngine.registerAudioFrameObserver(this);
 
@@ -415,13 +408,6 @@ public class TalkingEngine implements AGEventHandler,
         ret = mRtcEngine.setParameters(hwDecoder);
         if (ret != 0) {
             ALog.getInstance().e(TAG, "<joinChannel> fail to set HW decoder, ret=" + ret);
-        }
-
-        // 关闭麦克风选麦处理
-        String micSelect = "{\"che.audio.enable_mic_selection\":false}";
-        ret = mRtcEngine.setParameters(micSelect);
-        if (ret != 0) {
-            ALog.getInstance().e(TAG, "<joinChannel> fail to select MIC, ret=" + ret);
         }
 
         // APP端永远不推视频流
@@ -732,7 +718,6 @@ public class TalkingEngine implements AGEventHandler,
         retDevVideo = mRtcEngine.muteRemoteVideoStreamEx(sessionCtx.mDeviceRtcUid, mutePeerVideo, rtcConnection);
         ALog.getInstance().d(TAG, "<muteLocalAudioStream> mutePeerVideo=" + mutePeerVideo
                 + ", retDevVideo=" + retDevVideo);
-
 
         long t2 = System.currentTimeMillis();
         ALog.getInstance().d(TAG, "<muteLocalAudioStream> muteLocalAudio=" + muteLocalAudio
