@@ -228,9 +228,6 @@ public class TalkingEngine implements AGEventHandler,
         mRtcEngine.enableVideo();  // 启动音视频采集和推流处理
         mRtcEngine.enableAudio();
 
-        String log_file_path = Environment.getExternalStorageDirectory()
-                + File.separator + mInitParam.mContext.getPackageName() + "/log/agora-rtc.log";
-        mRtcEngine.setLogFile(log_file_path);
         // Warning: only enable dual stream mode if there will be more than one broadcaster in the channel
         //mRtcEngine.enableDualStreamMode(false);
 
