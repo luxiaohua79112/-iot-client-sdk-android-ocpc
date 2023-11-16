@@ -266,6 +266,13 @@ public class TalkingEngine implements AGEventHandler,
             ALog.getInstance().e(TAG, "<initialize> fail to set HW decoder, ret=" + ret);
         }
 
+        // 开启AGC
+        String enableAgc = "{\"che.audio.agc.enable\":true}";
+        ret = mRtcEngine.setParameters(enableAgc);
+        if (ret != 0) {
+            ALog.getInstance().e(TAG, "<initialize> fail to enable AGC, ret=" + ret);
+        }
+
         mRtcEngine.registerVideoFrameObserver(this);
         mRtcEngine.registerAudioFrameObserver(this);
 
@@ -405,6 +412,19 @@ public class TalkingEngine implements AGEventHandler,
         ret = mRtcEngine.setParameters(hwDecoder);
         if (ret != 0) {
             ALog.getInstance().e(TAG, "<joinChannel> fail to set HW decoder, ret=" + ret);
+        }
+
+        // 开启AGC
+        String enableAgc = "{\"che.audio.agc.enable\":true}";
+        ret = mRtcEngine.setParameters(enableAgc);
+        if (ret != 0) {
+            ALog.getInstance().e(TAG, "<joinChannel> fail to enable AGC, ret=" + ret);
+        }
+
+        // 设置meeting模式
+        ret = mRtcEngine.setAudioScenario(Constants.AUDIO_SCENARIO_MEETING);
+        if (ret != Constants.ERR_OK) {
+            ALog.getInstance().e(TAG, "<joinChannel> setAudioScenario() error, ret=" + ret);
         }
 
         // APP端永远不推视频流
