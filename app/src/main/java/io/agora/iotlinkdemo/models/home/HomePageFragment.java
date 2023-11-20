@@ -864,6 +864,9 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
                         // 设置显示控件
                         previewMgr.setDisplayView(findResult.mDevInfo.mVideoView);
 
+                        // 测试设置语音音量
+                        previewMgr.setLocalAudioVolume(150);
+
                         // 开始预览操作
                         previewMgr.previewStart(true, new IDevPreviewMgr.OnPreviewListener() {
                             @Override

@@ -119,6 +119,12 @@ public class DevPreviewMgr  implements IDevPreviewMgr {
     }
 
     @Override
+    public int setLocalAudioVolume(int volume) {
+        int ret = mSessionMgr.setLocalAudioVolume(mSessionId, volume);
+        return ret;
+    }
+
+    @Override
     public int muteDeviceVideo(boolean mute) {
         int ret = mSessionMgr.muteDeviceVideo(mSessionId, mute);
         return ret;

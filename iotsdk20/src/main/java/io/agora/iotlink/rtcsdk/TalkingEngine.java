@@ -743,6 +743,29 @@ public class TalkingEngine implements AGEventHandler,
     }
 
     /**
+     * @brief 设置推送语音音量
+     */
+    public boolean setLocalAudioVolume(final SessionCtx sessionCtx, int volume) {
+        if (mRtcEngine == null) {
+            ALog.getInstance().e(TAG, "<setLocalAudioVolume> bad state");
+            return false;
+        }
+        long t1 = System.currentTimeMillis();
+        int ret;
+
+        RtcConnection rtcConnection = new RtcConnection();
+        rtcConnection.channelId = sessionCtx.mChnlName;
+        rtcConnection.localUid = sessionCtx.mLocalRtcUid;
+        ret = mRtcEngine.adjustRecordingSignalVolumeEx(volume, rtcConnection);
+
+        long t2 = System.currentTimeMillis();
+        ALog.getInstance().d(TAG, "<setLocalAudioVolume> volume=" + volume
+                + ", ret=" + ret + ", costTime=" + (t2-t1));
+        return (ret == Constants.ERR_OK);
+    }
+
+
+    /**
      * @brief 设置指定频道的设备端，是否推送音频流
      */
     public boolean setAudioEffect(int voice_changer) {

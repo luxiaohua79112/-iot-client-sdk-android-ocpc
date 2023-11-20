@@ -1264,6 +1264,23 @@ public class DeviceSessionMgr extends BaseThreadComp
     }
 
 
+    int setLocalAudioVolume(final UUID sessionId, int volume) {
+        SessionCtx sessionCtx = mSessionMgr.getSession(sessionId);
+        if (sessionCtx == null) {
+            ALog.getInstance().e(TAG, "<setLocalAudioVolume> not found session, sessionId=" + sessionId);
+            return ErrCode.XERR_INVALID_PARAM;
+        }
+
+        boolean ret;
+        synchronized (mTalkEngLock) {
+            ret = mTalkEngine.setLocalAudioVolume(sessionCtx, volume);
+        }
+
+        ALog.getInstance().d(TAG, "<setLocalAudioVolume> done, sessionId=" + sessionId + ", ret=" + ret);
+        return (ret ? ErrCode.XOK : ErrCode.XERR_UNSUPPORTED);
+    }
+
+
     int muteLocalAudio(final UUID sessionId, boolean mute) {
         SessionCtx sessionCtx = mSessionMgr.getSession(sessionId);
         if (sessionCtx == null) {

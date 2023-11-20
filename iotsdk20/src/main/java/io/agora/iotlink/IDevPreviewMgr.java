@@ -158,6 +158,13 @@ public interface IDevPreviewMgr {
     int muteLocalAudio(boolean mute);
 
     /**
+     * @brief 设置本地推流的语音音量
+     * @param volume: 设置的语音音量，范围 [0, 400], 默认100(原始音量)，自带增益保护
+     * @return 错误码
+     */
+    int setLocalAudioVolume(int volume);
+
+    /**
      * @brief 禁止/启用 拉流设备端视频
      * @param mute: 是否禁止
      * @return 错误码
