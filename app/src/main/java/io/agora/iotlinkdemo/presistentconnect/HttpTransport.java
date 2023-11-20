@@ -333,7 +333,7 @@ public class HttpTransport {
         ALog.getInstance().d(TAG, "<connectDevice> [Enter] bodyJsonObj=" + bodyJsonObj);
 
         // 请求URL
-        String requestUrl = "https://api-test.sd-rtn.com/iot/cn/open-api/v2/iot-core/connect-device";
+        String requestUrl = "https://api-test.sd-rtn.com/iot/link/open-api/v2/iot-core/connect-device";
 
 
         ResponseObj responseObj = requestToServer(requestUrl, "POST",
