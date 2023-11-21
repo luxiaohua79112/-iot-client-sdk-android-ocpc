@@ -40,7 +40,7 @@ public class RtmBaseCmd implements IRtmCmd  {
     public boolean mIsRespCmd;      ///< 是否是响应命令包，true
     public int mErrCode;            ///< 回应命令中：错误码
 
-
+    public Object mUserData;        ///< 额外的用户数据
 
 
 
@@ -118,5 +118,14 @@ public class RtmBaseCmd implements IRtmCmd  {
     }
 
 
+    @Override
+    public Object getUserData() {
+        return mUserData;
+    }
+
+    @Override
+    public void setUserData(final Object userData) {
+        mUserData = userData;
+    }
 
 }

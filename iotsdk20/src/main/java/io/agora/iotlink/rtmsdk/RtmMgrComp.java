@@ -347,6 +347,7 @@ public class RtmMgrComp extends BaseThreadComp {
                         + ", respCmdId=" + commandId + ", reqCmdId=" + requestCmd.getCommandId());
                 continue;
             }
+            responseCmd.setUserData(requestCmd.getUserData());  // 直接拷贝用户数据
 
             //
             // 回调上层，请求--响应结果
@@ -382,7 +383,8 @@ public class RtmMgrComp extends BaseThreadComp {
             ALog.getInstance().d(TAG, "<onMessageTimer> callback command timeout, rtmCmd=" + rtmCmd);
             IRtmCmd.OnRtmCmdRespListener cmdRespListener = rtmCmd.getRespListener();
             if (cmdRespListener != null) {
-                cmdRespListener.onRtmCmdResponsed(rtmCmd.getCommandId(), ErrCode.XERR_DEVCMD_TIMEOUT, rtmCmd, null );
+                IRtmCmd respCmd = generateEmptyRespCmd(rtmCmd, ErrCode.XERR_DEVCMD_TIMEOUT);
+                cmdRespListener.onRtmCmdResponsed(rtmCmd.getCommandId(), ErrCode.XERR_DEVCMD_TIMEOUT, rtmCmd, respCmd );
             }
         }
 
@@ -921,7 +923,8 @@ public class RtmMgrComp extends BaseThreadComp {
                 //
                 IRtmCmd.OnRtmCmdRespListener cmdRespListener = rtmCmd.getRespListener();
                 if (cmdRespListener != null) {
-                    cmdRespListener.onRtmCmdResponsed(rtmCmd.getCommandId(), errCode, rtmCmd, null );
+                    IRtmCmd respCmd = generateEmptyRespCmd(rtmCmd, errCode);
+                    cmdRespListener.onRtmCmdResponsed(rtmCmd.getCommandId(), errCode, rtmCmd, respCmd );
                 }
             }
         });
@@ -932,12 +935,104 @@ public class RtmMgrComp extends BaseThreadComp {
 
 
     /*
-     * @brief 设置当前通话的 sessionId
+     * @brief 根据requestCmd 生成相应的 空的 responseCmd
      */
-    void setCurrSessionId(UUID sessionId) {
+    IRtmCmd generateEmptyRespCmd(IRtmCmd requestCmd, int errCode) {
 
+        IRtmCmd responseCmd = null;
+        switch (requestCmd.getCommandId()) {
+            case IRtmCmd.CMDID_EVENTTIMELINE_QUERY: {   // 事件分布查询响应命令
+                RtmEventTimelineRspCmd queryRspCmd = new RtmEventTimelineRspCmd();
+                queryRspCmd.mSequenceId = requestCmd.getSequenceId();
+                queryRspCmd.mCmdId = requestCmd.getCommandId();
+                queryRspCmd.mIsRespCmd = true;
+                queryRspCmd.mErrCode = errCode;
+                responseCmd = queryRspCmd;
+            } break;
 
+            case IRtmCmd.CMDID_MEDIA_QUERY: {       // 查询响应命令
+                RtmQueryRspCmd queryRspCmd = new RtmQueryRspCmd();
+                queryRspCmd.mSequenceId = requestCmd.getSequenceId();
+                queryRspCmd.mCmdId = requestCmd.getCommandId();
+                queryRspCmd.mIsRespCmd = true;
+                queryRspCmd.mErrCode = errCode;
+                responseCmd = queryRspCmd;
+            } break;
 
+            case IRtmCmd.CMDID_MEDIA_COVER: {       // 封面图片响应命令
+                RtmCoverRspCmd coverRspCmd = new RtmCoverRspCmd();
+                coverRspCmd.mSequenceId = requestCmd.getSequenceId();
+                coverRspCmd.mCmdId = requestCmd.getCommandId();
+                coverRspCmd.mIsRespCmd = true;
+                coverRspCmd.mErrCode = errCode;
+                responseCmd = coverRspCmd;
+            } break;
+
+            case IRtmCmd.CMDID_MEDIA_DELETE: {      // 删除响应命令
+                RtmDeleteRspCmd deleteRspCmd = new RtmDeleteRspCmd();
+                deleteRspCmd.mSequenceId = requestCmd.getSequenceId();
+                deleteRspCmd.mSequenceId = requestCmd.getSequenceId();
+                deleteRspCmd.mCmdId = requestCmd.getCommandId();
+                deleteRspCmd.mIsRespCmd = true;
+                deleteRspCmd.mErrCode = errCode;
+                responseCmd = deleteRspCmd;
+            } break;
+
+            case IRtmCmd.CMDID_FILE_DOWNLOAD: {      // 下载响应命令
+                RtmDownloadRspCmd dnloadRspCmd = new RtmDownloadRspCmd();
+                dnloadRspCmd.mSequenceId = requestCmd.getSequenceId();
+                dnloadRspCmd.mSequenceId = requestCmd.getSequenceId();
+                dnloadRspCmd.mCmdId = requestCmd.getCommandId();
+                dnloadRspCmd.mIsRespCmd = true;
+                dnloadRspCmd.mErrCode = errCode;
+                responseCmd = dnloadRspCmd;
+            } break;
+
+            case IRtmCmd.CMDID_MEDIA_PLAY_ID:
+            case IRtmCmd.CMDID_MEDIA_PLAY_TIMELINE: {      // 播放响应命令
+                RtmPlayRspCmd playRspCmd = new RtmPlayRspCmd();
+                playRspCmd.mSequenceId = requestCmd.getSequenceId();
+                playRspCmd.mSequenceId = requestCmd.getSequenceId();
+                playRspCmd.mCmdId = requestCmd.getCommandId();
+                playRspCmd.mIsRespCmd = true;
+                playRspCmd.mErrCode = errCode;
+                responseCmd = playRspCmd;
+            } break;
+
+            case IRtmCmd.CMDID_CUSTOMIZE_SEND: {    // 定制化响应命令
+                RtmCustomizeRspCmd customizeRspCmd = new RtmCustomizeRspCmd();
+                customizeRspCmd.mSequenceId = requestCmd.getSequenceId();
+                customizeRspCmd.mSequenceId = requestCmd.getSequenceId();
+                customizeRspCmd.mCmdId = requestCmd.getCommandId();
+                customizeRspCmd.mIsRespCmd = true;
+                customizeRspCmd.mErrCode = errCode;
+                responseCmd = customizeRspCmd;
+            } break;
+
+            case IRtmCmd.CMDID_PTZ_CTRL:
+            case IRtmCmd.CMDID_PTZ_RESET:
+            case IRtmCmd.CMDID_SDCARD_FMT:
+            case IRtmCmd.CMDID_MEDIA_STOP:
+            case IRtmCmd.CMDID_MEDIA_RATE:
+            case IRtmCmd.CMDID_MEDIA_PAUSE:
+            case IRtmCmd.CMDID_MEDIA_RESUME:
+            case IRtmCmd.CMDID_DEVICE_RESET:   {  // 其他响应命令，都不需要响应数据
+                RtmBaseCmd baseCmd = new RtmBaseCmd();
+                baseCmd.mSequenceId = requestCmd.getSequenceId();
+                baseCmd.mCmdId = requestCmd.getCommandId();
+                baseCmd.mIsRespCmd = true;
+                baseCmd.mErrCode = errCode;
+                responseCmd = baseCmd;
+            } break;
+
+            default: {  // 不支持的命令，直接返回空
+                return null;
+            }
+        }
+
+        // 直接透传用户数据
+        responseCmd.setUserData(requestCmd.getUserData());
+        return responseCmd;
     }
 
     ///////////////////////////////////////////////////////////////////////////

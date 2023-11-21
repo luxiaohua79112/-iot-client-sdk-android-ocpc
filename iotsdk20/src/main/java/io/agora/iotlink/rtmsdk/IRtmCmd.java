@@ -110,4 +110,14 @@ public interface IRtmCmd  {
      */
     int getRespErrCode();
 
+    /**
+     * @brief 返回用户数据
+     */
+    Object getUserData();
+
+    /**
+     * @brief 设置用户数据
+     */
+     void setUserData(final Object userData);
+
 }
