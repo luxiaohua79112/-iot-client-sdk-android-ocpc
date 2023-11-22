@@ -617,6 +617,8 @@ public class RtmMgrComp extends BaseThreadComp {
                     playRspCmd.mErrCode = ErrCode.XOK;
                 } else if (codeValue == 1) {
                     playRspCmd.mErrCode = ErrCode.XERR_MEDIAMGR_PLAY_READFILE;
+                } else if (codeValue == -16) {
+                    playRspCmd.mErrCode = ErrCode.XERR_MEDIAMGR_PLAY_ONGOING;
                 } else {
                     playRspCmd.mErrCode = ErrCode.XERR_MEDIAMGR_PLAY_UNKNOWN;
                 }

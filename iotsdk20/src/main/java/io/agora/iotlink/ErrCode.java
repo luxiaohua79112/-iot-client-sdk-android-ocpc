@@ -137,6 +137,7 @@ public class ErrCode {
     public static final int XERR_MEDIAMGR_DOWNLOAD_UNKNOWN = -40014;     ///< 未知原因下载失败
     public static final int XERR_MEDIAMGR_DOWNLOAD_NOT_EXIST = -40015;   ///< 下载的文件不存在
     public static final int XERR_MEDIAMGR_QUERYEVENT = -40016;           ///< 查询事件分布失败
+    public static final int XERR_MEDIAMGR_PLAY_ONGOING = -40017;         ///< 设备已经有SD卡播放在进行中
 
     //
     // RTM模块相应的错误
