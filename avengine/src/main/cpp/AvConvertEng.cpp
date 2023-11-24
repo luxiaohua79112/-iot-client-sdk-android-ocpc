@@ -152,6 +152,17 @@ int32_t CAvConvertEng::DoConvert() {
       LOGD("<CAvConvertEng::DoConvert> [AUDIO] audio_time_sec=%.3f, audio_time=%" PRId64 ", pkt_pts=%" PRId64
             ", in_audio_pts=%" PRId64 ", out_audio_pts=%" PRId64 ", in_audio_dts=%" PRId64 ", out_audio_dts=%" PRId64 " \n",
            audio_time_sec, audio_time, packet->pts, in_audio_pts, out_audio_pts, in_audio_dts, out_audio_dts);
+
+      // 如果当前没有视频流，则使用音频流计算当前进度
+      if (in_video_codec_ == NULL) {
+        cvt_time_ =
+          static_cast<int64_t>(out_audio_pts * 1000 * av_q2d(out_audio_stream_->time_base) * 1000);
+        cvt_progress_ = (int32_t) (cvt_time_ * 100L / in_media_info_->audio_duration_);
+        if (cvt_progress_ > 100) {
+          cvt_progress_ = 100;
+        }
+      }
+
   }
 
 
@@ -328,45 +339,48 @@ int32_t CAvConvertEng::OutStreamOpen() {
 
 
     // 创建写入的视频流
-    out_video_stream_ = AVFormatNewStreamCreate(out_format_ctx_.get(), in_video_codec_);
-    if (out_video_stream_ == nullptr)
-    {
+    if (in_video_codec_ != NULL) {
+      out_video_stream_ = AVFormatNewStreamCreate(out_format_ctx_.get(), in_video_codec_);
+      if (out_video_stream_ == nullptr) {
         out_format_ctx_.reset();
         LOGE("<CAvConvertEng::OutStreamOpen> [ERROR] fail to create video stream\n");
         return XERR_FILE_OPEN;
-    }
-    ret = avcodec_parameters_copy(out_video_stream_->codecpar, in_video_stream_->codecpar);
-    if (ret < 0)
-    {
+      }
+      ret = avcodec_parameters_copy(out_video_stream_->codecpar, in_video_stream_->codecpar);
+      if (ret < 0) {
         out_format_ctx_.reset();
-        LOGE("<CAvConvertEng::OutStreamOpen> [ERROR] fail to avcodec_parameters_copy(), ret=%d\n", ret);
+        LOGE("<CAvConvertEng::OutStreamOpen> [ERROR] fail to avcodec_parameters_copy(), ret=%d\n",
+             ret);
         return XERR_FILE_OPEN;
+      }
+      out_video_stream_->time_base = in_video_stream_->time_base;
+      out_video_stream_->codecpar->codec_tag =
+        0; // MKTAG('h', 'v', 'c', '1');  // 默认是 hev1 的tag, 需要修改
+      out_video_stream_->start_time = 0;          // 时间戳总是从0开始
     }
-    out_video_stream_->time_base = in_video_stream_->time_base;
-    out_video_stream_->codecpar->codec_tag = 0; // MKTAG('h', 'v', 'c', '1');  // 默认是 hev1 的tag, 需要修改
-    out_video_stream_->start_time = 0;          // 时间戳总是从0开始
 
     // 创建写入的音频流
-    out_audio_stream_ = AVFormatNewStreamCreate(out_format_ctx_.get(), in_audio_codec_);
-    if (out_audio_stream_ == nullptr)
-    {
+    if (in_audio_codec_ != NULL) {
+      out_audio_stream_ = AVFormatNewStreamCreate(out_format_ctx_.get(), in_audio_codec_);
+      if (out_audio_stream_ == nullptr) {
         out_format_ctx_.reset();
         out_video_stream_.reset();
         LOGE("<CAvConvertEng::OutStreamOpen> [ERROR] fail to create audio stream\n");
         return XERR_FILE_OPEN;
-    }
-    ret = avcodec_parameters_copy(out_audio_stream_->codecpar, in_audio_stream_->codecpar);
-    if (ret < 0)
-    {
+      }
+      ret = avcodec_parameters_copy(out_audio_stream_->codecpar, in_audio_stream_->codecpar);
+      if (ret < 0) {
         out_format_ctx_.reset();
         out_video_stream_.reset();
         out_audio_stream_.reset();
-        LOGE("<CAvConvertEng::OutStreamOpen> [ERROR] fail to avcodec_parameters_copy(), ret=%d\n", ret);
+        LOGE("<CAvConvertEng::OutStreamOpen> [ERROR] fail to avcodec_parameters_copy(), ret=%d\n",
+             ret);
         return XERR_FILE_OPEN;
+      }
+      out_audio_stream_->time_base = in_audio_stream_->time_base;
+      out_audio_stream_->codecpar->codec_tag = 0;  // 设置0 自动选择codec_tag，不能用输入流的
+      out_audio_stream_->start_time = 0;          // 时间戳总是从0开始
     }
-    out_audio_stream_->time_base = in_audio_stream_->time_base;
-    out_audio_stream_->codecpar->codec_tag = 0;  // 设置0 自动选择codec_tag，不能用输入流的
-    out_audio_stream_->start_time = 0;          // 时间戳总是从0开始
 
     //  创建输出生成文件上下文
     out_io_ctx_ = AVFormatAvIoOpen(out_format_ctx_.get(), dst_file_path_.c_str());
