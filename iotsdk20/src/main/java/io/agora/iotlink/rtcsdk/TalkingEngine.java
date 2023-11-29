@@ -282,7 +282,7 @@ public class TalkingEngine implements AGEventHandler,
         mRtcStatus.rxVideoKBitRate = (int)(Math.random()*90+5);
         mRtcStatus.rxKBitRate = mRtcStatus.rxAudioKBitRate + mRtcStatus.rxVideoKBitRate;
 
-        ALog.getInstance().d(TAG, "<initialize> done, mMaxEncodeWidth=" + mMaxEncodeWidth
+        ALog.getInstance().i(TAG, "<initialize> done, mMaxEncodeWidth=" + mMaxEncodeWidth
                     + ", mMaxEncodeHeight=" + mMaxEncodeHeight);
         return true;
     }
@@ -301,7 +301,7 @@ public class TalkingEngine implements AGEventHandler,
         if (mRtcEngEventHandler != null) {
             mRtcEngEventHandler.release();
             mRtcEngEventHandler = null;
-            ALog.getInstance().d(TAG, "<release> done");
+            ALog.getInstance().i(TAG, "<release> done");
         }
     }
 
@@ -457,7 +457,7 @@ public class TalkingEngine implements AGEventHandler,
                     + ", muteRemoteAudio=" + muteRemoteAudio);
         }
 
-        ALog.getInstance().d(TAG, "<joinChannel> Exit");
+        ALog.getInstance().i(TAG, "<joinChannel> Exit");
         return true;
     }
 
@@ -482,7 +482,7 @@ public class TalkingEngine implements AGEventHandler,
             return false;
         }
 
-        ALog.getInstance().d(TAG, "<leaveChannel> Exit");
+        ALog.getInstance().i(TAG, "<leaveChannel> Exit");
         return true;
     }
 
@@ -545,7 +545,7 @@ public class TalkingEngine implements AGEventHandler,
 
         VideoCanvas videoCanvas = new VideoCanvas(remoteView, VideoCanvas.RENDER_MODE_FIT, sessionCtx.mDeviceRtcUid);
         int ret = mRtcEngine.setupRemoteVideoEx(videoCanvas, rtcConnection);
-        ALog.getInstance().d(TAG, "<setRemoteVideoView> done, remoteView=" + remoteView
+        ALog.getInstance().i(TAG, "<setRemoteVideoView> done, remoteView=" + remoteView
                 + ", sessionId=" + sessionCtx.mSessionId + ", ret=" + ret);
         return (ret == Constants.ERR_OK);
     }
@@ -579,17 +579,16 @@ public class TalkingEngine implements AGEventHandler,
 
         boolean mutePeerAudio = (!sessionCtx.mSubDevAudio);
         retDevAudio = mRtcEngine.muteRemoteAudioStreamEx(sessionCtx.mDeviceRtcUid, mutePeerAudio, rtcConnection);
-        ALog.getInstance().d(TAG, "<subscribeStart> mutePeerAudio=" + mutePeerAudio
-                + ", retDevAudio=" + retDevAudio);
 
         boolean mutePeerVideo = (!sessionCtx.mSubDevVideo);
         retDevVideo = mRtcEngine.muteRemoteVideoStreamEx(sessionCtx.mDeviceRtcUid, mutePeerVideo, rtcConnection);
-        ALog.getInstance().d(TAG, "<subscribeStart> mutePeerVideo=" + mutePeerVideo
-                + ", retDevVideo=" + retDevVideo);
 
         long t2 = System.currentTimeMillis();
-        ALog.getInstance().d(TAG, "<subscribeStart> ret=" + ret
-                + ", retLocalAud=" + retLocalAud + ", costTime=" + (t2-t1));
+        ALog.getInstance().i(TAG, "<subscribeStart> mutePeerAudio=" + mutePeerAudio
+                + ", mutePeerVideo=" + mutePeerVideo
+                + ", ret=" + ret + ", retLocalAud=" + retLocalAud
+                + ", retDevAudio=" + retDevAudio + ", retDevVideo=" + retDevVideo
+                + ", costTime=" + (t2-t1));
         return (ret == Constants.ERR_OK);
     }
 
@@ -623,18 +622,16 @@ public class TalkingEngine implements AGEventHandler,
 
         boolean mutePeerAudio = (!sessionCtx.mSubDevAudio);
         retDevAudio = mRtcEngine.muteRemoteAudioStreamEx(sessionCtx.mDeviceRtcUid, mutePeerAudio, rtcConnection);
-        ALog.getInstance().d(TAG, "<subscribeStop> mutePeerAudio=" + mutePeerAudio
-                + ", retDevAudio=" + retDevAudio);
 
         boolean mutePeerVideo = (!sessionCtx.mSubDevVideo);
         retDevVideo = mRtcEngine.muteRemoteVideoStreamEx(sessionCtx.mDeviceRtcUid, mutePeerVideo, rtcConnection);
-        ALog.getInstance().d(TAG, "<subscribeStop> mutePeerVideo=" + mutePeerVideo
-                + ", retDevVideo=" + retDevVideo);
-
 
         long t2 = System.currentTimeMillis();
-        ALog.getInstance().d(TAG, "<subscribeStop> ret=" + ret
-                + ", retLocalAud=" + retLocalAud + ", costTime=" + (t2-t1));
+        ALog.getInstance().i(TAG, "<subscribeStop> mutePeerAudio=" + mutePeerAudio
+                + ", mutePeerVideo=" + mutePeerVideo
+                + ", ret=" + ret + ", retLocalAud=" + retLocalAud
+                + ", retDevAudio=" + retDevAudio + ", retDevVideo=" + retDevVideo
+                + ", costTime=" + (t2-t1));
         return (ret == Constants.ERR_OK);
     }
 
@@ -654,7 +651,7 @@ public class TalkingEngine implements AGEventHandler,
 
         boolean mutePeerVideo = (!sessionCtx.mSubDevVideo);
         int ret = mRtcEngine.muteRemoteVideoStreamEx(sessionCtx.mDeviceRtcUid, mutePeerVideo, rtcConnection);
-        ALog.getInstance().d(TAG, "<mutePeerVideoStream> sessionId=" + sessionCtx.mSessionId
+        ALog.getInstance().i(TAG, "<mutePeerVideoStream> sessionId=" + sessionCtx.mSessionId
                     + ", mutePeerVideo=" + mutePeerVideo + ", ret=" + ret);
         return (ret == Constants.ERR_OK);
     }
@@ -673,7 +670,7 @@ public class TalkingEngine implements AGEventHandler,
 
         boolean mutePeerAudio = (!sessionCtx.mSubDevAudio);
         int ret = mRtcEngine.muteRemoteAudioStreamEx(sessionCtx.mDeviceRtcUid, mutePeerAudio, rtcConnection);
-        ALog.getInstance().d(TAG, "<mutePeerAudioStream> sessionId=" + sessionCtx.mSessionId
+        ALog.getInstance().i(TAG, "<mutePeerAudioStream> sessionId=" + sessionCtx.mSessionId
                 + ", mutePeerAudio=" + mutePeerAudio + ", ret=" + ret);
         return (ret == Constants.ERR_OK);
     }
@@ -694,7 +691,7 @@ public class TalkingEngine implements AGEventHandler,
         int ret = mRtcEngine.takeSnapshotEx(rtcConnection, sessionCtx.mDeviceRtcUid, saveFilePath);
         long t2 = System.currentTimeMillis();
 
-        ALog.getInstance().d(TAG, "<takeSnapshot> sessionId=" + sessionCtx.mSessionId + ", ret=" + ret
+        ALog.getInstance().i(TAG, "<takeSnapshot> sessionId=" + sessionCtx.mSessionId + ", ret=" + ret
                 + ", saveFilePath=" + saveFilePath + ", costTime=" + (t2-t1) );
         return (ret == Constants.ERR_OK);
     }
@@ -728,17 +725,17 @@ public class TalkingEngine implements AGEventHandler,
 
         boolean mutePeerAudio = (!sessionCtx.mSubDevAudio);
         retDevAudio = mRtcEngine.muteRemoteAudioStreamEx(sessionCtx.mDeviceRtcUid, mutePeerAudio, rtcConnection);
-        ALog.getInstance().d(TAG, "<muteLocalAudioStream> mutePeerAudio=" + mutePeerAudio
-                + ", retDevAudio=" + retDevAudio);
 
         boolean mutePeerVideo = (!sessionCtx.mSubDevVideo);
         retDevVideo = mRtcEngine.muteRemoteVideoStreamEx(sessionCtx.mDeviceRtcUid, mutePeerVideo, rtcConnection);
-        ALog.getInstance().d(TAG, "<muteLocalAudioStream> mutePeerVideo=" + mutePeerVideo
-                + ", retDevVideo=" + retDevVideo);
 
         long t2 = System.currentTimeMillis();
-        ALog.getInstance().d(TAG, "<muteLocalAudioStream> muteLocalAudio=" + muteLocalAudio
-                + ", retLocalAud=" + retLocalAud + ", ret=" + ret + ", costTime=" + (t2-t1));
+
+        ALog.getInstance().i(TAG, "<muteLocalAudioStream> mutePeerAudio=" + mutePeerAudio
+                + ", mutePeerVideo=" + mutePeerVideo
+                + ", ret=" + ret + ", retLocalAud=" + retLocalAud
+                + ", retDevAudio=" + retDevAudio + ", retDevVideo=" + retDevVideo
+                + ", costTime=" + (t2-t1));
         return (ret == Constants.ERR_OK);
     }
 
@@ -759,7 +756,7 @@ public class TalkingEngine implements AGEventHandler,
         ret = mRtcEngine.adjustRecordingSignalVolumeEx(volume, rtcConnection);
 
         long t2 = System.currentTimeMillis();
-        ALog.getInstance().d(TAG, "<setLocalAudioVolume> volume=" + volume
+        ALog.getInstance().i(TAG, "<setLocalAudioVolume> volume=" + volume
                 + ", ret=" + ret + ", costTime=" + (t2-t1));
         return (ret == Constants.ERR_OK);
     }
@@ -775,7 +772,7 @@ public class TalkingEngine implements AGEventHandler,
         }
         mVoiceChanger = voice_changer;
         int ret = mRtcEngine.setAudioEffectPreset(voice_changer);
-        ALog.getInstance().d(TAG, "<setAudioEffect> voice_changer=" + voice_changer + ", ret=" + ret);
+        ALog.getInstance().i(TAG, "<setAudioEffect> voice_changer=" + voice_changer + ", ret=" + ret);
         return (ret == Constants.ERR_OK);
     }
 
@@ -792,7 +789,7 @@ public class TalkingEngine implements AGEventHandler,
             return false;
         }
         int ret = mRtcEngine.adjustPlaybackSignalVolume(volume);
-        ALog.getInstance().d(TAG, "<setPlaybackVolume> volume=" + volume + ", ret=" + ret);
+        ALog.getInstance().i(TAG, "<setPlaybackVolume> volume=" + volume + ", ret=" + ret);
         return (ret == Constants.ERR_OK);
     }
 
@@ -910,7 +907,7 @@ public class TalkingEngine implements AGEventHandler,
         }
         ret = mRecorder.recordingStart();
 
-        ALog.getInstance().d(TAG, "<recordingStart> done, ret=" + ret
+        ALog.getInstance().i(TAG, "<recordingStart> done, ret=" + ret
             + ", width=" + videoWidth + ", height=" + videoHeight + ", rotation=" + videoRotation
             + ", channels=" + channels + ", bytesPerSmpl=" + bytesPerSample + ", sampleRate=" + sampleRate);
         return ret;
@@ -956,7 +953,7 @@ public class TalkingEngine implements AGEventHandler,
             mRecorder.recordingStop();
             mRecorder.release();
             mRecorder = null;
-            ALog.getInstance().d(TAG, "<recordingStop> done");
+            ALog.getInstance().i(TAG, "<recordingStop> done");
         }
         synchronized (mVideoDataLock) {
             mCacheVideoFrame = false;

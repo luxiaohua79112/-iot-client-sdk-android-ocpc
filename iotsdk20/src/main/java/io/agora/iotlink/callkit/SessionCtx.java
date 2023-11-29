@@ -81,9 +81,9 @@ public class SessionCtx  {
                 + ", mSubDevAudio=" + mSubDevAudio
                 + ", mRecvedFirstFrame=" + mRecvedFirstFrame
                 + ", mRtmUid=" + mRtmUid
-                + ", mDevOnline=" + mDevOnline
-                + ",\n mRtcToken=" + mRtcToken
-                + ",\n mRtmToken=" + mRtmToken + " }";
+                + ", mDevOnline=" + mDevOnline + " }";
+            //    + ",\n mRtcToken=" + mRtcToken
+            //    + ",\n mRtmToken=" + mRtmToken + " }";
         return infoText;
     }
 }

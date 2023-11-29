@@ -127,7 +127,7 @@ public class DeviceSessionMgr extends BaseThreadComp
         sendSingleMessage(MSGID_SDK_TIMER, 0, 0, null,0);
 
         long t2 = System.currentTimeMillis();
-        ALog.getInstance().d(TAG, "<initialize> done, costTime=" + (t2-t1));
+        ALog.getInstance().i(TAG, "<initialize> done, costTime=" + (t2-t1));
         return ErrCode.XOK;
     }
 
@@ -147,7 +147,7 @@ public class DeviceSessionMgr extends BaseThreadComp
         }
 
         long t2 = System.currentTimeMillis();
-        ALog.getInstance().d(TAG, "<release> done, costTime=" + (t2-t1));
+        ALog.getInstance().i(TAG, "<release> done, costTime=" + (t2-t1));
         ALog.getInstance().release();
     }
 
@@ -222,7 +222,7 @@ public class DeviceSessionMgr extends BaseThreadComp
         sendSingleMessage(MSGID_SDK_CONNECT_DEV, 0, 0, newSession, 0);
 
         long t2 = System.currentTimeMillis();
-        ALog.getInstance().d(TAG, "<connect> <==End done" + ", costTime=" + (t2-t1));
+        ALog.getInstance().i(TAG, "<connect> <==End done" + ", costTime=" + (t2-t1));
         result.mSessionId = newSession.mSessionId;
         result.mErrCode = ErrCode.XOK;
         return result;
@@ -247,7 +247,7 @@ public class DeviceSessionMgr extends BaseThreadComp
         mDisconnectEvent.waitEvent(DISCONNECT_TIMEOUT);  // 等待断联完成
 
         long t2 = System.currentTimeMillis();
-        ALog.getInstance().d(TAG, "<disconnect> <==END, costTime=" + (t2-t1));
+        ALog.getInstance().i(TAG, "<disconnect> <==END, costTime=" + (t2-t1));
         return ErrCode.XOK;
     }
 
@@ -267,7 +267,7 @@ public class DeviceSessionMgr extends BaseThreadComp
         Object[] params = { sessionId, renewParam};
         sendSingleMessage(MSGID_SDK_RENEW_TOKEN, 0, 0, params, 0);
 
-        ALog.getInstance().d(TAG, "<renewToken> done");
+        ALog.getInstance().i(TAG, "<renewToken> done");
         return ErrCode.XOK;
     }
 
@@ -472,14 +472,14 @@ public class DeviceSessionMgr extends BaseThreadComp
         // RTM组件中连接设备处理
         mRtmComp.connectToDevice(newSession);
 
-        ALog.getInstance().d(TAG, "<onMessageConnectDev> done, newSession=" + newSession);
+        ALog.getInstance().i(TAG, "<onMessageConnectDev> done, newSession=" + newSession);
     }
 
     /**
      * @brief 工作线程或者RTM回调中进行，RTM登录完成或者 renew完成
      */
     public void onRtmConnectDevDone(final UUID sessionId, int errCode) {
-        ALog.getInstance().d(TAG, "<onRtmConnectDevDone> sessionId=" + sessionId
+        ALog.getInstance().i(TAG, "<onRtmConnectDevDone> sessionId=" + sessionId
                 + ", errCode=" + errCode);
         SessionCtx findSessionCtx = mSessionMgr.getSession(sessionId);
         if (findSessionCtx == null) {  // 已经断开连接了
@@ -512,7 +512,7 @@ public class DeviceSessionMgr extends BaseThreadComp
             return;
         }
         if (sessionCtx.mState != SESSION_STATE_CONNECTING) {
-            ALog.getInstance().d(TAG, "<onMessageConnectDone> bad session state, mState=" + sessionCtx.mState);
+            ALog.getInstance().e(TAG, "<onMessageConnectDone> bad session state, mState=" + sessionCtx.mState);
             return;
         }
 
@@ -542,7 +542,7 @@ public class DeviceSessionMgr extends BaseThreadComp
         }
 
         // 回调设备连接结果
-        ALog.getInstance().d(TAG, "<onMessageConnectDone> sessionId=" + sessionId
+        ALog.getInstance().i(TAG, "<onMessageConnectDone> sessionId=" + sessionId
                 + ", errCode=" + errCode);
         CallbackSessionConnectDone(sessionCtx, errCode);
     }
@@ -578,7 +578,7 @@ public class DeviceSessionMgr extends BaseThreadComp
         // 回调设备断连结果
         long t2 = System.currentTimeMillis();
 
-        ALog.getInstance().d(TAG, "<onMessageDisconnectDev> done, costTime=" + (t2-t1));
+        ALog.getInstance().i(TAG, "<onMessageDisconnectDev> done, costTime=" + (t2-t1));
         mDisconnectEvent.setEvent(ErrCode.XOK);  // 通知断联完成事件
     }
 
@@ -593,7 +593,7 @@ public class DeviceSessionMgr extends BaseThreadComp
             ALog.getInstance().w(TAG, "<onMessageDeviceOffline> session removed, sessionId=" + sessionId);
             return;
         }
-        ALog.getInstance().d(TAG, "<onMessageDeviceOffline> sessionCtx=" + sessionCtx);
+        ALog.getInstance().i(TAG, "<onMessageDeviceOffline> sessionCtx=" + sessionCtx);
 
         // 停止预览或者录像
         if (sessionCtx.mDevPreviewMgr != null) {
@@ -628,7 +628,7 @@ public class DeviceSessionMgr extends BaseThreadComp
             ALog.getInstance().w(TAG, "<onMessageDeviceFirstFrame> session removed, sessionId=" + sessionId);
             return;
         }
-        ALog.getInstance().d(TAG, "<onMessageDeviceFirstFrame> sessionCtx=" + sessionCtx
+        ALog.getInstance().i(TAG, "<onMessageDeviceFirstFrame> sessionCtx=" + sessionCtx
                 + ", width=" + width + ", height=" + height);
 
         if (sessionCtx.mState == SESSION_STATE_CONNECTED || sessionCtx.mState == SESSION_STATE_CONNECTING) {
@@ -653,7 +653,7 @@ public class DeviceSessionMgr extends BaseThreadComp
             ALog.getInstance().w(TAG, "<onMessageSnapshotTaken> session removed, sessionId=" + sessionId);
             return;
         }
-        ALog.getInstance().d(TAG, "<onMessageSnapshotTaken> sessionCtx=" + sessionCtx
+        ALog.getInstance().i(TAG, "<onMessageSnapshotTaken> sessionCtx=" + sessionCtx
                 + ", width=" + width + ", height=" + height
                 + ", filePath=" + filePath + ", errCode=" + errCode);
 
@@ -698,7 +698,7 @@ public class DeviceSessionMgr extends BaseThreadComp
         // 更新 RTM的token
         mRtmComp.renewToken(renewParam.mRtmToken);
 
-        ALog.getInstance().d(TAG, "<onMessageRenewToken> done, sessionCtx=" + sessionCtx);
+        ALog.getInstance().i(TAG, "<onMessageRenewToken> done, sessionCtx=" + sessionCtx);
     }
 
     /**
@@ -710,7 +710,7 @@ public class DeviceSessionMgr extends BaseThreadComp
         UUID sessionId = (UUID)params[1];
         Integer uid = (Integer)params[2];
 
-        ALog.getInstance().d(TAG, "<onMessageDevMediaMgrDevOnline> done, sessionId=" + sessionId);
+        ALog.getInstance().i(TAG, "<onMessageDevMediaMgrDevOnline> done, sessionId=" + sessionId);
         playerSession.mDevMediaMgr.onUserOnline(sessionId, uid, 0);
     }
 
@@ -723,7 +723,7 @@ public class DeviceSessionMgr extends BaseThreadComp
         UUID sessionId = (UUID)params[1];
         Integer uid = (Integer)params[2];
 
-        ALog.getInstance().d(TAG, "<onMessageDevMediaMgrDevOffline> done, sessionId=" + sessionId);
+        ALog.getInstance().i(TAG, "<onMessageDevMediaMgrDevOffline> done, sessionId=" + sessionId);
         playerSession.mDevMediaMgr.onUserOffline(sessionId, uid, 0);
     }
 
@@ -742,7 +742,7 @@ public class DeviceSessionMgr extends BaseThreadComp
         // 再处理设备通话的会话
         SessionCtx sessionCtx = mSessionMgr.getSession(sessionId);
         if ((sessionCtx != null) && (uid == sessionCtx.mLocalRtcUid)) {
-            ALog.getInstance().d(TAG, "<onTalkingJoinDone> uid=" + uid);
+            ALog.getInstance().i(TAG, "<onTalkingJoinDone> uid=" + uid);
 
             // 更新 RTC连接状态
             sessionCtx.mRtcState = SessionCtx.STATE_CONNECTED;
@@ -799,7 +799,7 @@ public class DeviceSessionMgr extends BaseThreadComp
             sessionCtx.mUserCount++;
             mSessionMgr.updateSession(sessionCtx);
 
-            ALog.getInstance().d(TAG, "<onUserOnline> callback online event");
+            ALog.getInstance().i(TAG, "<onUserOnline> callback online event");
             CallbackOtherUserOnline(sessionCtx, uid);
         }
     }
@@ -824,7 +824,7 @@ public class DeviceSessionMgr extends BaseThreadComp
                     + ", uid=" + uid + ", reason=" + reason);
             return;
         }
-        ALog.getInstance().d(TAG, "<onUserOffline> uid=" + uid
+        ALog.getInstance().i(TAG, "<onUserOffline> uid=" + uid
                 + ", reason=" + reason + ", sessionCtx=" + sessionCtx);
 
         if (uid == sessionCtx.mDeviceRtcUid) {  // 对端设备退出频道
@@ -839,7 +839,7 @@ public class DeviceSessionMgr extends BaseThreadComp
             sessionCtx.mUserCount--;
             mSessionMgr.updateSession(sessionCtx);
 
-            ALog.getInstance().d(TAG, "<onUserOffline> callback online event");
+            ALog.getInstance().i(TAG, "<onUserOffline> callback online event");
             CallbackOtherUserOffline(sessionCtx, uid);
         }
     }
@@ -855,7 +855,7 @@ public class DeviceSessionMgr extends BaseThreadComp
                 // 更新sessionCtx，设置收到首帧
                 playerSession.mRecvedFirstFrame = true;
                 mDevPlayerMgr.updateSession(playerSession);
-                ALog.getInstance().d(TAG, "<onRenderVideoFrame> recv sdcard playing first frame, sessionId=" + playerSession.mSessionId);
+                ALog.getInstance().i(TAG, "<onRenderVideoFrame> recv sdcard playing first frame, sessionId=" + playerSession.mSessionId);
 
                 int frameWidth = videoFrame.getRotatedWidth();
                 int frameHeight = videoFrame.getRotatedHeight();
@@ -873,7 +873,7 @@ public class DeviceSessionMgr extends BaseThreadComp
             // 更新sessionCtx，设置收到首帧
             sessionCtx.mRecvedFirstFrame = true;
             mSessionMgr.updateSession(sessionCtx);
-            ALog.getInstance().d(TAG, "<onRenderVideoFrame> recv first frame, sessionCtx=" + sessionCtx);
+            ALog.getInstance().i(TAG, "<onRenderVideoFrame> recv first frame, sessionCtx=" + sessionCtx);
 
             // 发送对端首帧出图事件
             int videoWidth = videoFrame.getRotatedWidth();
@@ -916,7 +916,7 @@ public class DeviceSessionMgr extends BaseThreadComp
         // 再处理设备通话的会话
         SessionCtx sessionCtx = mSessionMgr.getSession(sessionId);
         if (sessionCtx == null) {
-            ALog.getInstance().d(TAG, "<onRecordingError> session removed"
+            ALog.getInstance().w(TAG, "<onRecordingError> session removed"
                     + ", sessionId=" + sessionId + ", errCode=" + errCode);
             return;
         }
@@ -932,10 +932,10 @@ public class DeviceSessionMgr extends BaseThreadComp
         // 再处理设备通话的会话
         SessionCtx sessionCtx = mSessionMgr.getSession(sessionId);
         if (sessionCtx == null) {
-            ALog.getInstance().d(TAG, "<onRtcTokenWillExperie> session removed, sessionId=" + sessionId);
+            ALog.getInstance().w(TAG, "<onRtcTokenWillExperie> session removed, sessionId=" + sessionId);
             return;
         }
-        ALog.getInstance().d(TAG, "<onRtcTokenWillExperie> sessionCtx=" + sessionCtx
+        ALog.getInstance().i(TAG, "<onRtcTokenWillExperie> sessionCtx=" + sessionCtx
                 + ", token=" + token );
 
         // 直接回调 Token过期
@@ -950,10 +950,10 @@ public class DeviceSessionMgr extends BaseThreadComp
         // 再处理设备通话的会话
         SessionCtx sessionCtx = mSessionMgr.getSession(sessionId);
         if (sessionCtx == null) {
-            ALog.getInstance().d(TAG, "<onRtmTokenWillExpire> session removed, sessionId=" + sessionId);
+            ALog.getInstance().w(TAG, "<onRtmTokenWillExpire> session removed, sessionId=" + sessionId);
             return;
         }
-        ALog.getInstance().d(TAG, "<onRtmTokenWillExpire> sessionCtx=" + sessionCtx);
+        ALog.getInstance().i(TAG, "<onRtmTokenWillExpire> sessionCtx=" + sessionCtx);
 
         // 直接回调 Token过期
         CallbackTokenWillExpire(sessionCtx);

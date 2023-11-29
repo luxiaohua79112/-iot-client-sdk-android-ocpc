@@ -348,6 +348,10 @@ public class RtmMgrComp extends BaseThreadComp {
                 continue;
             }
             responseCmd.setUserData(requestCmd.getUserData());  // 直接拷贝用户数据
+            if (errCode != ErrCode.XOK) {
+                ALog.getInstance().i(TAG, "<onMessageRecvPkt> errCode=" + errCode
+                        + ", mPeerId=" + recvedPkt.mPeerId + ", mPktData=" + recvedPkt.mPktData);
+            }
 
             //
             // 回调上层，请求--响应结果
@@ -380,7 +384,7 @@ public class RtmMgrComp extends BaseThreadComp {
             //
             // 回调上层，请求--响应超时
             //
-            ALog.getInstance().d(TAG, "<onMessageTimer> callback command timeout, rtmCmd=" + rtmCmd);
+            ALog.getInstance().i(TAG, "<onMessageTimer> callback command timeout, rtmCmd=" + rtmCmd);
             IRtmCmd.OnRtmCmdRespListener cmdRespListener = rtmCmd.getRespListener();
             if (cmdRespListener != null) {
                 IRtmCmd respCmd = generateEmptyRespCmd(rtmCmd, ErrCode.XERR_DEVCMD_TIMEOUT);
@@ -832,7 +836,7 @@ public class RtmMgrComp extends BaseThreadComp {
 
             @Override
             public void onFailure(ErrorInfo errorInfo) {
-                ALog.getInstance().i(TAG, "<rtmEngInnerRenewToken.onFailure> failure"
+                ALog.getInstance().e(TAG, "<rtmEngInnerRenewToken.onFailure> failure"
                         + ", errInfo=" + errorInfo.getErrorCode()
                         + ", errDesc=" + errorInfo.getErrorDescription());
             }
@@ -863,7 +867,7 @@ public class RtmMgrComp extends BaseThreadComp {
 
             @Override
             public void onFailure(ErrorInfo errorInfo) {
-                ALog.getInstance().i(TAG, "<rtmEngRenewToken.onFailure> failure"
+                ALog.getInstance().e(TAG, "<rtmEngRenewToken.onFailure> failure"
                         + ", errInfo=" + errorInfo.getErrorCode()
                         + ", errDesc=" + errorInfo.getErrorDescription());
                 int errCode = mapRtmLoginErrCode(errorInfo.getErrorCode());
@@ -899,7 +903,7 @@ public class RtmMgrComp extends BaseThreadComp {
 
             @Override
             public void onFailure(ErrorInfo errorInfo) {
-                ALog.getInstance().i(TAG, "<rtmEngSendData.onFailure> failure"
+                ALog.getInstance().e(TAG, "<rtmEngSendData.onFailure> failure"
                         + ", errInfo=" + errorInfo.getErrorCode()
                         + ", errDesc=" + errorInfo.getErrorDescription()
                         + ", rtmPacket=" + rtmPacket);
