@@ -400,6 +400,7 @@ public class RtmMgrComp extends BaseThreadComp {
             mHeartbeatTimestamp = System.currentTimeMillis();
 
             // 轮询正在会话的各个设备，依次发送心跳处理包
+
             List<IDeviceSessionMgr.SessionInfo> sessionList = mSessionMgr.getSessionList();
             for (IDeviceSessionMgr.SessionInfo sessionInfo: sessionList) {
                 RtmPacket packet = new RtmPacket();
@@ -407,6 +408,7 @@ public class RtmMgrComp extends BaseThreadComp {
                 packet.mPeerId = sessionInfo.mPeerDevId;
                 packet.mPktData = HEARTBEAT_CONTENT;
                 mSendPktQueue.inqueue(packet);
+                ALog.getInstance().i(TAG, "<onMessageTimer> send headbeat packet");
             }
 
             sendSingleMessage(MSGID_RTM_SEND_PKT, 0, 0, null, 0);
