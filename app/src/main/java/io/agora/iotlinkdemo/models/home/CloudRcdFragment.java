@@ -389,7 +389,11 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
 
         //mediaFilePath = "http://stream-media.s3.cn-north-1.jdcloud-oss.com/iot-three/abcdefghijklmnopqrst/694981695177193038_1698400103240_1204949715.m3u8";
 
-        mediaFilePath = TEST_M3U8_URL;
+        // mediaFilePath = TEST_M3U8_URL;
+       // mediaFilePath = "https://stream-media.s3.cn-north-1.jdcloud-oss.com/iot-seven/bb6d4cdd44244aa3a7df1e109708c334/244201697436945557_1699709652882_1017416411.m3u8";
+
+        mediaFilePath = "https://pro-stream-media.s3.cn-north-1.jdcloud-oss.com/iot-seven/fd26e3e990c1fda98efea2af949013a3/328201700703023647_1700806496061_416033576.m3u8?agora-key=NzMwNDBiMzRjZTg5NTZjMg==";
+
 
         int playState = mVodPlayer.getPlayingState();
         if (playState == IVodPlayer.VODPLAYER_STATE_CLOSED) {
@@ -709,7 +713,10 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
 
             //String srcFileUrl = "http://stream-media.s3.cn-north-1.jdcloud-oss.com/iot-three/abcdefghijklmnopqrst/694981695177193038_1698226406024_1912937646.m3u8";
 
-            String srcFileUrl = TEST_M3U8_URL;
+           // String srcFileUrl = TEST_M3U8_URL;
+
+            String srcFileUrl = "https://pro-stream-media.s3.cn-north-1.jdcloud-oss.com/iot-seven/fd26e3e990c1fda98efea2af949013a3/328201700703023647_1700806496061_416033576.m3u8?agora-key=NzMwNDBiMzRjZTg5NTZjMg==";
+
 
             File file = getActivity().getExternalFilesDir(null);
             String cachePath = file.getAbsolutePath();
@@ -833,7 +840,9 @@ public class CloudRcdFragment extends BaseViewBindingFragment<FragmentHomeCloudr
             //String srcFileUrl = "http://stream-media.s3.cn-north-1.jdcloud-oss.com/iot-three/abcdefghijklmnopqrst/694981695177193038_1698391049764_964956074.m3u8";
             //String srcFileUrl = "http://stream-media.s3.cn-north-1.jdcloud-oss.com/iot-three/abcdefghijklmnopqrst/694981695177193038_1698400103240_1204949715.m3u8";
 
-            String srcFileUrl = TEST_M3U8_URL;
+            //String srcFileUrl = TEST_M3U8_URL;
+            //String srcFileUrl = "https://stream-media.s3.cn-north-1.jdcloud-oss.com/iot-seven/3609f8250e35fa8c5166c538cec073f9/513121700741345553_1700796666260_1667753563.m3u8?agora-key=MTA2NjQ1MzA3NmFjMTI1Zg==";
+            String srcFileUrl = "https://pro-stream-media.s3.cn-north-1.jdcloud-oss.com/iot-seven/fd26e3e990c1fda98efea2af949013a3/328201700703023647_1700806496061_416033576.m3u8?agora-key=NzMwNDBiMzRjZTg5NTZjMg==";
 
             AvDiagnoser.DiagnoseParam diagnoseParam = new AvDiagnoser.DiagnoseParam();
             diagnoseParam.mCallback = this;

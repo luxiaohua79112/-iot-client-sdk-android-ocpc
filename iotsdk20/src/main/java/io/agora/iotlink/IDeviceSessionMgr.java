@@ -97,15 +97,15 @@ public interface IDeviceSessionMgr  {
         public String mRtcToken;            ///< 要会话的RTC Token
         public String mRtmUid;              ///< 要会话的 RTM uid
         public String mRtmToken;            ///< 要会话的 RTM Token
+        public int mSpeakVolume = -1;       ///< 设置通话音量，-1表示不设置，[0, 400], 默认100(原始音量)，自带增益保护
 
         @Override
         public String toString() {
             String infoText = "{ mPeerDevId=" + mPeerDevId
                     + ", mLocalRtcUid=" + mLocalRtcUid
                     + ", mChannelName=" + mChannelName
-                    + ",\n mRtcToken=" + mRtcToken
-                    + ",\n mRtmUid=" + mRtmUid
-                    + ",\n mRtmToken=" + mRtmToken + " }";
+                    + ", mSpeakVolume=" + mSpeakVolume
+                    + ", mRtmUid=" + mRtmUid + " }";
             return infoText;
         }
     }

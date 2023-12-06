@@ -203,6 +203,7 @@ public class DeviceSessionMgr extends BaseThreadComp
         newSession.mRtcToken = connectParam.mRtcToken;
         newSession.mRtmUid = connectParam.mRtmUid;
         newSession.mRtmToken = connectParam.mRtmToken;
+        newSession.mSpeakVolume = connectParam.mSpeakVolume;
         newSession.mType = SESSION_TYPE_DIAL;  // 会话类型
         newSession.mUserCount = 1;      // 至少有一个用户
         newSession.mSeesionCallback = sessionCallback;

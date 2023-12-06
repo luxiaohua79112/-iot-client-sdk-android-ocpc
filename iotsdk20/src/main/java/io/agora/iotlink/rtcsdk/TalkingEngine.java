@@ -369,6 +369,11 @@ public class TalkingEngine implements AGEventHandler,
         }
         ALog.getInstance().d(TAG, "<joinChannel> Enter, sessionId=" + sessionCtx.mSessionId);
 
+        RtcConnection rtcConnection = new RtcConnection();
+        rtcConnection.channelId = sessionCtx.mChnlName;
+        rtcConnection.localUid = sessionCtx.mLocalRtcUid;
+
+
         // 加入频道
         ChannelMediaOptions options = new ChannelMediaOptions();
         options.channelProfile = Constants.CHANNEL_PROFILE_LIVE_BROADCASTING;
@@ -378,9 +383,6 @@ public class TalkingEngine implements AGEventHandler,
         options.publishCameraTrack = false;
         options.publishMicrophoneTrack = sessionCtx.mPubLocalAudio;
 
-        RtcConnection rtcConnection = new RtcConnection();
-        rtcConnection.channelId = sessionCtx.mChnlName;
-        rtcConnection.localUid = sessionCtx.mLocalRtcUid;
 
         RtcChnlEventHandler eventHandler = new RtcChnlEventHandler(this, sessionCtx.mSessionId);
         int ret = mRtcEngine.joinChannelEx(sessionCtx.mRtcToken, rtcConnection, options, eventHandler);
@@ -427,6 +429,15 @@ public class TalkingEngine implements AGEventHandler,
             ALog.getInstance().e(TAG, "<joinChannel> setAudioScenario() error, ret=" + ret);
         }
 
+        // 设置通话音量
+        if (sessionCtx.mSpeakVolume >= 0) {
+            int retRcdVolume = mRtcEngine.adjustRecordingSignalVolumeEx(sessionCtx.mSpeakVolume, rtcConnection);
+            if (retRcdVolume != 0) {
+                ALog.getInstance().e(TAG, "<joinChannel> fail to adjust singnal volume, retRcdVolume=" + retRcdVolume);
+            }
+        }
+
+
         // APP端永远不推视频流
         ret = mRtcEngine.muteLocalVideoStreamEx(true, rtcConnection);
         if (ret != Constants.ERR_OK) {
@@ -457,7 +468,8 @@ public class TalkingEngine implements AGEventHandler,
                     + ", muteRemoteAudio=" + muteRemoteAudio);
         }
 
-        ALog.getInstance().i(TAG, "<joinChannel> Exit");
+
+        ALog.getInstance().i(TAG, "<joinChannel> Exit, mSpeakVolume=" + sessionCtx.mSpeakVolume);
         return true;
     }
 

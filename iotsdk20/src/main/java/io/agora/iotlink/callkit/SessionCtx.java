@@ -35,6 +35,7 @@ public class SessionCtx  {
     public int mDeviceRtcUid;       ///< 设备端的 Rtc Uid
     public String mChnlName;        ///< 频道名
     public String mRtcToken;        ///< 分配的RTC token
+    public int mSpeakVolume = -1;   ///< 通话的音量，-1表示使用默认值不设置
 
     public String mRtmUid;          ///< 本地的 RTM uid
     public String mRtmToken;        ///< 要会话的 RTM Token

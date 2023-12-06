@@ -424,6 +424,7 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
                                 connectParam.mRtcToken = rtcToken;
                                 connectParam.mRtmUid = rtmUid;
                                 connectParam.mRtmToken = rtmToken;
+                                connectParam.mSpeakVolume = 150;
 
                                 IDeviceSessionMgr.ConnectResult sdkConnectRslt = sessionMgr.connect(connectParam, mFragment);
                                 if (sdkConnectRslt.mErrCode != ErrCode.XOK) {
@@ -865,7 +866,7 @@ public class HomePageFragment extends BaseViewBindingFragment<FragmentHomePageBi
                         previewMgr.setDisplayView(findResult.mDevInfo.mVideoView);
 
                         // 测试设置语音音量
-                        previewMgr.setLocalAudioVolume(150);
+                        // previewMgr.setLocalAudioVolume(150);
 
                         // 开始预览操作
                         previewMgr.previewStart(true, new IDevPreviewMgr.OnPreviewListener() {
