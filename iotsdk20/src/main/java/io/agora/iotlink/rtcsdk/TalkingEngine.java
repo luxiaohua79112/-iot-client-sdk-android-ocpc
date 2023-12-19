@@ -514,10 +514,6 @@ public class TalkingEngine implements AGEventHandler,
         ChannelMediaOptions options = new ChannelMediaOptions();
         options.channelProfile = Constants.CHANNEL_PROFILE_LIVE_BROADCASTING;
         options.clientRoleType = Constants.CLIENT_ROLE_BROADCASTER;
-        options.autoSubscribeAudio = false;      // 不自动订阅音频流
-        options.autoSubscribeVideo = false;      // 不自动订阅视频流
-        options.publishCameraTrack = false;     // 不推本地视频
-        options.publishMicrophoneTrack = sessionCtx.mPubLocalAudio;
         options.token = newToken;   // 要更新的token
 
         RtcConnection rtcConnection = new RtcConnection();
@@ -576,10 +572,6 @@ public class TalkingEngine implements AGEventHandler,
         ChannelMediaOptions options = new ChannelMediaOptions();
         options.channelProfile = Constants.CHANNEL_PROFILE_LIVE_BROADCASTING;
         options.clientRoleType = Constants.CLIENT_ROLE_BROADCASTER;
-        options.autoSubscribeAudio = false;      // 不订阅音频流
-        options.autoSubscribeVideo = false;      // 不订阅视频流
-        options.publishCameraTrack = false;     // 不推本地视频
-        options.publishMicrophoneTrack = false; // 不推本地音频流
 
         RtcConnection rtcConnection = new RtcConnection();
         rtcConnection.channelId = sessionCtx.mChnlName;
@@ -619,10 +611,6 @@ public class TalkingEngine implements AGEventHandler,
         ChannelMediaOptions options = new ChannelMediaOptions();
         options.channelProfile = Constants.CHANNEL_PROFILE_LIVE_BROADCASTING;
         options.clientRoleType = Constants.CLIENT_ROLE_BROADCASTER;
-        options.autoSubscribeAudio = false;      // 不订阅音频流
-        options.autoSubscribeVideo = false;      // 不订阅视频流
-        options.publishCameraTrack = false;     // 不推本地视频
-        options.publishMicrophoneTrack = false; // 不推本地音频流
 
         RtcConnection rtcConnection = new RtcConnection();
         rtcConnection.channelId = sessionCtx.mChnlName;
@@ -722,9 +710,6 @@ public class TalkingEngine implements AGEventHandler,
         ChannelMediaOptions options = new ChannelMediaOptions();
         options.channelProfile = Constants.CHANNEL_PROFILE_LIVE_BROADCASTING;
         options.clientRoleType = mRtcEngCfg.mClientRole;
-        options.autoSubscribeAudio = false;  // 不自动订阅音频
-        options.autoSubscribeVideo = false;  // 不自动订阅视频
-        options.publishCameraTrack = false;
         options.publishMicrophoneTrack = sessionCtx.mPubLocalAudio;
 
         RtcConnection rtcConnection = new RtcConnection();
